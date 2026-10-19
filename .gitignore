@@ -1,0 +1,57 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+
+# Next.js
+.next/
+out/
+build/
+dist/
+
+# Misc
+.DS_Store
+*.pem
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local env files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE
+.idea/
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Database & uploads
+uploads/
+*.sqlite
+*.sqlite-journal
+
+# .NET / C#
+bin/
+obj/
+*.user
+*.userosscache
+*.suo
+*.userprefs
+[Aa]rms/
+[Dd]ebug/
+[Rr]elease/
+appsettings.Local.json
+appsettings.Development.json
+appsettings.*.local.json
+

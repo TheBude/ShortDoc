@@ -1,0 +1,245 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  LEADERSHIP
+  CHANCELLERY
+  DEPARTMENT_HEAD
+  STAFF
+}
+
+enum DocumentType {
+  INCOMING
+  OUTGOING
+  INTERNAL
+}
+
+enum DocumentStatus {
+  NEW
+  REGISTERED
+  IN_REVIEW
+  IN_APPROVAL
+  IN_EXECUTION
+  COMPLETED
+  REJECTED
+  ARCHIVED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  OVERDUE
+  CANCELLED
+}
+
+model Department {
+  id        String     @id @default(uuid())
+  name      String
+  code      String     @unique
+  type      String     @default("DEPARTMENT") // RECTORATE, FACULTY, CHANCELLERY, DEPARTMENT, DIVISION
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  users     User[]
+  documents Document[]
+
+  @@map("departments")
+}
+
+model User {
+  id           String      @id @default(uuid())
+  email        String      @unique
+  passwordHash String
+  fullName     String
+  role         Role        @default(STAFF)
+  position     String
+  phone        String?
+  isActive     Boolean     @default(true)
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  createdDocuments     Document[]              @relation("DocumentCreator")
+  assignedDocuments    Document[]              @relation("DocumentAssignee")
+  uploadedFiles        DocumentFile[]
+  approvals            DocumentApproval[]
+  assignedTasks        Task[]                  @relation("TaskAssignee")
+  createdTasks         Task[]                  @relation("TaskCreator")
+  comments             DocumentComment[]
+  statusChanges        DocumentStatusHistory[]
+  auditLogs            AuditLog[]
+  notifications        Notification[]
+
+  @@map("users")
+}
+
+model Document {
+  id             String         @id @default(uuid())
+  regNumber      String         @unique
+  title          String
+  documentType   DocumentType   @default(INTERNAL)
+  category       String         @default("Bildirgi") // Xizmat xati, Bildirgi, Buyruq loyihasi, Qaror, Ariza
+  registeredDate DateTime       @default(now())
+  sender         String?
+  receiver       String?
+  departmentId   String?
+  department     Department?    @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  assigneeId     String?
+  assignee       User?          @relation("DocumentAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  creatorId      String
+  creator        User           @relation("DocumentCreator", fields: [creatorId], references: [id])
+  priority       Priority       @default(MEDIUM)
+  deadline       DateTime?
+  status         DocumentStatus @default(NEW)
+  summary        String?        @db.Text
+  isArchived     Boolean        @default(false)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  files          DocumentFile[]
+  approvals      DocumentApproval[]
+  tasks          Task[]
+  comments       DocumentComment[]
+  statusHistory  DocumentStatusHistory[]
+
+  @@index([regNumber])
+  @@index([status])
+  @@index([documentType])
+  @@index([deadline])
+  @@map("documents")
+}
+
+model DocumentFile {
+  id           String   @id @default(uuid())
+  documentId   String
+  document     Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  originalName String
+  fileName     String
+  filePath     String
+  fileSize     Int
+  mimeType     String
+  uploadedById String
+  uploadedBy   User     @relation(fields: [uploadedById], references: [id])
+  createdAt    DateTime @default(now())
+
+  @@map("document_files")
+}
+
+model DocumentApproval {
+  id         String         @id @default(uuid())
+  documentId String
+  document   Document       @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  approverId String
+  approver   User           @relation(fields: [approverId], references: [id])
+  stepOrder  Int            @default(1)
+  status     ApprovalStatus @default(PENDING)
+  comments   String?
+  signedAt   DateTime?
+  createdAt  DateTime       @default(now())
+
+  @@index([documentId, stepOrder])
+  @@map("document_approvals")
+}
+
+model Task {
+  id            String     @id @default(uuid())
+  documentId    String
+  document      Document   @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  title         String
+  description   String?    @db.Text
+  assignedToId  String
+  assignedTo    User       @relation("TaskAssignee", fields: [assignedToId], references: [id])
+  createdById   String
+  createdBy     User       @relation("TaskCreator", fields: [createdById], references: [id])
+  deadline      DateTime?
+  status        TaskStatus @default(PENDING)
+  resultComment String?    @db.Text
+  resultFileUrl String?
+  completedAt   DateTime?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@index([documentId])
+  @@index([assignedToId])
+  @@index([status])
+  @@map("tasks")
+}
+
+model DocumentComment {
+  id         String   @id @default(uuid())
+  documentId String
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  comment    String   @db.Text
+  createdAt  DateTime @default(now())
+
+  @@map("document_comments")
+}
+
+model DocumentStatusHistory {
+  id          String         @id @default(uuid())
+  documentId  String
+  document    Document       @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  changedById String
+  changedBy   User           @relation(fields: [changedById], references: [id])
+  oldStatus   DocumentStatus
+  newStatus   DocumentStatus
+  reason      String?
+  createdAt   DateTime       @default(now())
+
+  @@map("document_status_histories")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String
+  entity    String
+  entityId  String?
+  details   String?  @db.Text
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([action])
+  @@index([entity])
+  @@map("audit_logs")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  link      String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
