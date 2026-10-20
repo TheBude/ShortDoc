@@ -24,6 +24,7 @@ export interface User {
   position: string;
   phone?: string;
   isActive: boolean;
+  registrationStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
   departmentId?: string | null;
   department?: Department;
   createdAt?: string;

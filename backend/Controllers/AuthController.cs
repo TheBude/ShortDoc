@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ShortDoc.Api.Data;
 using ShortDoc.Api.DTOs;
+using ShortDoc.Api.Models;
 using ShortDoc.Api.Services;
 
 namespace ShortDoc.Api.Controllers;
@@ -40,9 +41,19 @@ public class AuthController : ControllerBase
             return Unauthorized(ApiResponse<object>.Fail("Email yoki parol noto‘g‘ri"));
         }
 
+        if (user.RegistrationStatus == "PENDING")
+        {
+            return StatusCode(403, ApiResponse<object>.Fail("Arizangiz SuperAdmin tomonidan tasdiqlanishi kutilmoqda. 1 soat ichida javob ma'lum bo'ladi yoki admin bilan bog'laning: +998500728270"));
+        }
+
+        if (user.RegistrationStatus == "REJECTED")
+        {
+            return StatusCode(403, ApiResponse<object>.Fail("Ro‘yxatdan o‘tish arizangiz rad etilgan. Ma’lumot uchun admin bilan bog‘laning: +998500728270"));
+        }
+
         if (!user.IsActive)
         {
-            return StatusCode(403, ApiResponse<object>.Fail("Hisobingiz bloklangan. Administratorga murojaat qiling."));
+            return StatusCode(403, ApiResponse<object>.Fail("Hisobingiz faol emas yoki bloklangan. Administratorga murojaat qiling."));
         }
 
         var token = _jwtService.GenerateToken(user);
@@ -60,6 +71,7 @@ public class AuthController : ControllerBase
                 role = user.Role.ToString(),
                 position = user.Position,
                 phone = user.Phone,
+                registrationStatus = user.RegistrationStatus,
                 department = user.Department != null ? new
                 {
                     id = user.Department.Id,
@@ -70,6 +82,143 @@ public class AuthController : ControllerBase
         };
 
         return Ok(ApiResponse<object>.Ok(responseData, "Tizimga muvaffaqiyatli kirildi"));
+    }
+
+    [HttpGet("check-email")]
+    public async Task<IActionResult> CheckEmail([FromQuery] string email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            return BadRequest(ApiResponse<object>.Fail("Email ko‘rsatilmadi"));
+        }
+
+        var exists = await _context.Users.AnyAsync(u => u.Email.ToLower() == email.Trim().ToLower());
+        return Ok(ApiResponse<object>.Ok(new { available = !exists, exists }));
+    }
+
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] RegisterDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Password) || string.IsNullOrWhiteSpace(dto.FullName))
+        {
+            return BadRequest(ApiResponse<object>.Fail("Email, parol va to‘liq ism kiritilishi shart"));
+        }
+
+        var trimmedEmail = dto.Email.Trim().ToLower();
+        var exists = await _context.Users.AnyAsync(u => u.Email.ToLower() == trimmedEmail);
+        if (exists)
+        {
+            return BadRequest(ApiResponse<object>.Fail("Bu email bilan allaqachon ro‘yxatdan o‘tilgan"));
+        }
+
+        // Parol murakkabligi: Kamida 8 belgi, katta harf, kichik harf va raqam
+        var pwd = dto.Password;
+        var hasUpper = pwd.Any(char.IsUpper);
+        var hasLower = pwd.Any(char.IsLower);
+        var hasDigit = pwd.Any(char.IsDigit);
+
+        if (pwd.Length < 8 || !hasUpper || !hasLower || !hasDigit)
+        {
+            return BadRequest(ApiResponse<object>.Fail("Parol talabga javob bermaydi: kamida 8 ta belgi, katta harf, kichik harf va son qatnashishi majburiy"));
+        }
+
+        // Bo'limni aniqlash
+        string? departmentId = null;
+        if (!string.IsNullOrWhiteSpace(dto.CustomDepartment))
+        {
+            var customDeptName = dto.CustomDepartment.Trim();
+            var existingDept = await _context.Departments.FirstOrDefaultAsync(d => d.Name.ToLower() == customDeptName.ToLower());
+            if (existingDept == null)
+            {
+                var deptCode = "DEP-" + Guid.NewGuid().ToString("N")[..6].ToUpper();
+                existingDept = new Department
+                {
+                    Name = customDeptName,
+                    Code = deptCode,
+                    Type = "CUSTOM"
+                };
+                _context.Departments.Add(existingDept);
+                await _context.SaveChangesAsync();
+            }
+            departmentId = existingDept.Id;
+        }
+        else if (!string.IsNullOrWhiteSpace(dto.DepartmentId))
+        {
+            departmentId = dto.DepartmentId;
+        }
+
+        // Lavozimni aniqlash
+        string position = "Xodim";
+        if (!string.IsNullOrWhiteSpace(dto.CustomPosition))
+        {
+            position = dto.CustomPosition.Trim();
+        }
+        else if (!string.IsNullOrWhiteSpace(dto.Position))
+        {
+            position = dto.Position.Trim();
+        }
+
+        // Bo'lim va lavozimga qarab rolni avtomatik aniqlash
+        string deptNameToCompare = dto.CustomDepartment ?? "";
+        if (string.IsNullOrEmpty(deptNameToCompare) && departmentId != null)
+        {
+            var d = await _context.Departments.FindAsync(departmentId);
+            deptNameToCompare = d?.Name ?? "";
+        }
+
+        var dLower = deptNameToCompare.ToLower();
+        var pLower = position.ToLower();
+        Role resolvedRole = Role.STAFF;
+        if (dLower.Contains("rektor") || pLower.Contains("rektor") || pLower.Contains("prorektor"))
+        {
+            resolvedRole = Role.LEADERSHIP;
+        }
+        else if (dLower.Contains("devon") || pLower.Contains("devonxona"))
+        {
+            resolvedRole = Role.CHANCELLERY;
+        }
+        else if (pLower.Contains("boshlig") || pLower.Contains("mudir") || pLower.Contains("dekan") || pLower.Contains("rahbar"))
+        {
+            resolvedRole = Role.DEPARTMENT_HEAD;
+        }
+
+        var newUser = new User
+        {
+            Email = trimmedEmail,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
+            FullName = dto.FullName.Trim(),
+            Role = resolvedRole,
+            Position = position,
+            Phone = dto.Phone?.Trim(),
+            DepartmentId = departmentId,
+            IsActive = false,
+            RegistrationStatus = "PENDING",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        _context.Users.Add(newUser);
+        await _context.SaveChangesAsync();
+
+        await _auditService.LogAsync(
+            newUser.Id,
+            "REGISTER",
+            "AUTH",
+            newUser.Id,
+            $"{newUser.FullName} ({newUser.Email}) yangi ro‘yxatdan o‘tish arizasini topshirdi",
+            HttpContext.Connection.RemoteIpAddress?.ToString(),
+            Request.Headers.UserAgent.ToString()
+        );
+
+        return Ok(ApiResponse<object>.Ok(new
+        {
+            id = newUser.Id,
+            email = newUser.Email,
+            fullName = newUser.FullName,
+            registrationStatus = newUser.RegistrationStatus,
+            supportPhone = "+998500728270",
+            message = "Adminga barcha ma'lumotlar yuborildi. 1 soat ichida javob ma'lum bo'ladi yoki admin bilan bog'lanish: +998500728270"
+        }, "Arizangiz muvaffaqiyatli qabul qilindi"));
     }
 
     [Authorize]

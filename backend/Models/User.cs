@@ -32,6 +32,9 @@ public class User
 
     public bool IsActive { get; set; } = true;
 
+    [MaxLength(50)]
+    public string RegistrationStatus { get; set; } = "APPROVED";
+
     public string? DepartmentId { get; set; }
 
     [ForeignKey("DepartmentId")]

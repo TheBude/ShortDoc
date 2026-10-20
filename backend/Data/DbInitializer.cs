@@ -10,6 +10,46 @@ public static class DbInitializer
         // Ensure database tables exist
         await context.Database.EnsureCreatedAsync();
 
+        try
+        {
+            await context.Database.ExecuteSqlRawAsync(@"
+                ALTER TABLE users ADD COLUMN IF NOT EXISTS ""registrationStatus"" VARCHAR(50) DEFAULT 'APPROVED';
+                DO $$ BEGIN
+                    ALTER TABLE users ALTER COLUMN ""role"" TYPE VARCHAR(50) USING ""role""::text;
+                    ALTER TABLE documents ALTER COLUMN ""documentType"" TYPE VARCHAR(50) USING ""documentType""::text;
+                    ALTER TABLE documents ALTER COLUMN ""status"" TYPE VARCHAR(50) USING ""status""::text;
+                    ALTER TABLE documents ALTER COLUMN ""priority"" TYPE VARCHAR(50) USING ""priority""::text;
+                    ALTER TABLE document_approvals ALTER COLUMN ""status"" TYPE VARCHAR(50) USING ""status""::text;
+                    ALTER TABLE tasks ALTER COLUMN ""status"" TYPE VARCHAR(50) USING ""status""::text;
+                EXCEPTION WHEN OTHERS THEN NULL;
+                END $$;
+            ");
+        }
+        catch
+        {
+            // Ignore if column already exists or table not ready
+        }
+
+        // Seed additional modern departments if not present
+        var requiredDepts = new (string Name, string Code, string Type)[]
+        {
+            ("Raqamli ta'limni rivojlantirish bo‘limi", "DIGITAL-EDU", "DEPARTMENT"),
+            ("ATM", "ATM", "DEPARTMENT"),
+            ("HEMIS", "HEMIS", "DEPARTMENT"),
+            ("Magistratura Qabul", "MAGISTR-ADMISSION", "DEPARTMENT"),
+            ("Bakalavr Qabul", "BACHELOR-ADMISSION", "DEPARTMENT"),
+            ("Bilimni baholash", "ASSESSMENT", "DEPARTMENT"),
+        };
+
+        foreach (var (name, code, type) in requiredDepts)
+        {
+            if (!await context.Departments.AnyAsync(d => d.Code == code || d.Name == name))
+            {
+                context.Departments.Add(new Department { Name = name, Code = code, Type = type });
+            }
+        }
+        await context.SaveChangesAsync();
+
         // 1. Seed Departments if empty
         if (!await context.Departments.AnyAsync())
         {

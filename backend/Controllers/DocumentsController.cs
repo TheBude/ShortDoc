@@ -220,73 +220,81 @@ public class DocumentsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> CreateDocument([FromBody] CreateDocumentDto dto)
     {
-        if (string.IsNullOrWhiteSpace(dto.Title))
+        try
         {
-            return BadRequest(ApiResponse<object>.Fail("Hujjat nomi kiritilishi shart"));
-        }
-
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-        var user = await _context.Users.FindAsync(userId);
-
-        Enum.TryParse<DocumentType>(dto.DocumentType, true, out var docType);
-        Enum.TryParse<Priority>(dto.Priority, true, out var priority);
-
-        // Generate Unique Reg Number
-        var year = DateTime.UtcNow.Year;
-        var prefix = docType == DocumentType.INCOMING ? "KIR" : docType == DocumentType.OUTGOING ? "CHIQ" : "ICH";
-        var count = await _context.Documents.CountAsync(d => d.DocumentType == docType && d.CreatedAt.Year == year);
-        var regNumber = $"{year}/{prefix}-{(count + 1):D4}";
-
-        var doc = new Document
-        {
-            RegNumber = regNumber,
-            Title = dto.Title,
-            DocumentType = docType,
-            Category = string.IsNullOrWhiteSpace(dto.Category) ? "Bildirgi" : dto.Category,
-            Sender = dto.Sender,
-            Receiver = dto.Receiver,
-            DepartmentId = !string.IsNullOrEmpty(dto.DepartmentId) ? dto.DepartmentId : user?.DepartmentId,
-            AssigneeId = dto.AssigneeId,
-            CreatorId = userId,
-            Priority = priority,
-            Deadline = !string.IsNullOrEmpty(dto.Deadline) ? DateTime.SpecifyKind(DateTime.Parse(dto.Deadline), DateTimeKind.Utc) : null,
-            Summary = dto.Summary,
-            Status = DocumentStatus.REGISTERED
-        };
-
-        _context.Documents.Add(doc);
-
-        // Status history
-        _context.DocumentStatusHistories.Add(new DocumentStatusHistory
-        {
-            DocumentId = doc.Id,
-            ChangedById = userId,
-            OldStatus = DocumentStatus.NEW,
-            NewStatus = DocumentStatus.REGISTERED,
-            Reason = "C# API orqali ro‘yxatga olindi"
-        });
-
-        // Add Approver chain if provided
-        if (dto.ApproverIds != null && dto.ApproverIds.Any())
-        {
-            int order = 1;
-            foreach (var approverId in dto.ApproverIds)
+            if (string.IsNullOrWhiteSpace(dto.Title))
             {
-                _context.DocumentApprovals.Add(new DocumentApproval
-                {
-                    DocumentId = doc.Id,
-                    ApproverId = approverId,
-                    StepOrder = order++,
-                    Status = ApprovalStatus.PENDING
-                });
+                return BadRequest(ApiResponse<object>.Fail("Hujjat nomi kiritilishi shart"));
             }
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            var user = await _context.Users.FindAsync(userId);
+
+            Enum.TryParse<DocumentType>(dto.DocumentType, true, out var docType);
+            Enum.TryParse<Priority>(dto.Priority, true, out var priority);
+
+            // Generate Unique Reg Number
+            var year = DateTime.UtcNow.Year;
+            var prefix = docType == DocumentType.INCOMING ? "KIR" : docType == DocumentType.OUTGOING ? "CHIQ" : "ICH";
+            var count = await _context.Documents.CountAsync(d => d.DocumentType == docType && d.CreatedAt.Year == year);
+            var regNumber = $"{year}/{prefix}-{(count + 1):D4}";
+
+            var doc = new Document
+            {
+                RegNumber = regNumber,
+                Title = dto.Title,
+                DocumentType = docType,
+                Category = string.IsNullOrWhiteSpace(dto.Category) ? "Bildirgi" : dto.Category,
+                Sender = dto.Sender,
+                Receiver = dto.Receiver,
+                DepartmentId = !string.IsNullOrEmpty(dto.DepartmentId) ? dto.DepartmentId : user?.DepartmentId,
+                AssigneeId = dto.AssigneeId,
+                CreatorId = userId,
+                Priority = priority,
+                Deadline = !string.IsNullOrEmpty(dto.Deadline) ? DateTime.SpecifyKind(DateTime.Parse(dto.Deadline), DateTimeKind.Utc) : null,
+                Summary = dto.Summary,
+                Status = DocumentStatus.REGISTERED
+            };
+
+            _context.Documents.Add(doc);
+
+            // Status history
+            _context.DocumentStatusHistories.Add(new DocumentStatusHistory
+            {
+                DocumentId = doc.Id,
+                ChangedById = userId,
+                OldStatus = DocumentStatus.NEW,
+                NewStatus = DocumentStatus.REGISTERED,
+                Reason = "C# API orqali ro‘yxatga olindi"
+            });
+
+            // Add Approver chain if provided
+            if (dto.ApproverIds != null && dto.ApproverIds.Any())
+            {
+                int order = 1;
+                foreach (var approverId in dto.ApproverIds)
+                {
+                    _context.DocumentApprovals.Add(new DocumentApproval
+                    {
+                        DocumentId = doc.Id,
+                        ApproverId = approverId,
+                        StepOrder = order++,
+                        Status = ApprovalStatus.PENDING
+                    });
+                }
+            }
+
+            await _context.SaveChangesAsync();
+
+            await _auditService.LogAsync(userId, "CREATE_DOCUMENT", "DOCUMENT", doc.Id, $"Yangi hujjat ro‘yxatga olindi: {doc.RegNumber} - {doc.Title}");
+
+            return CreatedAtAction(nameof(GetDocumentById), new { id = doc.Id }, ApiResponse<object>.Ok(new { id = doc.Id, regNumber = doc.RegNumber, title = doc.Title }, "Hujjat muvaffaqiyatli ro‘yxatga olindi"));
         }
-
-        await _context.SaveChangesAsync();
-
-        await _auditService.LogAsync(userId, "CREATE_DOCUMENT", "DOCUMENT", doc.Id, $"Yangi hujjat ro‘yxatga olindi: {doc.RegNumber} - {doc.Title}");
-
-        return CreatedAtAction(nameof(GetDocumentById), new { id = doc.Id }, ApiResponse<object>.Ok(doc, "Hujjat muvaffaqiyatli ro‘yxatga olindi"));
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ERROR] CreateDocument: {ex}");
+            return StatusCode(500, ApiResponse<object>.Fail($"Server xatosi: {ex.Message} {(ex.InnerException != null ? "--> " + ex.InnerException.Message : "")}"));
+        }
     }
 
     [HttpPatch("{id}/status")]

@@ -23,7 +23,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetUsers([FromQuery] string? role, [FromQuery] string? departmentId, [FromQuery] string? search)
+    public async Task<IActionResult> GetUsers([FromQuery] string? role, [FromQuery] string? departmentId, [FromQuery] string? search, [FromQuery] string? status)
     {
         var query = _context.Users.AsNoTracking().AsQueryable();
 
@@ -37,6 +37,11 @@ public class UsersController : ControllerBase
             query = query.Where(u => u.DepartmentId == departmentId);
         }
 
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            query = query.Where(u => u.RegistrationStatus.ToLower() == status.ToLower());
+        }
+
         if (!string.IsNullOrWhiteSpace(search))
         {
             var s = search.ToLower();
@@ -44,7 +49,7 @@ public class UsersController : ControllerBase
         }
 
         var users = await query
-            .OrderBy(u => u.FullName)
+            .OrderByDescending(u => u.CreatedAt)
             .Select(u => new
             {
                 id = u.Id,
@@ -54,6 +59,7 @@ public class UsersController : ControllerBase
                 position = u.Position,
                 phone = u.Phone,
                 isActive = u.IsActive,
+                registrationStatus = u.RegistrationStatus,
                 departmentId = u.DepartmentId,
                 department = u.Department != null ? new { id = u.Department.Id, name = u.Department.Name, code = u.Department.Code } : null,
                 createdAt = u.CreatedAt
@@ -116,5 +122,99 @@ public class UsersController : ControllerBase
         await _context.SaveChangesAsync();
 
         return Ok(ApiResponse<object>.Ok(user, "Foydalanuvchi muvaffaqiyatli yangilandi"));
+    }
+
+    [HttpPost("{id}/approve")]
+    [Authorize(Roles = "SUPER_ADMIN")]
+    public async Task<IActionResult> ApproveUser(string id, [FromBody] ApproveUserDto? dto)
+    {
+        var user = await _context.Users.Include(u => u.Department).FirstOrDefaultAsync(u => u.Id == id);
+        if (user == null) return NotFound(ApiResponse<object>.Fail("Foydalanuvchi topilmadi"));
+
+        // Bo'lim va lavozimiga qarab rolni avtomatik belgilash
+        var deptName = user.Department?.Name?.ToLower() ?? "";
+        var pos = user.Position.ToLower();
+
+        Role resolvedRole = Role.STAFF;
+        if (deptName.Contains("rektor") || pos.Contains("rektor") || pos.Contains("prorektor"))
+        {
+            resolvedRole = Role.LEADERSHIP;
+        }
+        else if (deptName.Contains("devon") || pos.Contains("devonxona"))
+        {
+            resolvedRole = Role.CHANCELLERY;
+        }
+        else if (pos.Contains("boshlig") || pos.Contains("mudir") || pos.Contains("dekan") || pos.Contains("rahbar"))
+        {
+            resolvedRole = Role.DEPARTMENT_HEAD;
+        }
+        else
+        {
+            resolvedRole = Role.STAFF;
+        }
+
+        if (!string.IsNullOrWhiteSpace(dto?.Role) && Enum.TryParse<Role>(dto.Role, true, out var explicitRole))
+        {
+            user.Role = explicitRole;
+        }
+        else
+        {
+            user.Role = resolvedRole;
+        }
+
+        user.RegistrationStatus = "APPROVED";
+        user.IsActive = true;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        await _auditService.LogAsync(
+            user.Id,
+            "APPROVE_USER",
+            "USER",
+            user.Id,
+            $"SuperAdmin tomonidan {user.FullName} ({user.Email}) hisobi avtomatik {user.Role} roli bilan tasdiqlandi"
+        );
+
+        return Ok(ApiResponse<object>.Ok(new
+        {
+            user.Id,
+            user.Email,
+            user.FullName,
+            user.RegistrationStatus,
+            user.IsActive,
+            role = user.Role.ToString()
+        }, "Foydalanuvchi arizasi muvaffaqiyatli tasdiqlandi"));
+    }
+
+    [HttpPost("{id}/reject")]
+    [Authorize(Roles = "SUPER_ADMIN")]
+    public async Task<IActionResult> RejectUser(string id)
+    {
+        var user = await _context.Users.FindAsync(id);
+        if (user == null) return NotFound(ApiResponse<object>.Fail("Foydalanuvchi topilmadi"));
+
+        user.RegistrationStatus = "REJECTED";
+        user.IsActive = false;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        await _auditService.LogAsync(
+            user.Id,
+            "REJECT_USER",
+            "USER",
+            user.Id,
+            $"SuperAdmin tomonidan {user.FullName} ({user.Email}) arizasi rad etildi"
+        );
+
+        return Ok(ApiResponse<object>.Ok(new
+        {
+            user.Id,
+            user.Email,
+            user.FullName,
+            user.RegistrationStatus,
+            user.IsActive
+        }, "Foydalanuvchi arizasi rad etildi"));
     }
 }

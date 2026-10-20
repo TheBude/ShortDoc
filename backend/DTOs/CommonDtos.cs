@@ -44,6 +44,23 @@ public class LoginDto
     public string Password { get; set; } = string.Empty;
 }
 
+public class RegisterDto
+{
+    public string Email { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
+    public string FullName { get; set; } = string.Empty;
+    public string? Phone { get; set; }
+    public string? DepartmentId { get; set; }
+    public string? CustomDepartment { get; set; }
+    public string Position { get; set; } = string.Empty;
+    public string? CustomPosition { get; set; }
+}
+
+public class ApproveUserDto
+{
+    public string? Role { get; set; }
+}
+
 public class ChangePasswordDto
 {
     public string OldPassword { get; set; } = string.Empty;
