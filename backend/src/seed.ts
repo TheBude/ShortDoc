@@ -3,7 +3,7 @@ import { prisma } from './prisma.js';
 
 export async function runSeed() {
   console.log('================================================================');
-  console.log('🏛️  Sharof Rashidov nomidagi SamDU - Tizim Ma’lumotlarini Yangilash (Seed)');
+  console.log('[Seed] Sharof Rashidov nomidagi SamDU - Tizim Ma’lumotlarini Yangilash');
   console.log('================================================================');
 
   // 1. Bo'limlar va Fakultetlar (SamDU tuzilmasi)
@@ -30,7 +30,7 @@ export async function runSeed() {
     });
     depMap.set(dep.code, created.id);
   }
-  console.log(`✓ SamDU bo‘lim va fakultetlari (${depMap.size} ta) yaratildi/yangilandi.`);
+  console.log(`[Seed OK] SamDU bo‘lim va fakultetlari (${depMap.size} ta) yaratildi/yangilandi.`);
 
   // 2. Foydalanuvchilar (Rollari va parollari bilan)
   const pAdmin = await bcrypt.hash('Admin123!', 10);
@@ -129,7 +129,7 @@ export async function runSeed() {
     });
     userMap.set(u.email, created.id);
   }
-  console.log(`✓ SamDU xodimlari (${userMap.size} ta) tizimga kiritildi.`);
+  console.log(`[Seed OK] SamDU xodimlari (${userMap.size} ta) tizimga kiritildi.`);
 
   const adminId = userMap.get('admin@shortdoc.uz')!;
   const rektorId = userMap.get('rektor@shortdoc.uz')!;
@@ -504,7 +504,7 @@ export async function runSeed() {
     },
   });
 
-  console.log('✓ Barcha kategoriyalar bo‘yicha SamDU namunaviy hujjatlari yaratildi.');
+  console.log('[Seed OK] Barcha kategoriyalar bo‘yicha SamDU namunaviy hujjatlari yaratildi.');
 
   // 4. Imzo zanjirlari (DocumentApprovals) - Har bir foydalanuvchida imzoga kelgan hujjat ko'rinishi uchun!
   await prisma.documentApproval.deleteMany({});
@@ -581,7 +581,7 @@ export async function runSeed() {
       },
     ],
   });
-  console.log('✓ Imzo zanjirlari (Admin, Rektor, Dekan, Xodim uchun navbatdagi imzolar) yaratildi.');
+  console.log('[Seed OK] Imzo zanjirlari (Admin, Rektor, Dekan, Xodim uchun navbatdagi imzolar) yaratildi.');
 
   // 5. Ijro Topshiriqlari (Tasks)
   await prisma.task.upsert({
@@ -674,7 +674,7 @@ export async function runSeed() {
     },
   });
 
-  console.log('✓ Ijro topshiriqlari (Jarayonda, Muddati o‘tgan va Yangi) yaratildi.');
+  console.log('[Seed OK] Ijro topshiriqlari (Jarayonda, Muddati o‘tgan va Yangi) yaratildi.');
 
   // 6. Audit Loglar
   await prisma.auditLog.createMany({
@@ -708,10 +708,10 @@ export async function runSeed() {
       },
     ],
   });
-  console.log('✓ Dastlabki tizim audit loglari yozildi.');
+  console.log('[Seed OK] Dastlabki tizim audit loglari yozildi.');
 
   console.log('================================================================');
-  console.log('🎉 SamDU ShortDoc TypeScript backend ma’lumotlar bazasi tayyor!');
+  console.log('[Seed Tugallandi] SamDU ShortDoc ma’lumotlar bazasi tayyor.');
   console.log('Foydalanuvchilar:');
   console.log(' 1. Super Admin: admin@shortdoc.uz / Admin123!');
   console.log(' 2. Rektor:      rektor@shortdoc.uz / Rektor123!');

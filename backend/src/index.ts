@@ -73,11 +73,11 @@ app.use('/api/notifications', notificationRoutes);
 // Boshlang'ich ma'lumotlarni browser orqali ham seed qilish imkoniyati (Render Free tier uchun)
 app.get('/api/seed', async (req, res) => {
   try {
-    console.log('🌱 URL orqali Seed so‘rovi qabul qilindi...');
+    console.log('[Seed] HTTP orqali boshlang‘ich ma’lumotlarni kiritish so‘rovi qabul qilindi.');
     await runSeed();
     res.json({
       success: true,
-      message: 'SamDU boshlang‘ich ma’lumotlari (seed) muvaffaqiyatli bazaga yozildi!',
+      message: 'SamDU boshlang‘ich ma’lumotlari (seed) muvaffaqiyatli bazaga yozildi.',
       users: [
         { role: 'SUPER_ADMIN', email: 'admin@shortdoc.uz', pass: 'Admin123!' },
         { role: 'LEADERSHIP', email: 'rektor@shortdoc.uz', pass: 'Rektor123!' },
@@ -87,7 +87,7 @@ app.get('/api/seed', async (req, res) => {
       ]
     });
   } catch (err: any) {
-    console.error('Seed xatosi:', err);
+    console.error('[Seed Error]:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
@@ -97,29 +97,29 @@ app.use(errorHandler);
 
 const server = app.listen(PORT, async () => {
   console.log(`=========================================`);
-  console.log(`🚀 ShortDoc Backend API muvaffaqiyatli ishga tushdi!`);
-  console.log(`📡 URL: http://localhost:${PORT}`);
-  console.log(`📚 Swagger Docs: http://localhost:${PORT}/api/docs`);
+  console.log(`[ShortDoc API] Server muvaffaqiyatli ishga tushdi.`);
+  console.log(`[ShortDoc API] URL: http://localhost:${PORT}`);
+  console.log(`[ShortDoc API] Swagger Docs: http://localhost:${PORT}/api/docs`);
   console.log(`=========================================`);
 
   // Baza bo'sh bo'lsa avtomatik seed qilish
   try {
     const userCount = await prisma.user.count();
     if (userCount === 0) {
-      console.log('🌱 Baza bo‘sh ekanligi aniqlandi. Boshlang‘ich foydalanuvchilar va hujjatlar avtomatik yuklanmoqda...');
+      console.log('[ShortDoc DB] Baza bo‘sh ekanligi aniqlandi. Boshlang‘ich foydalanuvchilar yuklanmoqda...');
       await runSeed();
-      console.log('✅ Boshlang‘ich ma’lumotlar muvaffaqiyatli yuklandi!');
+      console.log('[ShortDoc DB] Boshlang‘ich ma’lumotlar yuklandi.');
     }
   } catch (err) {
-    console.warn('⚠️ Auto-seed tekshiruvida xatolik (baza hali tayyor emas bo‘lishi mumkin):', err);
+    console.warn('[ShortDoc DB Warning] Auto-seed tekshiruvida ogohlantirish:', err);
   }
 });
 
 // Graceful shutdown
 const gracefulShutdown = (signal: string) => {
-  console.log(`\n🛑 ${signal} qabul qilindi. Server xavfsiz to‘xtatilmoqda...`);
+  console.log(`\n[ShortDoc] ${signal} qabul qilindi. Server xavfsiz to‘xtatilmoqda...`);
   server.close(() => {
-    console.log('✅ Barcha ulanishlar yopildi.');
+    console.log('[ShortDoc] Barcha ulanishlar yopildi.');
     process.exit(0);
   });
 };

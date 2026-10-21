@@ -23,7 +23,7 @@ import {
   EyeOff,
   ShieldCheck,
   Clock,
-  Sparkles,
+  UserPlus,
   Check,
   X,
   PhoneCall,
@@ -403,7 +403,7 @@ export default function LoginPage() {
                       : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
                   }`}
                 >
-                  <Sparkles className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                  <UserPlus className="w-4 h-4 text-slate-600 dark:text-slate-400" />
                   <span>Ro‘yxatdan o‘tish</span>
                 </button>
               </div>
@@ -494,46 +494,46 @@ export default function LoginPage() {
                       <button
                         type="button"
                         onClick={() => handleQuickLogin('admin@shortdoc.uz', 'Admin123!')}
-                        className="p-2 text-left rounded-xl border border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-950/40 hover:bg-purple-100/60 dark:hover:bg-purple-900/40 text-purple-900 dark:text-purple-200 transition-colors cursor-pointer"
+                        className="p-2.5 text-left rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 transition-colors cursor-pointer"
                       >
-                        <div className="font-semibold">Super Admin</div>
-                        <div className="text-[10px] text-purple-600 dark:text-purple-400">To‘liq boshqaruv</div>
+                        <div className="font-semibold text-slate-900 dark:text-slate-100">Super Admin</div>
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400">Boshqaruv</div>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => handleQuickLogin('rektor@shortdoc.uz', 'Rektor123!')}
-                        className="p-2 text-left rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/40 hover:bg-amber-100/60 dark:hover:bg-amber-900/40 text-amber-900 dark:text-amber-200 transition-colors cursor-pointer"
+                        className="p-2.5 text-left rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 transition-colors cursor-pointer"
                       >
-                        <div className="font-semibold">Rektorat</div>
-                        <div className="text-[10px] text-amber-600 dark:text-amber-400">Monitoring & Imzo</div>
+                        <div className="font-semibold text-slate-900 dark:text-slate-100">Rektorat</div>
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400">Monitoring & Imzo</div>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => handleQuickLogin('devonxona@shortdoc.uz', 'Devon123!')}
-                        className="p-2 text-left rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/40 hover:bg-blue-100/60 dark:hover:bg-blue-900/40 text-blue-900 dark:text-blue-200 transition-colors cursor-pointer"
+                        className="p-2.5 text-left rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 transition-colors cursor-pointer"
                       >
-                        <div className="font-semibold">Devonxona</div>
-                        <div className="text-[10px] text-blue-600 dark:text-blue-400">Ro‘yxatga olish</div>
+                        <div className="font-semibold text-slate-900 dark:text-slate-100">Devonxona</div>
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400">Ro‘yxatga olish</div>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => handleQuickLogin('dekan@shortdoc.uz', 'Dekan123!')}
-                        className="p-2 text-left rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/40 hover:bg-emerald-100/60 dark:hover:bg-emerald-900/40 text-emerald-900 dark:text-emerald-200 transition-colors cursor-pointer"
+                        className="p-2.5 text-left rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 transition-colors cursor-pointer"
                       >
-                        <div className="font-semibold">Dekan</div>
-                        <div className="text-[10px] text-emerald-600 dark:text-emerald-400">Bo‘lim boshqaruvi</div>
+                        <div className="font-semibold text-slate-900 dark:text-slate-100">Dekan</div>
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400">Fakultet boshqaruvi</div>
                       </button>
                     </div>
 
                     <button
                       type="button"
                       onClick={() => handleQuickLogin('xodim@shortdoc.uz', 'Xodim123!')}
-                      className="w-full mt-2 p-2 text-center rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold transition-colors cursor-pointer"
+                      className="w-full mt-2 p-2.5 text-center rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold transition-colors cursor-pointer"
                     >
-                      Oddiy Xodim / O‘qituvchi (xodim@shortdoc.uz)
+                      Xodim / O‘qituvchi (xodim@shortdoc.uz)
                     </button>
                   </div>
                 </div>
@@ -716,7 +716,7 @@ export default function LoginPage() {
                                   {name}
                                 </option>
                               ))}
-                          <option value="Boshqa">➕ Boshqa (Katalogda yo‘q)</option>
+                          <option value="Boshqa">Boshqa (Katalogda yo‘q)</option>
                         </select>
                       </div>
 
@@ -751,7 +751,7 @@ export default function LoginPage() {
                           <option value="">-- Lavozimni tanlang --</option>
                           {positionOptions.map((pos) => (
                             <option key={pos} value={pos}>
-                              {pos === 'Boshqa' ? '➕ Boshqa (Katalogda yo‘q)' : pos}
+                              {pos === 'Boshqa' ? 'Boshqa (Katalogda yo‘q)' : pos}
                             </option>
                           ))}
                         </select>

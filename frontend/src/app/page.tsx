@@ -68,21 +68,21 @@ export default function HomePage() {
   return (
     <div className="space-y-8">
       {/* Welcome Banner */}
-      <div className="bg-gradient-to-r from-primary-900 to-slate-900 dark:from-slate-900 dark:to-primary-950 rounded-2xl p-6 lg:p-8 text-white shadow-md border border-transparent dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-6 transition-colors duration-200">
+      <div className="bg-[#0c1836] dark:bg-[#081024] rounded-2xl p-6 lg:p-8 text-white shadow-sm border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-6 transition-colors duration-200">
         <div className="max-w-3xl">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold bg-white/20 dark:bg-white/10 text-white px-3 py-1 rounded-full uppercase tracking-wider">
+            <span className="text-xs font-semibold bg-white/10 text-slate-200 px-3 py-1 rounded-full uppercase tracking-wider border border-white/10">
               Samarqand davlat universiteti (SamDU)
             </span>
           </div>
           <h1 className="text-2xl lg:text-3xl font-bold mt-3 tracking-tight">
             Xush kelibsiz, {user?.fullName}!
           </h1>
-          <p className="text-slate-300 dark:text-slate-300 text-sm mt-2 leading-relaxed">
-            Sharof Rashidov nomidagi SamDU elektron hujjatlar aylanishi va ijro nazorati tizimi orqali xizmat xatlari, bildirgilar va topshiriqlar holatini real vaqtda nazorat qiling.
+          <p className="text-slate-300 dark:text-slate-400 text-sm mt-2 leading-relaxed">
+            Sharof Rashidov nomidagi SamDU elektron hujjatlar aylanishi va ijro nazorati tizimi orqali xizmat xatlari, bildirgilar va topshiriqlar holatini nazorat qiling.
           </p>
         </div>
-        <div className="w-16 h-16 rounded-full bg-white p-1 shrink-0 hidden md:flex items-center justify-center shadow-lg border border-white/20">
+        <div className="w-16 h-16 rounded-full bg-white p-1 shrink-0 hidden md:flex items-center justify-center shadow-sm border border-slate-700">
           <img src="/samdu-logo.png" alt="SamDU Gerbi" className="w-full h-full object-contain" />
         </div>
       </div>

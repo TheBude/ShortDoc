@@ -10,18 +10,19 @@ export default {
   theme: {
     extend: {
       colors: {
+        // SamDU Rasmiy Akademik va Davlat Hujjatlari Ranglar Palitrasi (Deep Royal Navy & Slate)
         primary: {
-          50: '#f0f7ff',
-          100: '#e0effe',
-          200: '#bae0fd',
-          300: '#7cc7fb',
-          400: '#36abf7',
-          500: '#0c8fe9',
-          600: '#0171c7',
-          700: '#015aa1',
-          800: '#054c85',
-          900: '#0a406e',
-          950: '#04223d',
+          50: '#f0f5fc',
+          100: '#e1ecf9',
+          200: '#c7def4',
+          300: '#9ec7ed',
+          400: '#6faae3',
+          500: '#3f8ad6',
+          600: '#1e6bb8',
+          700: '#175494',
+          800: '#144476',
+          900: '#0f2b5c', // SamDU Asosiy Hujjat Rangi (Deep Academic Navy)
+          950: '#091936',
         },
       },
     },

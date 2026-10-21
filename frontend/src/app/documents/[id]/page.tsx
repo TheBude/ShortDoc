@@ -192,7 +192,7 @@ export default function DocumentDetailPage({
         <button
           type="button"
           onClick={() => downloadDocumentDocx(document.id, document.regNumber, document.category)}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold text-xs shadow-md shadow-blue-600/20 hover:shadow-blue-600/40 transition-all cursor-pointer self-start sm:self-auto"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 font-semibold text-xs shadow-sm transition-all cursor-pointer self-start sm:self-auto"
         >
           <Download className="w-4 h-4" />
           <span>Word (.docx) shaklida yuklab olish</span>
@@ -204,13 +204,13 @@ export default function DocumentDetailPage({
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-6 border-b border-slate-100 dark:border-slate-800">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <span className="font-mono text-sm font-bold bg-primary-50 dark:bg-primary-950/70 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800 px-3 py-1 rounded-md">
+              <span className="font-mono text-sm font-bold bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 px-3 py-1 rounded">
                 {document.regNumber}
               </span>
-              <span className="text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2.5 py-0.5 rounded-full">
+              <span className="text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-2.5 py-1 rounded">
                 {document.category}
               </span>
-              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/70 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+              <span className="text-xs font-semibold px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700">
                 {document.status}
               </span>
             </div>

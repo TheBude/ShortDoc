@@ -299,8 +299,8 @@ export default function DocumentVerificationPage({
                     className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between text-xs"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 flex items-center justify-center font-bold text-xs">
-                        ✓
+                      <div className="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 flex items-center justify-center">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                       </div>
                       <div>
                         <div className="font-bold text-slate-900 dark:text-white">{app.approver.fullName}</div>

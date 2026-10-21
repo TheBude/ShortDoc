@@ -32,10 +32,12 @@ function getDepartmentScope(deptName: string = '', position: string = '') {
   const d = deptName.toLowerCase();
   const p = position.toLowerCase();
 
+  const standardBadge = 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-700';
+
   if (d.includes('rektor') || p.includes('rektor') || p.includes('prorektor')) {
     return {
       roleTitle: 'Rahbariyat (LEADERSHIP)',
-      roleBadgeColor: 'bg-purple-100 text-purple-900 border-purple-200',
+      roleBadgeColor: standardBadge,
       capabilities: [
         'Universitet bo‘yicha umumiy ijro intizomi va barcha hujjatlar monitoringi',
         'Rasmiy buyruq loyihalari va xizmat xatlariga yakuniy imzo qo‘yish',
@@ -47,7 +49,7 @@ function getDepartmentScope(deptName: string = '', position: string = '') {
   if (d.includes('devon') || p.includes('devonxona')) {
     return {
       roleTitle: 'Devonxona (CHANCELLERY)',
-      roleBadgeColor: 'bg-blue-100 text-blue-900 border-blue-200',
+      roleBadgeColor: standardBadge,
       capabilities: [
         'Kiruvchi va chiquvchi rasmiy hujjatlarni ro‘yxatga olish va reg-raqam berish',
         'Hujjatlarni rektoratga, fakultetlarga va ijrochi bo‘limlarga yo‘naltirish',
@@ -65,7 +67,7 @@ function getDepartmentScope(deptName: string = '', position: string = '') {
   ) {
     return {
       roleTitle: 'Bo‘lim / Kafedra rahbari (DEPARTMENT_HEAD)',
-      roleBadgeColor: 'bg-emerald-100 text-emerald-900 border-emerald-200',
+      roleBadgeColor: standardBadge,
       capabilities: [
         'Bo‘lim nomidan rasmiy bildirgi, xizmat xatlari va buyruq loyihalarini kiritish',
         'O‘z bo‘limi mutaxassislariga topshiriqlarni taqsimlash va ijrosini nazorat qilish',
@@ -83,7 +85,7 @@ function getDepartmentScope(deptName: string = '', position: string = '') {
   ) {
     return {
       roleTitle: 'IT / Raqamli ta’lim mutaxassisi (STAFF)',
-      roleBadgeColor: 'bg-sky-100 text-sky-900 border-sky-200',
+      roleBadgeColor: standardBadge,
       capabilities: [
         'Universitet AT tizimlari (HEMIS, ATM, tarmoq) bo‘yicha topshiriqlar ijrosini ta’minlash',
         'Texnik xizmat ko‘rsatish va yangilanishlar bo‘yicha dasturiy hisobot fayllarini yuklash',
@@ -95,7 +97,7 @@ function getDepartmentScope(deptName: string = '', position: string = '') {
   if (d.includes('qabul') || d.includes('magistr') || d.includes('bakalavr')) {
     return {
       roleTitle: 'Qabul bo‘limi mutaxassisi (STAFF)',
-      roleBadgeColor: 'bg-amber-100 text-amber-900 border-amber-200',
+      roleBadgeColor: standardBadge,
       capabilities: [
         'Qabul jarayoniga oid rasmiy xatlar, arizalar va buyruq loyihalarini kiritish',
         'Rahbariyat va vazirlikdan kelgan topshiriqlar ijrosi bo‘yicha hisobot taqdim etish',
@@ -106,7 +108,7 @@ function getDepartmentScope(deptName: string = '', position: string = '') {
   if (d.includes('baholash') || d.includes('bilim') || d.includes('test')) {
     return {
       roleTitle: 'Baholash va monitoring mutaxassisi (STAFF)',
-      roleBadgeColor: 'bg-teal-100 text-teal-900 border-teal-200',
+      roleBadgeColor: standardBadge,
       capabilities: [
         'Yakuniy nazoratlar va monitoring natijalari bo‘yicha xizmat xatlarini tayyorlash',
         'O‘quv jarayoni va bilim sifatini baholash bo‘yicha analitik ma’lumotlarni yuborish',
@@ -117,7 +119,7 @@ function getDepartmentScope(deptName: string = '', position: string = '') {
   // Default staff
   return {
     roleTitle: 'Bo‘lim xodimi / Ijrochi (STAFF)',
-    roleBadgeColor: 'bg-slate-100 text-slate-800 border-slate-200',
+    roleBadgeColor: standardBadge,
     capabilities: [
       'Bo‘lim nomidan xizmat xatlari va bildirgilar yaratish',
       'Biriktirilgan topshiriqlarni belgilangan muddatda bajarish va hisobot fayllarini kiritish',

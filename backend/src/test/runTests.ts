@@ -7,17 +7,17 @@ let failed = 0;
 
 function assert(condition: boolean, testName: string) {
   if (condition) {
-    console.log(`  ✅ PASSED: ${testName}`);
+    console.log(`  [PASS]: ${testName}`);
     passed++;
   } else {
-    console.error(`  ❌ FAILED: ${testName}`);
+    console.error(`  [FAIL]: ${testName}`);
     failed++;
   }
 }
 
 async function runTests() {
   console.log('\n======================================================');
-  console.log('🧪 ShortDoc Backend Avtomatlashtirilgan Testlar Boshlandi');
+  console.log('[TEST] ShortDoc Backend Avtomatlashtirilgan Testlar Boshlandi');
   console.log('======================================================\n');
 
   try {

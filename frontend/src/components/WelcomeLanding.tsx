@@ -31,6 +31,8 @@ import {
   Calendar,
   Sun,
   Moon,
+  Check,
+  X,
 } from 'lucide-react';
 
 export const WelcomeLanding = () => {
@@ -364,7 +366,7 @@ export const WelcomeLanding = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             
             <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3 transition-colors">
-              <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold">
+              <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-bold">
                 01
               </div>
               <h4 className="font-bold text-slate-900 dark:text-white text-base">Tezkor Hujjat Almashinuvi</h4>
@@ -374,7 +376,7 @@ export const WelcomeLanding = () => {
             </div>
 
             <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3 transition-colors">
-              <div className="w-10 h-10 rounded-lg bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
+              <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-bold">
                 02
               </div>
               <h4 className="font-bold text-slate-900 dark:text-white text-base">Sekundlik Aqlli Qidiruv</h4>
@@ -384,7 +386,7 @@ export const WelcomeLanding = () => {
             </div>
 
             <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3 transition-colors">
-              <div className="w-10 h-10 rounded-lg bg-amber-50 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
+              <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-bold">
                 03
               </div>
               <h4 className="font-bold text-slate-900 dark:text-white text-base">Masofaviy Elektron Imzo</h4>
@@ -394,7 +396,7 @@ export const WelcomeLanding = () => {
             </div>
 
             <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3 transition-colors">
-              <div className="w-10 h-10 rounded-lg bg-purple-50 dark:bg-purple-950/70 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold">
+              <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-bold">
                 04
               </div>
               <h4 className="font-bold text-slate-900 dark:text-white text-base">Shaffoflik va Audit</h4>
@@ -413,15 +415,21 @@ export const WelcomeLanding = () => {
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white">An’anaviy usuldagi muammolar:</h3>
                 <ul className="space-y-2.5 text-xs sm:text-sm text-slate-600 dark:text-slate-400">
                   <li className="flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-full bg-rose-100 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 flex items-center justify-center text-xs font-bold">✕</span>
+                    <span className="w-5 h-5 rounded-full bg-rose-100 dark:bg-rose-950/70 flex items-center justify-center shrink-0">
+                      <X className="w-3 h-3 text-rose-600 dark:text-rose-400" />
+                    </span>
                     Hujjatlar SamDU korpuslari bo‘ylab qo‘lda ko‘tarib yuriladi
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-full bg-rose-100 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 flex items-center justify-center text-xs font-bold">✕</span>
+                    <span className="w-5 h-5 rounded-full bg-rose-100 dark:bg-rose-950/70 flex items-center justify-center shrink-0">
+                      <X className="w-3 h-3 text-rose-600 dark:text-rose-400" />
+                    </span>
                     Topshiriq ijro muddati o‘tgachgina esga olinadi
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-full bg-rose-100 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 flex items-center justify-center text-xs font-bold">✕</span>
+                    <span className="w-5 h-5 rounded-full bg-rose-100 dark:bg-rose-950/70 flex items-center justify-center shrink-0">
+                      <X className="w-3 h-3 text-rose-600 dark:text-rose-400" />
+                    </span>
                     Eski xatlar va protokollarni arxivdan topish soatlab vaqt oladi
                   </li>
                 </ul>
@@ -432,15 +440,21 @@ export const WelcomeLanding = () => {
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white">Elektron tizimdagi qulaylik:</h3>
                 <ul className="space-y-2.5 text-xs sm:text-sm text-slate-700 dark:text-slate-300">
                   <li className="flex items-center gap-2 font-medium">
-                    <span className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs font-bold">✓</span>
+                    <span className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950/70 flex items-center justify-center shrink-0">
+                      <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                    </span>
                     Barcha jarayonlar 100% raqamli va yagona bazada
                   </li>
                   <li className="flex items-center gap-2 font-medium">
-                    <span className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs font-bold">✓</span>
+                    <span className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950/70 flex items-center justify-center shrink-0">
+                      <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                    </span>
                     Dedlayn va muddatlar avtomatik monitoring qilinadi
                   </li>
                   <li className="flex items-center gap-2 font-medium">
-                    <span className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs font-bold">✓</span>
+                    <span className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950/70 flex items-center justify-center shrink-0">
+                      <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                    </span>
                     Barcha statistika va hisobotlar bir tugma bilan tayyorlanadi
                   </li>
                 </ul>
@@ -471,8 +485,8 @@ export const WelcomeLanding = () => {
             
             {/* SamDU Rektorati */}
             <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 hover:bg-white dark:hover:bg-slate-850 hover:shadow-lg transition-all space-y-3">
-              <div className="w-12 h-12 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold shadow-md">
-                <Building2 className="w-6 h-6" />
+              <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-bold">
+                <Building2 className="w-6 h-6 stroke-[1.75]" />
               </div>
               <h3 className="font-bold text-slate-900 dark:text-white text-base">Rektorat va Rahbariyat</h3>
               <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
@@ -482,8 +496,8 @@ export const WelcomeLanding = () => {
 
             {/* Devonxona */}
             <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 hover:bg-white dark:hover:bg-slate-850 hover:shadow-lg transition-all space-y-3">
-              <div className="w-12 h-12 rounded-xl bg-primary-600 text-white flex items-center justify-center font-bold shadow-md">
-                <Inbox className="w-6 h-6" />
+              <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-bold">
+                <Inbox className="w-6 h-6 stroke-[1.75]" />
               </div>
               <h3 className="font-bold text-slate-900 dark:text-white text-base">Devonxona (Umumiy bo‘lim)</h3>
               <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
@@ -493,8 +507,8 @@ export const WelcomeLanding = () => {
 
             {/* 16 ta Fakultet & Kafedralar */}
             <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 hover:bg-white dark:hover:bg-slate-850 hover:shadow-lg transition-all space-y-3">
-              <div className="w-12 h-12 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold shadow-md">
-                <Users className="w-6 h-6" />
+              <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-bold">
+                <Users className="w-6 h-6 stroke-[1.75]" />
               </div>
               <h3 className="font-bold text-slate-900 dark:text-white text-base">Dekanatlar va Kafedralar</h3>
               <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
@@ -504,8 +518,8 @@ export const WelcomeLanding = () => {
 
             {/* Xodimlar va O'qituvchilar */}
             <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 hover:bg-white dark:hover:bg-slate-850 hover:shadow-lg transition-all space-y-3">
-              <div className="w-12 h-12 rounded-xl bg-purple-600 text-white flex items-center justify-center font-bold shadow-md">
-                <FileCheck2 className="w-6 h-6" />
+              <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-bold">
+                <FileCheck2 className="w-6 h-6 stroke-[1.75]" />
               </div>
               <h3 className="font-bold text-slate-900 dark:text-white text-base">Professor-o‘qituvchilar</h3>
               <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">

@@ -14,15 +14,15 @@ export const Header = () => {
   const getRoleBadge = (role?: string) => {
     switch (role) {
       case 'SUPER_ADMIN':
-        return <span className="bg-purple-100 dark:bg-purple-950/70 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-xs px-2.5 py-0.5 rounded-full font-semibold">Super Admin</span>;
+        return <span className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs px-2.5 py-0.5 rounded-md font-medium">Bosh administrator</span>;
       case 'LEADERSHIP':
-        return <span className="bg-amber-100 dark:bg-amber-950/70 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 text-xs px-2.5 py-0.5 rounded-full font-semibold">Rektorat</span>;
+        return <span className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs px-2.5 py-0.5 rounded-md font-medium">Rektorat</span>;
       case 'CHANCELLERY':
-        return <span className="bg-blue-100 dark:bg-blue-950/70 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-xs px-2.5 py-0.5 rounded-full font-semibold">Devonxona</span>;
+        return <span className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs px-2.5 py-0.5 rounded-md font-medium">Devonxona</span>;
       case 'DEPARTMENT_HEAD':
-        return <span className="bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs px-2.5 py-0.5 rounded-full font-semibold">Bo‘lim rahbari</span>;
+        return <span className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs px-2.5 py-0.5 rounded-md font-medium">Bo‘lim rahbari</span>;
       default:
-        return <span className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs px-2.5 py-0.5 rounded-full font-semibold">Xodim</span>;
+        return <span className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs px-2.5 py-0.5 rounded-md font-medium">Xodim</span>;
     }
   };
 
@@ -57,8 +57,8 @@ export const Header = () => {
 
         <div className="flex items-center gap-2 shrink-0">
           <img src="/samdu-logo.png" alt="SamDU" className="w-8 h-8 object-contain rounded-full border border-slate-200 dark:border-slate-700 p-0.5 bg-white" />
-          <span className="font-extrabold text-sm text-slate-800 dark:text-white hidden sm:inline tracking-tight">SamDU ShortDoc</span>
-          <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
+          <span className="font-bold text-sm text-slate-800 dark:text-white hidden sm:inline tracking-tight">SamDU ShortDoc</span>
+          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-700">
             Test
           </span>
         </div>

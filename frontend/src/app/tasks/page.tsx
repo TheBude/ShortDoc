@@ -138,15 +138,15 @@ export default function TasksPage() {
   const getStatusBadge = (st: string) => {
     switch (st) {
       case 'PENDING':
-        return <span className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs px-2.5 py-0.5 rounded-full font-medium">Kutilmoqda</span>;
+        return <span className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs px-2 py-0.5 rounded font-medium">Kutilmoqda</span>;
       case 'IN_PROGRESS':
-        return <span className="bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-xs px-2.5 py-0.5 rounded-full font-medium">Jarayonda</span>;
+        return <span className="bg-blue-50 dark:bg-blue-950/50 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-900 text-xs px-2 py-0.5 rounded font-medium">Jarayonda</span>;
       case 'COMPLETED':
-        return <span className="bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs px-2.5 py-0.5 rounded-full font-medium">Bajarildi</span>;
+        return <span className="bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-850 text-xs px-2 py-0.5 rounded font-medium">Bajarildi</span>;
       case 'OVERDUE':
-        return <span className="bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-xs px-2.5 py-0.5 rounded-full font-medium">Muddati o‘tgan</span>;
+        return <span className="bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-850 text-xs px-2 py-0.5 rounded font-medium">Muddati o‘tgan</span>;
       default:
-        return <span className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs px-2.5 py-0.5 rounded-full">{st}</span>;
+        return <span className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs px-2 py-0.5 rounded">{st}</span>;
     }
   };
 
