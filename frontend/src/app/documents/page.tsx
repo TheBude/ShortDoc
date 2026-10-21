@@ -229,10 +229,10 @@ function DocumentsContent() {
 
       {/* Active Filter Pill / Banner */}
       {activeFilterName && (
-        <div className="flex items-center justify-between p-3.5 bg-primary-50 dark:bg-primary-950/50 border border-primary-200 dark:border-primary-800 rounded-xl text-xs text-primary-900 dark:text-primary-100 font-medium shadow-sm">
+        <div className="flex items-center justify-between p-3.5 bg-blue-50 dark:bg-slate-900 border border-blue-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-200 font-medium shadow-sm transition-colors duration-200">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-primary-600 animate-pulse" />
-            <span>Tanlangan bo‘lim: <strong className="font-bold text-primary-950 dark:text-white text-sm ml-1">{activeFilterName}</strong></span>
+            <span className="w-2 h-2 rounded-full bg-primary-600 dark:bg-primary-500 animate-pulse" />
+            <span>Tanlangan bo‘lim: <strong className="font-bold text-slate-900 dark:text-white text-sm ml-1">{activeFilterName}</strong></span>
           </div>
           <button
             onClick={() => {
@@ -244,7 +244,7 @@ function DocumentsContent() {
               setSearch('');
               router.push('/documents');
             }}
-            className="text-primary-700 dark:text-primary-300 hover:text-primary-900 dark:hover:text-primary-100 underline font-bold cursor-pointer"
+            className="text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300 underline font-bold cursor-pointer transition-colors"
           >
             Filtrni tozalash
           </button>
