@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
+import { useTheme } from '@/context/ThemeContext';
 import { fetchApi } from '@/lib/api';
 import { Department } from '@/types';
 import {
@@ -25,12 +26,15 @@ import {
   Sparkles,
   Check,
   X,
-  PhoneCall
+  PhoneCall,
+  Sun,
+  Moon,
 } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   const [mode, setMode] = useState<'login' | 'register' | 'submitted'>('login');
 
@@ -282,9 +286,19 @@ export default function LoginPage() {
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Asosiy sahifaga qaytish</span>
           </Link>
-          <span className="text-[11px] text-slate-400 font-medium tracking-wide">
-            SamDU • 1420
-          </span>
+          <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="p-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-slate-300 hover:text-white transition-colors border border-white/10 cursor-pointer"
+              title={theme === 'dark' ? "Yorug' rejim" : "Qorong'u rejim"}
+            >
+              {theme === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-300" /> : <Moon className="w-3.5 h-3.5 text-slate-300" />}
+            </button>
+            <span className="text-[11px] text-slate-400 font-medium tracking-wide">
+              SamDU • 1420
+            </span>
+          </div>
         </div>
 
         {/* Header Branding */}
@@ -302,7 +316,7 @@ export default function LoginPage() {
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-3xl shadow-2xl p-6 sm:p-8 border border-slate-100 transition-all">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl p-6 sm:p-8 border border-slate-100 dark:border-slate-800 transition-all">
           {/* SUCCESS SCREEN AFTER REGISTRATION */}
           {mode === 'submitted' ? (
             <div className="text-center py-4">
@@ -361,17 +375,17 @@ export default function LoginPage() {
           ) : (
             <>
               {/* Tab selector */}
-              <div className="flex p-1 bg-slate-100 rounded-2xl mb-6">
+              <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl mb-6">
                 <button
                   type="button"
                   onClick={() => {
                     setMode('login');
                     setLoginError(null);
                   }}
-                  className={`flex-1 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${
+                  className={`flex-1 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer ${
                     mode === 'login'
-                      ? 'bg-white text-slate-900 shadow-sm'
-                      : 'text-slate-500 hover:text-slate-800'
+                      ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
                   }`}
                 >
                   <Lock className="w-4 h-4" />
@@ -383,13 +397,13 @@ export default function LoginPage() {
                     setMode('register');
                     setRegError(null);
                   }}
-                  className={`flex-1 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${
+                  className={`flex-1 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer ${
                     mode === 'register'
-                      ? 'bg-white text-slate-900 shadow-sm'
-                      : 'text-slate-500 hover:text-slate-800'
+                      ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
                   }`}
                 >
-                  <Sparkles className="w-4 h-4 text-primary-600" />
+                  <Sparkles className="w-4 h-4 text-primary-600 dark:text-primary-400" />
                   <span>Ro‘yxatdan o‘tish</span>
                 </button>
               </div>
@@ -397,20 +411,20 @@ export default function LoginPage() {
               {/* LOGIN FORM */}
               {mode === 'login' ? (
                 <div>
-                  <h2 className="text-lg font-bold text-slate-900 mb-1">Xush kelibsiz!</h2>
-                  <p className="text-xs text-slate-500 mb-5">
+                  <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Xush kelibsiz!</h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-5">
                     Xizmat hisobingizga kirish uchun login va parolingizni kiriting
                   </p>
 
                   {loginError && (
-                    <div className="mb-5 p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-2.5 leading-relaxed">
-                      <AlertCircle className="w-4 h-4 shrink-0 text-rose-600 mt-0.5" />
+                    <div className="mb-5 p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs flex items-start gap-2.5 leading-relaxed">
+                      <AlertCircle className="w-4 h-4 shrink-0 text-rose-600 dark:text-rose-400 mt-0.5" />
                       <div>
                         <div>{loginError}</div>
                         {loginError.includes('+998500728270') && (
                           <a
                             href="tel:+998500728270"
-                            className="inline-flex items-center gap-1.5 mt-2 font-bold text-primary-700 hover:underline"
+                            className="inline-flex items-center gap-1.5 mt-2 font-bold text-primary-700 dark:text-primary-400 hover:underline"
                           >
                             <Phone className="w-3.5 h-3.5" />
                             <span>Qo&apos;ng&apos;iroq qilish: +998 50 072 82 70</span>
@@ -422,7 +436,7 @@ export default function LoginPage() {
 
                   <form onSubmit={handleLoginSubmit} className="space-y-4">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                         Elektron pochta (Email)
                       </label>
                       <div className="relative">
@@ -433,13 +447,13 @@ export default function LoginPage() {
                           onChange={(e) => setLoginEmail(e.target.value)}
                           placeholder="nomi@shortdoc.uz"
                           required
-                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                         Maxfiy parol
                       </label>
                       <div className="relative">
@@ -450,7 +464,7 @@ export default function LoginPage() {
                           onChange={(e) => setLoginPassword(e.target.value)}
                           placeholder="••••••••"
                           required
-                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
                         />
                       </div>
                     </div>
@@ -472,52 +486,52 @@ export default function LoginPage() {
                   </form>
 
                   {/* Quick Demo Credentials */}
-                  <div className="mt-8 pt-5 border-t border-slate-100">
-                    <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-3 text-center">
+                  <div className="mt-8 pt-5 border-t border-slate-100 dark:border-slate-800">
+                    <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3 text-center">
                       Tezkor sinov uchun rollar (Demo):
                     </p>
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <button
                         type="button"
                         onClick={() => handleQuickLogin('admin@shortdoc.uz', 'Admin123!')}
-                        className="p-2 text-left rounded-xl border border-purple-200 bg-purple-50/50 hover:bg-purple-100/60 text-purple-900 transition-colors"
+                        className="p-2 text-left rounded-xl border border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-950/40 hover:bg-purple-100/60 dark:hover:bg-purple-900/40 text-purple-900 dark:text-purple-200 transition-colors cursor-pointer"
                       >
                         <div className="font-semibold">Super Admin</div>
-                        <div className="text-[10px] text-purple-600">To‘liq boshqaruv</div>
+                        <div className="text-[10px] text-purple-600 dark:text-purple-400">To‘liq boshqaruv</div>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => handleQuickLogin('rektor@shortdoc.uz', 'Rektor123!')}
-                        className="p-2 text-left rounded-xl border border-amber-200 bg-amber-50/50 hover:bg-amber-100/60 text-amber-900 transition-colors"
+                        className="p-2 text-left rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/40 hover:bg-amber-100/60 dark:hover:bg-amber-900/40 text-amber-900 dark:text-amber-200 transition-colors cursor-pointer"
                       >
                         <div className="font-semibold">Rektorat</div>
-                        <div className="text-[10px] text-amber-600">Monitoring & Imzo</div>
+                        <div className="text-[10px] text-amber-600 dark:text-amber-400">Monitoring & Imzo</div>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => handleQuickLogin('devonxona@shortdoc.uz', 'Devon123!')}
-                        className="p-2 text-left rounded-xl border border-blue-200 bg-blue-50/50 hover:bg-blue-100/60 text-blue-900 transition-colors"
+                        className="p-2 text-left rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/40 hover:bg-blue-100/60 dark:hover:bg-blue-900/40 text-blue-900 dark:text-blue-200 transition-colors cursor-pointer"
                       >
                         <div className="font-semibold">Devonxona</div>
-                        <div className="text-[10px] text-blue-600">Ro‘yxatga olish</div>
+                        <div className="text-[10px] text-blue-600 dark:text-blue-400">Ro‘yxatga olish</div>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => handleQuickLogin('dekan@shortdoc.uz', 'Dekan123!')}
-                        className="p-2 text-left rounded-xl border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-100/60 text-emerald-900 transition-colors"
+                        className="p-2 text-left rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/40 hover:bg-emerald-100/60 dark:hover:bg-emerald-900/40 text-emerald-900 dark:text-emerald-200 transition-colors cursor-pointer"
                       >
                         <div className="font-semibold">Dekan</div>
-                        <div className="text-[10px] text-emerald-600">Bo‘lim boshqaruvi</div>
+                        <div className="text-[10px] text-emerald-600 dark:text-emerald-400">Bo‘lim boshqaruvi</div>
                       </button>
                     </div>
 
                     <button
                       type="button"
                       onClick={() => handleQuickLogin('xodim@shortdoc.uz', 'Xodim123!')}
-                      className="w-full mt-2 p-2 text-center rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold transition-colors"
+                      className="w-full mt-2 p-2 text-center rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold transition-colors cursor-pointer"
                     >
                       Oddiy Xodim / O‘qituvchi (xodim@shortdoc.uz)
                     </button>
@@ -526,8 +540,8 @@ export default function LoginPage() {
               ) : (
                 /* REGISTRATION FORM */
                 <div>
-                  <h2 className="text-lg font-bold text-slate-900 mb-1">Yangi hisob ochish</h2>
-                  <p className="text-xs text-slate-500 mb-5">
+                  <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Yangi hisob ochish</h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-5">
                     Ma&apos;lumotlaringizni to&apos;ldiring, SuperAdmin tasdiqlagach tizimdan foydalanasiz
                   </p>
 
@@ -541,7 +555,7 @@ export default function LoginPage() {
                   <form onSubmit={handleRegisterSubmit} className="space-y-4">
                     {/* Full Name */}
                     <div>
-                      <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                         To‘liq ism-familiya (F.I.Sh.) <span className="text-rose-500">*</span>
                       </label>
                       <div className="relative">
@@ -552,7 +566,7 @@ export default function LoginPage() {
                           onChange={(e) => setRegFullName(e.target.value)}
                           placeholder="Masalan: Aliyev Vali G‘aniyevich"
                           required
-                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
                         />
                       </div>
                     </div>
@@ -560,14 +574,14 @@ export default function LoginPage() {
                     {/* Email with real-time uniqueness check */}
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
-                        <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                           E-mail manzil <span className="text-rose-500">*</span>
                         </label>
                         {emailCheckLoading && (
                           <span className="text-[11px] text-slate-400 animate-pulse">Tekshirilmoqda...</span>
                         )}
                         {!emailCheckLoading && emailChecked && !emailTaken && (
-                          <span className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
+                          <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
                             <Check className="w-3 h-3" /> Email bo‘sh
                           </span>
                         )}
@@ -582,13 +596,13 @@ export default function LoginPage() {
                           required
                           className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm focus:outline-none transition-all ${
                             emailTaken
-                              ? 'border-rose-400 focus:ring-2 focus:ring-rose-500 bg-rose-50/30'
-                              : 'border-slate-300 focus:ring-2 focus:ring-primary-500'
+                              ? 'border-rose-400 focus:ring-2 focus:ring-rose-500 bg-rose-50/30 dark:bg-rose-950/30 text-rose-900 dark:text-rose-200'
+                              : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary-500'
                           }`}
                         />
                       </div>
                       {emailTaken && (
-                        <p className="mt-1 text-xs text-rose-600 font-semibold flex items-center gap-1">
+                        <p className="mt-1 text-xs text-rose-600 dark:text-rose-400 font-semibold flex items-center gap-1">
                           <AlertCircle className="w-3.5 h-3.5" />
                           Bu email bilan allaqachon ro‘yxatdan o‘tilgan
                         </p>
@@ -597,7 +611,7 @@ export default function LoginPage() {
 
                     {/* Phone Number */}
                     <div>
-                      <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                         Telefon raqami
                       </label>
                       <div className="relative">
@@ -607,14 +621,14 @@ export default function LoginPage() {
                           value={regPhone}
                           onChange={(e) => setRegPhone(e.target.value)}
                           placeholder="+998 (90) 123-45-67"
-                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
                         />
                       </div>
                     </div>
 
                     {/* Password with real-time animated strength meter */}
                     <div>
-                      <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                         Maxfiy parol <span className="text-rose-500">*</span>
                       </label>
                       <div className="relative">
@@ -625,12 +639,12 @@ export default function LoginPage() {
                           onChange={(e) => setRegPassword(e.target.value)}
                           placeholder="Katta, kichik harf va raqam"
                           required
-                          className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                          className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
                         />
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
                         >
                           {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
@@ -640,14 +654,14 @@ export default function LoginPage() {
                       {regPassword && (
                         <div className="mt-2.5 space-y-2 transition-all">
                           <div className="flex justify-between items-center text-[11px]">
-                            <span className="text-slate-500">Parol murakkabligi:</span>
+                            <span className="text-slate-500 dark:text-slate-400">Parol murakkabligi:</span>
                             <span className={`font-bold ${strengthLabel.text}`}>
                               {strengthLabel.label}
                             </span>
                           </div>
 
                           {/* Progress track */}
-                          <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                          <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                             <div
                               className={`h-full transition-all duration-500 ease-out rounded-full ${strengthLabel.color}`}
                               style={{ width: `${passwordScore}%` }}
@@ -656,19 +670,19 @@ export default function LoginPage() {
 
                           {/* Criteria Badges */}
                           <div className="grid grid-cols-2 gap-1.5 pt-1 text-[11px]">
-                            <div className={`flex items-center gap-1.5 ${passwordCriteria.minLength ? 'text-emerald-600 font-semibold' : 'text-slate-400'}`}>
+                            <div className={`flex items-center gap-1.5 ${passwordCriteria.minLength ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-slate-400 dark:text-slate-500'}`}>
                               {passwordCriteria.minLength ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
                               <span>Kamida 8 ta belgi</span>
                             </div>
-                            <div className={`flex items-center gap-1.5 ${passwordCriteria.hasUpper ? 'text-emerald-600 font-semibold' : 'text-slate-400'}`}>
+                            <div className={`flex items-center gap-1.5 ${passwordCriteria.hasUpper ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-slate-400 dark:text-slate-500'}`}>
                               {passwordCriteria.hasUpper ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
                               <span>Katta harf (A-Z)</span>
                             </div>
-                            <div className={`flex items-center gap-1.5 ${passwordCriteria.hasLower ? 'text-emerald-600 font-semibold' : 'text-slate-400'}`}>
+                            <div className={`flex items-center gap-1.5 ${passwordCriteria.hasLower ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-slate-400 dark:text-slate-500'}`}>
                               {passwordCriteria.hasLower ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
                               <span>Kichik harf (a-z)</span>
                             </div>
-                            <div className={`flex items-center gap-1.5 ${passwordCriteria.hasDigit ? 'text-emerald-600 font-semibold' : 'text-slate-400'}`}>
+                            <div className={`flex items-center gap-1.5 ${passwordCriteria.hasDigit ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-slate-400 dark:text-slate-500'}`}>
                               {passwordCriteria.hasDigit ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
                               <span>Raqamlar (0-9)</span>
                             </div>
@@ -679,7 +693,7 @@ export default function LoginPage() {
 
                     {/* Department Select (Katalog) */}
                     <div>
-                      <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                         Bo‘limni tanlang <span className="text-rose-500">*</span>
                       </label>
                       <div className="relative">
@@ -688,7 +702,7 @@ export default function LoginPage() {
                           value={selectedDept}
                           onChange={(e) => setSelectedDept(e.target.value)}
                           required
-                          className="w-full pl-10 pr-8 py-2.5 rounded-xl border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all appearance-none cursor-pointer"
+                          className="w-full pl-10 pr-8 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all appearance-none cursor-pointer"
                         >
                           <option value="">-- Bo‘limni tanlang --</option>
                           {departments.length > 0
@@ -715,7 +729,7 @@ export default function LoginPage() {
                             onChange={(e) => setCustomDept(e.target.value)}
                             placeholder="O‘z bo‘limingiz nomini kiriting..."
                             required
-                            className="w-full px-4 py-2.5 rounded-xl border border-primary-300 bg-primary-50/20 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
+                            className="w-full px-4 py-2.5 rounded-xl border border-primary-300 dark:border-primary-700 bg-primary-50/20 dark:bg-primary-950/40 text-slate-900 dark:text-white placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
                           />
                         </div>
                       )}
@@ -723,7 +737,7 @@ export default function LoginPage() {
 
                     {/* Position Select (Katalog) */}
                     <div>
-                      <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                         Lavozimni tanlang <span className="text-rose-500">*</span>
                       </label>
                       <div className="relative">
@@ -732,7 +746,7 @@ export default function LoginPage() {
                           value={selectedPos}
                           onChange={(e) => setSelectedPos(e.target.value)}
                           required
-                          className="w-full pl-10 pr-8 py-2.5 rounded-xl border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all appearance-none cursor-pointer"
+                          className="w-full pl-10 pr-8 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all appearance-none cursor-pointer"
                         >
                           <option value="">-- Lavozimni tanlang --</option>
                           {positionOptions.map((pos) => (
@@ -752,7 +766,7 @@ export default function LoginPage() {
                             onChange={(e) => setCustomPos(e.target.value)}
                             placeholder="O‘z lavozimingiz nomini kiriting..."
                             required
-                            className="w-full px-4 py-2.5 rounded-xl border border-primary-300 bg-primary-50/20 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
+                            className="w-full px-4 py-2.5 rounded-xl border border-primary-300 dark:border-primary-700 bg-primary-50/20 dark:bg-primary-950/40 text-slate-900 dark:text-white placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
                           />
                         </div>
                       )}

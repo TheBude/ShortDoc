@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { useTheme } from '@/context/ThemeContext';
 import {
   GraduationCap,
   ShieldCheck,
@@ -27,18 +28,22 @@ import {
   AlertTriangle,
   Building,
   MapPin,
-  Calendar
+  Calendar,
+  Sun,
+  Moon,
 } from 'lucide-react';
 
 export const WelcomeLanding = () => {
+  const { theme, toggleTheme } = useTheme();
+
   return (
-    <div className="min-h-screen bg-white text-slate-800 flex flex-col font-sans selection:bg-primary-100 selection:text-primary-900">
+    <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex flex-col font-sans selection:bg-primary-100 dark:selection:bg-primary-900 selection:text-primary-900 dark:selection:text-primary-100 transition-colors duration-200">
       {/* 1. TOP NAVBAR (SamDU Header) */}
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200">
+      <header className="sticky top-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors duration-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           {/* Logo & Platform Name */}
           <Link href="/" className="flex items-center gap-3.5 group">
-            <div className="w-12 h-12 rounded-full bg-white p-0.5 border-2 border-primary-200 flex items-center justify-center shadow-md shadow-primary-500/10 group-hover:scale-105 transition-transform shrink-0">
+            <div className="w-12 h-12 rounded-full bg-white p-0.5 border-2 border-primary-200 dark:border-primary-500/50 flex items-center justify-center shadow-md shadow-primary-500/10 group-hover:scale-105 transition-transform shrink-0">
               <img
                 src="/samdu-logo.png"
                 alt="Samarqand Davlat Universiteti Gerbi"
@@ -47,30 +52,44 @@ export const WelcomeLanding = () => {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-black text-xl tracking-tight text-slate-900">SamDU ShortDoc</span>
-                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-primary-100 text-primary-800 uppercase tracking-wide">
+                <span className="font-black text-xl tracking-tight text-slate-900 dark:text-white">SamDU ShortDoc</span>
+                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-primary-100 dark:bg-primary-950/80 text-primary-800 dark:text-primary-300 border border-primary-200 dark:border-primary-800 uppercase tracking-wide">
                   1420 • SamDU
                 </span>
               </div>
-              <p className="text-[11px] text-slate-500 font-medium hidden sm:block">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium hidden sm:block">
                 Sharof Rashidov nomidagi Samarqand davlat universiteti
               </p>
             </div>
           </Link>
 
           {/* Navigation Links (Desktop) */}
-          <nav className="hidden md:flex items-center gap-7 text-sm font-semibold text-slate-600">
-            <a href="#about" className="hover:text-primary-600 transition-colors">Bosh sahifa</a>
-            <a href="#features" className="hover:text-primary-600 transition-colors">Tizim imkoniyatlari</a>
-            <a href="#benefits" className="hover:text-primary-600 transition-colors">Qulayliklar</a>
-            <a href="#hierarchy" className="hover:text-primary-600 transition-colors">SamDU Tuzilmasi</a>
+          <nav className="hidden md:flex items-center gap-7 text-sm font-semibold text-slate-600 dark:text-slate-300">
+            <a href="#about" className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Bosh sahifa</a>
+            <a href="#features" className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Tizim imkoniyatlari</a>
+            <a href="#benefits" className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Qulayliklar</a>
+            <a href="#hierarchy" className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">SamDU Tuzilmasi</a>
           </nav>
 
           {/* Action Buttons (Right) */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            {/* Theme Toggle Button */}
+            <button
+              onClick={toggleTheme}
+              className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+              title={theme === 'dark' ? "Yorug' rejimga o'tish" : "Qorong'u rejimga o'tish"}
+              aria-label="Toggle theme"
+            >
+              {theme === 'dark' ? (
+                <Sun className="w-4 h-4 text-amber-400 animate-spin-slow" />
+              ) : (
+                <Moon className="w-4 h-4 text-slate-600" />
+              )}
+            </button>
+
             <Link
               href="/login"
-              className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 hover:border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold transition-all"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all"
             >
               <span className="w-2 h-2 rounded-full bg-emerald-500" />
               <span>ONE ID</span>
@@ -78,7 +97,7 @@ export const WelcomeLanding = () => {
 
             <Link
               href="/login"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white text-xs sm:text-sm font-bold shadow-md shadow-primary-600/30 hover:shadow-lg hover:shadow-primary-600/40 transition-all group"
+              className="inline-flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white text-xs sm:text-sm font-bold shadow-md shadow-primary-600/30 hover:shadow-lg hover:shadow-primary-600/40 transition-all group cursor-pointer"
             >
               <span>Tizimga kirish</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
@@ -88,32 +107,32 @@ export const WelcomeLanding = () => {
       </header>
 
       {/* 2. HERO SECTION (Customized for SamDU) */}
-      <section id="about" className="pt-10 pb-16 lg:pt-16 lg:pb-24 overflow-hidden relative bg-gradient-to-b from-slate-50/70 via-white to-white">
+      <section id="about" className="pt-10 pb-16 lg:pt-16 lg:pb-24 overflow-hidden relative bg-gradient-to-b from-slate-50/70 via-white to-white dark:from-slate-900/60 dark:via-slate-950 dark:to-slate-950 transition-colors duration-200">
         {/* Subtle decorative background shapes */}
-        <div className="absolute top-0 right-1/4 w-96 h-96 bg-primary-100/40 rounded-full blur-3xl -z-10 pointer-events-none" />
-        <div className="absolute top-20 left-10 w-80 h-80 bg-blue-100/30 rounded-full blur-3xl -z-10 pointer-events-none" />
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-primary-100/40 dark:bg-primary-900/15 rounded-full blur-3xl -z-10 pointer-events-none" />
+        <div className="absolute top-20 left-10 w-80 h-80 bg-blue-100/30 dark:bg-blue-900/15 rounded-full blur-3xl -z-10 pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
             
             {/* Left Column: Hero Title & System Description */}
             <div className="lg:col-span-7 space-y-6">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary-50 border border-primary-200 text-primary-800 text-xs font-bold">
-                <Sparkles className="w-3.5 h-3.5 text-primary-600" />
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary-50 dark:bg-primary-950/70 border border-primary-200 dark:border-primary-800 text-primary-800 dark:text-primary-300 text-xs font-bold">
+                <Sparkles className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
                 <span>Sharof Rashidov nomidagi Samarqand davlat universiteti (SamDU)</span>
               </div>
 
               <div>
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight leading-[1.15]">
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-[1.15]">
                   SAMDU.UZ • SHORTDOC <br />
-                  <span className="bg-gradient-to-r from-primary-600 via-primary-700 to-primary-900 bg-clip-text text-transparent">
+                  <span className="bg-gradient-to-r from-primary-600 via-primary-500 to-indigo-500 bg-clip-text text-transparent">
                     Universitet elektron hujjat aylanishi
                   </span> va ijro nazorati tizimi
                 </h1>
               </div>
 
               {/* Exact Description customized for SamDU */}
-              <p className="text-slate-600 text-sm sm:text-base leading-relaxed text-justify sm:text-left">
+              <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-base leading-relaxed text-justify sm:text-left">
                 Sharof Rashidov nomidagi Samarqand davlat universitetida ijro intizomi nazoratini ta’minlovchi yagona
                 elektron hujjat aylanishi tizimi. Ushbu platforma universitet rektorati, 16 ta fakultet, 70 dan ortiq
                 kafedralar, ilmiy markazlar va barcha bo‘limlar o‘rtasida xizmat xatlari, bildirgi, arizalar hamda
@@ -125,7 +144,7 @@ export const WelcomeLanding = () => {
               <div className="flex flex-wrap items-center gap-3 pt-2">
                 <Link
                   href="/login"
-                  className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-bold shadow-lg shadow-primary-600/30 hover:shadow-xl hover:shadow-primary-600/40 transition-all"
+                  className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-bold shadow-lg shadow-primary-600/30 hover:shadow-xl hover:shadow-primary-600/40 transition-all cursor-pointer"
                 >
                   <span>Tizimga kirish</span>
                   <ArrowRight className="w-4 h-4" />
@@ -133,25 +152,25 @@ export const WelcomeLanding = () => {
 
                 <Link
                   href="/login?mode=register"
-                  className="inline-flex items-center gap-2 px-5 py-3.5 rounded-xl border-2 border-slate-200 hover:border-primary-500 bg-white hover:bg-primary-50/50 text-slate-800 hover:text-primary-700 text-sm font-bold transition-all"
+                  className="inline-flex items-center gap-2 px-5 py-3.5 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-primary-500 dark:hover:border-primary-500 bg-white dark:bg-slate-900 hover:bg-primary-50/50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 hover:text-primary-700 dark:hover:text-primary-400 text-sm font-bold transition-all cursor-pointer"
                 >
-                  <Users className="w-4 h-4 text-primary-600" />
+                  <Users className="w-4 h-4 text-primary-600 dark:text-primary-400" />
                   <span>Xodim arizasi (Ro‘yxatdan o‘tish)</span>
                 </Link>
               </div>
 
               {/* Convenience Platform Badges */}
-              <div className="pt-6 border-t border-slate-200 flex flex-wrap items-center gap-4 text-xs text-slate-500">
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100/80 border border-slate-200 font-medium">
-                  <Laptop className="w-4 h-4 text-slate-700" />
+              <div className="pt-6 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100/80 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-medium text-slate-700 dark:text-slate-300">
+                  <Laptop className="w-4 h-4 text-slate-700 dark:text-slate-300" />
                   <span>SamDU Veb-portali</span>
                 </div>
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100/80 border border-slate-200 font-medium">
-                  <Smartphone className="w-4 h-4 text-slate-700" />
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100/80 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-medium text-slate-700 dark:text-slate-300">
+                  <Smartphone className="w-4 h-4 text-slate-700 dark:text-slate-300" />
                   <span>Moslashuvchan mobil interfeys</span>
                 </div>
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100/80 border border-slate-200 font-medium">
-                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100/80 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-medium text-slate-700 dark:text-slate-300">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   <span>Ichki tarmoq va SSL himoyasi</span>
                 </div>
               </div>
@@ -217,19 +236,19 @@ export const WelcomeLanding = () => {
       </section>
 
       {/* 3. SYSTEM CAPABILITIES SECTION */}
-      <section id="features" className="py-16 lg:py-24 bg-white border-t border-slate-100">
+      <section id="features" className="py-16 lg:py-24 bg-white dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800 transition-colors duration-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
           {/* Section Header */}
           <div className="max-w-3xl mb-14 space-y-3">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-100 text-primary-800 text-xs font-bold uppercase tracking-wider">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-100 dark:bg-primary-950/70 text-primary-800 dark:text-primary-300 border border-primary-200 dark:border-primary-800 text-xs font-bold uppercase tracking-wider">
               SamDU Imkoniyatlari
             </div>
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               Tizim imkoniyatlari
             </h2>
-            <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
-              <span className="font-semibold text-primary-700">SamDU ShortDoc</span> — Sharof Rashidov nomidagi
+            <p className="text-slate-600 dark:text-slate-400 text-sm sm:text-base leading-relaxed">
+              <span className="font-semibold text-primary-700 dark:text-primary-400">SamDU ShortDoc</span> — Sharof Rashidov nomidagi
               Samarqand davlat universitetida ma’muriy ish yuritish va ijro intizomini yagona elektron standartga
               keltirish, an’anaviy qog‘ozbozlikdan to‘liq voz kechish va shaffoflikni ta’minlash uchun ishlab chiqilgan.
             </p>
@@ -239,84 +258,84 @@ export const WelcomeLanding = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             
             {/* Card 1: Ma'lumotlarni saqlanish tartibi */}
-            <div className="p-6 rounded-2xl border border-slate-200/90 hover:border-primary-300 bg-white hover:bg-primary-50/20 shadow-sm hover:shadow-md transition-all group">
+            <div className="p-6 rounded-2xl border border-slate-200/90 dark:border-slate-800 hover:border-primary-300 dark:hover:border-primary-600 bg-white dark:bg-slate-900 hover:bg-primary-50/20 dark:hover:bg-slate-850 shadow-sm hover:shadow-md transition-all group">
               <div className="w-12 h-12 rounded-xl bg-primary-600 text-white flex items-center justify-center mb-5 shadow-md shadow-primary-600/20 group-hover:scale-110 transition-transform">
                 <FileText className="w-6 h-6" />
               </div>
-              <h3 className="text-base font-bold text-slate-900 mb-2">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2">
                 Ma’lumotlarni saqlanish tartibi
               </h3>
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
                 Elektron arxivda SamDU hujjatlari (rektor buyruqlari, kengash qarorlari, bildirgilar) markazlashtirilgan,
                 turkumlangan va tizimlashtirilgan holatda xavfsiz saqlanadi.
               </p>
             </div>
 
             {/* Card 2: Xarajatlarning qisqarishi */}
-            <div className="p-6 rounded-2xl border border-slate-200/90 hover:border-primary-300 bg-white hover:bg-primary-50/20 shadow-sm hover:shadow-md transition-all group">
+            <div className="p-6 rounded-2xl border border-slate-200/90 dark:border-slate-800 hover:border-primary-300 dark:hover:border-primary-600 bg-white dark:bg-slate-900 hover:bg-primary-50/20 dark:hover:bg-slate-850 shadow-sm hover:shadow-md transition-all group">
               <div className="w-12 h-12 rounded-xl bg-primary-600 text-white flex items-center justify-center mb-5 shadow-md shadow-primary-600/20 group-hover:scale-110 transition-transform">
                 <BarChart3 className="w-6 h-6" />
               </div>
-              <h3 className="text-base font-bold text-slate-900 mb-2">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2">
                 Xarajatlarning keskin qisqarishi
               </h3>
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
                 SamDU korpuslari va fakultetlari o‘rtasida qog‘oz tashish, chop etish va arxiv xonalari xarajatlarini
                 90% gacha kamaytiradi. Xodimlar vaqti tejaladi.
               </p>
             </div>
 
             {/* Card 3: Tizimning umumiyligi */}
-            <div className="p-6 rounded-2xl border border-slate-200/90 hover:border-primary-300 bg-white hover:bg-primary-50/20 shadow-sm hover:shadow-md transition-all group">
+            <div className="p-6 rounded-2xl border border-slate-200/90 dark:border-slate-800 hover:border-primary-300 dark:hover:border-primary-600 bg-white dark:bg-slate-900 hover:bg-primary-50/20 dark:hover:bg-slate-850 shadow-sm hover:shadow-md transition-all group">
               <div className="w-12 h-12 rounded-xl bg-primary-600 text-white flex items-center justify-center mb-5 shadow-md shadow-primary-600/20 group-hover:scale-110 transition-transform">
                 <Layers className="w-6 h-6" />
               </div>
-              <h3 className="text-base font-bold text-slate-900 mb-2">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2">
                 Tizimning umumiyligi va standarti
               </h3>
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
                 Universitetning barcha 16 ta fakulteti, kafedralari va departamentlarida hujjatni shakllantirish,
                 ro‘yxatga olish va imzo qo‘yish tartiblariga yagona yondashuv.
               </p>
             </div>
 
             {/* Card 4: Ko'p bosqichli Imzo zanjiri */}
-            <div className="p-6 rounded-2xl border border-slate-200/90 hover:border-primary-300 bg-white hover:bg-primary-50/20 shadow-sm hover:shadow-md transition-all group">
+            <div className="p-6 rounded-2xl border border-slate-200/90 dark:border-slate-800 hover:border-primary-300 dark:hover:border-primary-600 bg-white dark:bg-slate-900 hover:bg-primary-50/20 dark:hover:bg-slate-850 shadow-sm hover:shadow-md transition-all group">
               <div className="w-12 h-12 rounded-xl bg-primary-600 text-white flex items-center justify-center mb-5 shadow-md shadow-primary-600/20 group-hover:scale-110 transition-transform">
                 <CheckCircle2 className="w-6 h-6" />
               </div>
-              <h3 className="text-base font-bold text-slate-900 mb-2">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2">
                 Elektron Imzo va Kelishuv zanjiri
               </h3>
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
                 Bildirgi va arizalar kafedra mudiridan dekan, bo‘lim boshliqlari va rektoratgacha avtomatik ketma-ketlikda
                 elektron yo‘naltiriladi va tasdiqlanadi (imzolanadi).
               </p>
             </div>
 
             {/* Card 5: Ijro intizomi va Dedlayn nazorati */}
-            <div className="p-6 rounded-2xl border border-slate-200/90 hover:border-primary-300 bg-white hover:bg-primary-50/20 shadow-sm hover:shadow-md transition-all group">
+            <div className="p-6 rounded-2xl border border-slate-200/90 dark:border-slate-800 hover:border-primary-300 dark:hover:border-primary-600 bg-white dark:bg-slate-900 hover:bg-primary-50/20 dark:hover:bg-slate-850 shadow-sm hover:shadow-md transition-all group">
               <div className="w-12 h-12 rounded-xl bg-primary-600 text-white flex items-center justify-center mb-5 shadow-md shadow-primary-600/20 group-hover:scale-110 transition-transform">
                 <Clock className="w-6 h-6" />
               </div>
-              <h3 className="text-base font-bold text-slate-900 mb-2">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2">
                 Ijro intizomi va Dedlayn nazorati
               </h3>
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
                 Har bir topshiriq va rasmiy xat uchun aniq bajarilish muddati belgilanadi. Kechikayotgan topshiriqlar
                 bo‘yicha tizim mas’ullarni darhol ogohlantiradi.
               </p>
             </div>
 
             {/* Card 6: Rolga asoslangan xavfsizlik */}
-            <div className="p-6 rounded-2xl border border-slate-200/90 hover:border-primary-300 bg-white hover:bg-primary-50/20 shadow-sm hover:shadow-md transition-all group">
+            <div className="p-6 rounded-2xl border border-slate-200/90 dark:border-slate-800 hover:border-primary-300 dark:hover:border-primary-600 bg-white dark:bg-slate-900 hover:bg-primary-50/20 dark:hover:bg-slate-850 shadow-sm hover:shadow-md transition-all group">
               <div className="w-12 h-12 rounded-xl bg-primary-600 text-white flex items-center justify-center mb-5 shadow-md shadow-primary-600/20 group-hover:scale-110 transition-transform">
                 <ShieldCheck className="w-6 h-6" />
               </div>
-              <h3 className="text-base font-bold text-slate-900 mb-2">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2">
                 Rolga asoslangan vakolatlar (RBAC)
               </h3>
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
                 SamDU Rektori, prorektorlar, dekanlar, kafedra mudirlari, devonxona va o‘qituvchilar uchun alohida
                 vakolatlar belgilangan bo‘lib, maxfiylik to‘liq ta’minlanadi.
               </p>
@@ -327,59 +346,59 @@ export const WelcomeLanding = () => {
       </section>
 
       {/* 4. CONVENIENCES & BENEFITS SECTION */}
-      <section id="benefits" className="py-16 lg:py-24 bg-slate-50 border-t border-slate-200">
+      <section id="benefits" className="py-16 lg:py-24 bg-slate-50 dark:bg-slate-900/60 border-t border-slate-200 dark:border-slate-800 transition-colors duration-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
           <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-primary-700 bg-primary-100/70 px-3 py-1 rounded-full">
+            <span className="text-xs font-bold uppercase tracking-wider text-primary-700 dark:text-primary-300 bg-primary-100/70 dark:bg-primary-950/70 border border-primary-200 dark:border-primary-800 px-3 py-1 rounded-full">
               SamDU Qulayliklari
             </span>
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               Dasturimiz beradigan qulayliklar va afzalliklar
             </h2>
-            <p className="text-slate-600 text-sm sm:text-base">
+            <p className="text-slate-600 dark:text-slate-400 text-sm sm:text-base">
               Samarqand davlat universitetida zamonaviy ShortDoc elektron platformasiga o‘tish orqali erishiladigan natijalar
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
-              <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3 transition-colors">
+              <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold">
                 01
               </div>
-              <h4 className="font-bold text-slate-900 text-base">Tezkor Hujjat Almashinuvi</h4>
-              <p className="text-xs text-slate-600 leading-relaxed">
+              <h4 className="font-bold text-slate-900 dark:text-white text-base">Tezkor Hujjat Almashinuvi</h4>
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                 Fakultet yoki kafedrada tayyorlangan hujjat bir zumda rektorat yoki tegishli bo‘limga yetib boradi.
               </p>
             </div>
 
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
-              <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3 transition-colors">
+              <div className="w-10 h-10 rounded-lg bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
                 02
               </div>
-              <h4 className="font-bold text-slate-900 text-base">Sekundlik Aqlli Qidiruv</h4>
-              <p className="text-xs text-slate-600 leading-relaxed">
+              <h4 className="font-bold text-slate-900 dark:text-white text-base">Sekundlik Aqlli Qidiruv</h4>
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                 SamDU arxividagi minglab hujjatlar ichidan reg. raqami, sana yoki ijrochi bo‘yicha bir zumda toping.
               </p>
             </div>
 
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
-              <div className="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3 transition-colors">
+              <div className="w-10 h-10 rounded-lg bg-amber-50 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
                 03
               </div>
-              <h4 className="font-bold text-slate-900 text-base">Masofaviy Elektron Imzo</h4>
-              <p className="text-xs text-slate-600 leading-relaxed">
+              <h4 className="font-bold text-slate-900 dark:text-white text-base">Masofaviy Elektron Imzo</h4>
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                 Rahbariyat xizmat safarida yoki yig‘ilishda bo‘lsa ham istalgan qurilmadan elektron imzo qo‘ya oladi.
               </p>
             </div>
 
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
-              <div className="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3 transition-colors">
+              <div className="w-10 h-10 rounded-lg bg-purple-50 dark:bg-purple-950/70 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold">
                 04
               </div>
-              <h4 className="font-bold text-slate-900 text-base">Shaffoflik va Audit</h4>
-              <p className="text-xs text-slate-600 leading-relaxed">
+              <h4 className="font-bold text-slate-900 dark:text-white text-base">Shaffoflik va Audit</h4>
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                 Har bir xat kim tomonidan qachon ko‘rildi, qachon tasdiqlandi — to‘liq tarixiy jurnal yuritiladi.
               </p>
             </div>
@@ -387,41 +406,41 @@ export const WelcomeLanding = () => {
           </div>
 
           {/* Comparison Banner */}
-          <div className="mt-12 p-6 sm:p-8 rounded-3xl bg-white border border-slate-200 shadow-sm">
+          <div className="mt-12 p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm transition-colors">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
               <div className="space-y-4">
-                <span className="text-xs font-bold text-rose-600 uppercase tracking-wider">Eski qog‘ozbozlik tartibi</span>
-                <h3 className="text-lg font-bold text-slate-900">An’anaviy usuldagi muammolar:</h3>
-                <ul className="space-y-2.5 text-xs sm:text-sm text-slate-600">
+                <span className="text-xs font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">Eski qog‘ozbozlik tartibi</span>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">An’anaviy usuldagi muammolar:</h3>
+                <ul className="space-y-2.5 text-xs sm:text-sm text-slate-600 dark:text-slate-400">
                   <li className="flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center text-xs font-bold">✕</span>
+                    <span className="w-5 h-5 rounded-full bg-rose-100 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 flex items-center justify-center text-xs font-bold">✕</span>
                     Hujjatlar SamDU korpuslari bo‘ylab qo‘lda ko‘tarib yuriladi
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center text-xs font-bold">✕</span>
+                    <span className="w-5 h-5 rounded-full bg-rose-100 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 flex items-center justify-center text-xs font-bold">✕</span>
                     Topshiriq ijro muddati o‘tgachgina esga olinadi
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center text-xs font-bold">✕</span>
+                    <span className="w-5 h-5 rounded-full bg-rose-100 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 flex items-center justify-center text-xs font-bold">✕</span>
                     Eski xatlar va protokollarni arxivdan topish soatlab vaqt oladi
                   </li>
                 </ul>
               </div>
 
-              <div className="space-y-4 border-t md:border-t-0 md:border-l border-slate-200 md:pl-8 pt-6 md:pt-0">
-                <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">SamDU ShortDoc Yechimi</span>
-                <h3 className="text-lg font-bold text-slate-900">Elektron tizimdagi qulaylik:</h3>
-                <ul className="space-y-2.5 text-xs sm:text-sm text-slate-700">
+              <div className="space-y-4 border-t md:border-t-0 md:border-l border-slate-200 dark:border-slate-800 md:pl-8 pt-6 md:pt-0">
+                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">SamDU ShortDoc Yechimi</span>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">Elektron tizimdagi qulaylik:</h3>
+                <ul className="space-y-2.5 text-xs sm:text-sm text-slate-700 dark:text-slate-300">
                   <li className="flex items-center gap-2 font-medium">
-                    <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-xs font-bold">✓</span>
+                    <span className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs font-bold">✓</span>
                     Barcha jarayonlar 100% raqamli va yagona bazada
                   </li>
                   <li className="flex items-center gap-2 font-medium">
-                    <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-xs font-bold">✓</span>
+                    <span className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs font-bold">✓</span>
                     Dedlayn va muddatlar avtomatik monitoring qilinadi
                   </li>
                   <li className="flex items-center gap-2 font-medium">
-                    <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-xs font-bold">✓</span>
+                    <span className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs font-bold">✓</span>
                     Barcha statistika va hisobotlar bir tugma bilan tayyorlanadi
                   </li>
                 </ul>
@@ -433,17 +452,17 @@ export const WelcomeLanding = () => {
       </section>
 
       {/* 5. SAMDU ORGANIZATIONAL HIERARCHY */}
-      <section id="hierarchy" className="py-16 lg:py-24 bg-white border-t border-slate-200">
+      <section id="hierarchy" className="py-16 lg:py-24 bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 transition-colors duration-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
           <div className="max-w-3xl mb-14 space-y-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-primary-700 bg-primary-100/70 px-3 py-1 rounded-full">
+            <span className="text-xs font-bold uppercase tracking-wider text-primary-700 dark:text-primary-300 bg-primary-100/70 dark:bg-primary-950/70 border border-primary-200 dark:border-primary-800 px-3 py-1 rounded-full">
               SamDU Tuzilmasi
             </span>
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               Tizim universitetning qaysi bo‘g‘inlari uchun?
             </h2>
-            <p className="text-slate-600 text-sm sm:text-base">
+            <p className="text-slate-600 dark:text-slate-400 text-sm sm:text-base">
               ShortDoc SamDUning barcha ma’muriy va ilmiy-o‘quv bo‘linmalarini yagona zanjirga birlashtiradi
             </p>
           </div>
@@ -451,45 +470,45 @@ export const WelcomeLanding = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             
             {/* SamDU Rektorati */}
-            <div className="p-6 rounded-2xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:shadow-lg transition-all space-y-3">
+            <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 hover:bg-white dark:hover:bg-slate-850 hover:shadow-lg transition-all space-y-3">
               <div className="w-12 h-12 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold shadow-md">
                 <Building2 className="w-6 h-6" />
               </div>
-              <h3 className="font-bold text-slate-900 text-base">Rektorat va Rahbariyat</h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
+              <h3 className="font-bold text-slate-900 dark:text-white text-base">Rektorat va Rahbariyat</h3>
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                 Rektor, prorektorlar va rektorat qarorlari, buyruqlar chiqarish, imzo qo‘yish va universitet bo‘yicha ijro intizomi monitoringi.
               </p>
             </div>
 
             {/* Devonxona */}
-            <div className="p-6 rounded-2xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:shadow-lg transition-all space-y-3">
+            <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 hover:bg-white dark:hover:bg-slate-850 hover:shadow-lg transition-all space-y-3">
               <div className="w-12 h-12 rounded-xl bg-primary-600 text-white flex items-center justify-center font-bold shadow-md">
                 <Inbox className="w-6 h-6" />
               </div>
-              <h3 className="font-bold text-slate-900 text-base">Devonxona (Umumiy bo‘lim)</h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
+              <h3 className="font-bold text-slate-900 dark:text-white text-base">Devonxona (Umumiy bo‘lim)</h3>
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                 Vazirlik, viloyat hokimligi va hamkor tashkilotlardan kiruvchi hamda chiquvchi rasmiy xatlarni avtomatik reg-raqam bilan ro‘yxatga olish.
               </p>
             </div>
 
             {/* 16 ta Fakultet & Kafedralar */}
-            <div className="p-6 rounded-2xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:shadow-lg transition-all space-y-3">
+            <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 hover:bg-white dark:hover:bg-slate-850 hover:shadow-lg transition-all space-y-3">
               <div className="w-12 h-12 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold shadow-md">
                 <Users className="w-6 h-6" />
               </div>
-              <h3 className="font-bold text-slate-900 text-base">Dekanatlar va Kafedralar</h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
+              <h3 className="font-bold text-slate-900 dark:text-white text-base">Dekanatlar va Kafedralar</h3>
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                 16 ta fakultet va 70+ kafedralar: ichki xizmat xatlari, bildirgilar, kafedra bayonnomalari va o‘quv jarayoni hujjatlarini shakllantirish.
               </p>
             </div>
 
             {/* Xodimlar va O'qituvchilar */}
-            <div className="p-6 rounded-2xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:shadow-lg transition-all space-y-3">
+            <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 hover:bg-white dark:hover:bg-slate-850 hover:shadow-lg transition-all space-y-3">
               <div className="w-12 h-12 rounded-xl bg-purple-600 text-white flex items-center justify-center font-bold shadow-md">
                 <FileCheck2 className="w-6 h-6" />
               </div>
-              <h3 className="font-bold text-slate-900 text-base">Professor-o‘qituvchilar</h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
+              <h3 className="font-bold text-slate-900 dark:text-white text-base">Professor-o‘qituvchilar</h3>
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                 Elektron arizalar topshirish, o‘ziga yuklatilgan topshiriqlar ijrosini belgilash va natijalar bo‘yicha hisobot kiritish.
               </p>
             </div>
@@ -521,14 +540,14 @@ export const WelcomeLanding = () => {
           <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
             <Link
               href="/login"
-              className="px-8 py-3.5 rounded-xl bg-white hover:bg-primary-50 text-primary-900 text-sm font-bold shadow-xl transition-all"
+              className="px-8 py-3.5 rounded-xl bg-white hover:bg-primary-50 text-primary-900 text-sm font-bold shadow-xl transition-all cursor-pointer"
             >
               Tizimga kirish
             </Link>
 
             <Link
               href="/login?mode=register"
-              className="px-7 py-3.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white text-sm font-bold backdrop-blur-md transition-all"
+              className="px-7 py-3.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white text-sm font-bold backdrop-blur-md transition-all cursor-pointer"
             >
               Yangi hisob ochish
             </Link>
