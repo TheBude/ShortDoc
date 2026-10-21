@@ -18,7 +18,9 @@ import {
   Clock,
   XCircle,
   FileCheck,
+  Download,
 } from 'lucide-react';
+import { downloadDocumentDocx } from '@/lib/downloadDocx';
 
 function DocumentsContent() {
   const router = useRouter();
@@ -40,6 +42,7 @@ function DocumentsContent() {
 
   // Modal for new document
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [createdDocSuccess, setCreatedDocSuccess] = useState<Document | null>(null);
   const [usersList, setUsersList] = useState<User[]>([]);
   const [departmentsList, setDepartmentsList] = useState<Department[]>([]);
 
@@ -58,6 +61,23 @@ function DocumentsContent() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  const resetForm = () => {
+    setFormData({
+      title: '',
+      documentType: 'INTERNAL',
+      category: 'Bildirgi',
+      sender: '',
+      receiver: '',
+      departmentId: '',
+      priority: 'MEDIUM',
+      deadline: '',
+      summary: '',
+      approverIds: [],
+    });
+    setFormError(null);
+    setCreatedDocSuccess(null);
+  };
 
   const urlDocType = searchParams.get('documentType') || '';
   const urlStatus = searchParams.get('status') || '';
@@ -154,27 +174,15 @@ function DocumentsContent() {
     setSubmitting(true);
     setFormError(null);
 
-    const res = await fetchApi('/documents', {
+    const res = await fetchApi<Document>('/documents', {
       method: 'POST',
       body: JSON.stringify(formData),
     });
 
     setSubmitting(false);
 
-    if (res.success) {
-      setIsModalOpen(false);
-      setFormData({
-        title: '',
-        documentType: 'INTERNAL',
-        category: 'Bildirgi',
-        sender: '',
-        receiver: '',
-        departmentId: '',
-        priority: 'MEDIUM',
-        deadline: '',
-        summary: '',
-        approverIds: [],
-      });
+    if (res.success && res.data) {
+      setCreatedDocSuccess(res.data);
       loadDocuments();
     } else {
       setFormError(res.message || 'Xatolik yuz berdi');
@@ -219,7 +227,10 @@ function DocumentsContent() {
         </div>
 
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => {
+            resetForm();
+            setIsModalOpen(true);
+          }}
           className="inline-flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold px-4 py-2.5 rounded-lg shadow-sm transition-colors cursor-pointer"
         >
           <Plus className="w-4 h-4" />
@@ -394,13 +405,25 @@ function DocumentsContent() {
                       )}
                     </td>
                     <td className="py-3 px-4 text-right whitespace-nowrap">
-                      <Link
-                        href={`/documents/${doc.id}`}
-                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-primary-50 dark:hover:bg-primary-950/60 text-slate-700 dark:text-slate-200 hover:text-primary-700 dark:hover:text-primary-300 font-medium transition-colors cursor-pointer"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                        <span>Ko‘rish</span>
-                      </Link>
+                      <div className="inline-flex items-center gap-1.5 justify-end">
+                        <button
+                          type="button"
+                          onClick={() => downloadDocumentDocx(doc.id, doc.regNumber, doc.category)}
+                          title="Word (.docx) yuklab olish"
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 font-medium transition-colors cursor-pointer border border-blue-200 dark:border-blue-800"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          <span>.docx</span>
+                        </button>
+
+                        <Link
+                          href={`/documents/${doc.id}`}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-primary-50 dark:hover:bg-primary-950/60 text-slate-700 dark:text-slate-200 hover:text-primary-700 dark:hover:text-primary-300 font-medium transition-colors cursor-pointer"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>Ko‘rish</span>
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -437,17 +460,88 @@ function DocumentsContent() {
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 w-full max-w-2xl my-8 p-6 transition-colors duration-200">
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Yangi Hujjat Ro‘yxatga Olish</h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">Hujjat ma’lumotlarini kiriting va imzo qo‘yuvchi mas’ullarni belgilang</p>
+            {createdDocSuccess ? (
+              <div className="text-center py-4 space-y-4">
+                <div className="w-14 h-14 bg-emerald-100 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto shadow-sm">
+                  <CheckCircle2 className="w-8 h-8" />
+                </div>
 
-            {formError && (
-              <div className="mb-4 p-3 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 rounded-lg text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>{formError}</span>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                    Hujjat muvaffaqiyatli ro‘yxatga olindi!
+                  </h3>
+                  <div className="flex items-center justify-center gap-2 mt-2">
+                    <span className="font-mono text-xs font-bold bg-primary-50 dark:bg-primary-950/70 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800 px-3 py-1 rounded-md">
+                      {createdDocSuccess.regNumber}
+                    </span>
+                    <span className="text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2.5 py-0.5 rounded-full">
+                      {createdDocSuccess.category}
+                    </span>
+                  </div>
+                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 mt-2 max-w-md mx-auto">
+                    «{createdDocSuccess.title}»
+                  </p>
+                </div>
+
+                <div className="bg-blue-50 dark:bg-slate-800/60 p-4 rounded-xl border border-blue-200 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300 text-left max-w-lg mx-auto space-y-1">
+                  <div className="font-bold text-blue-900 dark:text-blue-300 flex items-center gap-1.5">
+                    <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                    <span>SamDU Rasmiy Bildirishnoma (Word) hujjati tayyor</span>
+                  </div>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+                    Hujjat o‘ng tomondagi rektorga va muallifga shapka, markazda sarlavha, asosiy matn, sana va imzo chizig‘i hamda pastki rasmiy muhr/shtamp bilan to‘liq shakllantirildi.
+                  </p>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-3">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      downloadDocumentDocx(
+                        createdDocSuccess.id,
+                        createdDocSuccess.regNumber,
+                        createdDocSuccess.category
+                      )
+                    }
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-600/30 transition-all cursor-pointer"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>Word (.docx) yuklab olish</span>
+                  </button>
+
+                  <Link
+                    href={`/documents/${createdDocSuccess.id}`}
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary-50 dark:bg-primary-950/70 hover:bg-primary-100 dark:hover:bg-primary-900/60 text-primary-700 dark:text-primary-300 font-semibold text-xs border border-primary-200 dark:border-primary-800 transition-colors cursor-pointer"
+                  >
+                    <Eye className="w-4 h-4" />
+                    <span>Hujjatni ko‘rish</span>
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsModalOpen(false);
+                      resetForm();
+                    }}
+                    className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  >
+                    Yopish
+                  </button>
+                </div>
               </div>
-            )}
+            ) : (
+              <>
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Yangi Hujjat Ro‘yxatga Olish</h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">Hujjat ma’lumotlarini kiriting va imzo qo‘yuvchi mas’ullarni belgilang</p>
 
-            <form onSubmit={handleCreateDocument} className="space-y-4 text-xs">
+                {formError && (
+                  <div className="mb-4 p-3 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 rounded-lg text-xs flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span>{formError}</span>
+                  </div>
+                )}
+
+                <form onSubmit={handleCreateDocument} className="space-y-4 text-xs">
               <div>
                 <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Hujjat sarlavhasi (Nomi) *</label>
                 <input
@@ -603,9 +697,11 @@ function DocumentsContent() {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </div>
+    </div>
+  )}
     </div>
   );
 }

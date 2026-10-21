@@ -24,6 +24,7 @@ import {
   ShieldCheck,
   Send,
 } from 'lucide-react';
+import { downloadDocumentDocx } from '@/lib/downloadDocx';
 
 export default function DocumentDetailPage({
   params,
@@ -178,8 +179,8 @@ export default function DocumentDetailPage({
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      {/* Back button */}
-      <div>
+      {/* Top Action Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <Link
           href="/documents"
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
@@ -187,6 +188,15 @@ export default function DocumentDetailPage({
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Hujjatlar ro‘yxatiga qaytish</span>
         </Link>
+
+        <button
+          type="button"
+          onClick={() => downloadDocumentDocx(document.id, document.regNumber, document.category)}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold text-xs shadow-md shadow-blue-600/20 hover:shadow-blue-600/40 transition-all cursor-pointer self-start sm:self-auto"
+        >
+          <Download className="w-4 h-4" />
+          <span>Word (.docx) shaklida yuklab olish</span>
+        </button>
       </div>
 
       {/* Main Document Header Card */}

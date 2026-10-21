@@ -4,6 +4,7 @@ import { prisma } from '../prisma.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
 import { logActivity } from '../middleware/audit.js';
+import { generateDocumentDocx } from '../utils/docxGenerator.js';
 
 const router = Router();
 
@@ -202,6 +203,48 @@ router.get('/:id', authenticate, async (req: AuthRequest, res, next) => {
     }
 
     return sendSuccess(res, document, 'Hujjat ma’lumotlari');
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Hujjatni rasmiy Word (.docx) formatida yuklab olish (SamDU standarti)
+router.get('/:id/docx', authenticate, async (req: AuthRequest, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const document = await prisma.document.findUnique({
+      where: { id },
+      include: {
+        department: true,
+        creator: { select: { id: true, fullName: true, position: true } },
+        approvals: {
+          include: { approver: { select: { fullName: true, position: true } } },
+          orderBy: { stepOrder: 'asc' },
+        },
+      },
+    });
+
+    if (!document) {
+      return sendError(res, 'Hujjat topilmadi', 404);
+    }
+
+    const docxBuffer = await generateDocumentDocx(document);
+
+    const safeRegNumber = document.regNumber.replace(/[\/\\:*"<>|]/g, '_');
+    const filename = `${safeRegNumber}_${document.category || 'bildirishnoma'}.docx`;
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    );
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${encodeURIComponent(filename)}"; filename*=UTF-8''${encodeURIComponent(filename)}`
+    );
+    res.setHeader('Content-Length', docxBuffer.length);
+
+    return res.end(docxBuffer);
   } catch (error) {
     next(error);
   }

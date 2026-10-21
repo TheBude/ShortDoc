@@ -17,11 +17,17 @@ export const authenticate = async (
 ) => {
   try {
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return sendError(res, 'Autentifikatsiya talab qilinadi. Token topilmadi.', 401);
+    let token: string | undefined;
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    } else if (req.query?.token && typeof req.query.token === 'string') {
+      token = req.query.token;
     }
 
-    const token = authHeader.split(' ')[1];
+    if (!token) {
+      return sendError(res, 'Autentifikatsiya talab qilinadi. Token topilmadi.', 401);
+    }
     const payload = verifyToken(token);
 
     // Verify user is still active in DB
