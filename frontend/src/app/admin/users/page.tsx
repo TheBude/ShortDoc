@@ -254,8 +254,8 @@ export default function AdminUsersPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Foydalanuvchilarni Boshqarish</h1>
-          <p className="text-xs text-slate-500 mt-1">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Foydalanuvchilarni Boshqarish</h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Universitet xodimlari hisoblarini boshqarish, yangi arizalarni tasdiqlash va bo‘limlar bo‘yicha vakolatlarni monitoring qilish
           </p>
         </div>
@@ -270,17 +270,17 @@ export default function AdminUsersPage() {
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200 pb-1">
+      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-1">
         <button
           type="button"
           onClick={() => setActiveTab('pending')}
           className={`flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all cursor-pointer ${
             activeTab === 'pending'
-              ? 'bg-amber-50 text-amber-900 border border-amber-200 shadow-sm'
-              : 'text-slate-600 hover:bg-slate-100'
+              ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-800 shadow-sm'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
-          <Clock className="w-4 h-4 text-amber-600" />
+          <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
           <span>Yangi Arizalar (Kutilayotganlar)</span>
           {pendingUsers.length > 0 && (
             <span className="ml-1 px-2 py-0.5 rounded-full text-xs bg-amber-500 text-white font-extrabold animate-pulse">
@@ -294,11 +294,11 @@ export default function AdminUsersPage() {
           onClick={() => setActiveTab('all')}
           className={`flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all cursor-pointer ${
             activeTab === 'all'
-              ? 'bg-primary-50 text-primary-900 border border-primary-200 shadow-sm'
-              : 'text-slate-600 hover:bg-slate-100'
+              ? 'bg-primary-50 dark:bg-primary-950/60 text-primary-900 dark:text-primary-200 border border-primary-200 dark:border-primary-800 shadow-sm'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
-          <Users className="w-4 h-4 text-primary-600" />
+          <Users className="w-4 h-4 text-primary-600 dark:text-primary-400" />
           <span>Barcha Foydalanuvchilar ({activeUsers.length})</span>
         </button>
       </div>
@@ -307,17 +307,17 @@ export default function AdminUsersPage() {
       {activeTab === 'pending' && (
         <div className="space-y-4">
           {loading ? (
-            <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-400 shadow-sm">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-12 text-center text-slate-400 dark:text-slate-500 shadow-sm">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mb-2" />
               <p className="text-xs">Arizalar yuklanmoqda...</p>
             </div>
           ) : pendingUsers.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-12 text-center shadow-sm">
-              <div className="w-12 h-12 rounded-2xl bg-slate-50 text-slate-400 mx-auto flex items-center justify-center mb-3">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-300 dark:border-slate-800 p-12 text-center shadow-sm">
+              <div className="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-slate-800 text-slate-400 mx-auto flex items-center justify-center mb-3">
                 <CheckCircle2 className="w-6 h-6 text-emerald-500" />
               </div>
-              <h3 className="text-sm font-bold text-slate-800">Kutilayotgan yangi arizalar mavjud emas</h3>
-              <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+              <h3 className="text-sm font-bold text-slate-800 dark:text-white">Kutilayotgan yangi arizalar mavjud emas</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
                 Barcha yangi ro‘yxatdan o‘tgan xodimlarning arizalari ko‘rib chiqilgan va tasdiqlangan.
               </p>
             </div>
@@ -329,7 +329,7 @@ export default function AdminUsersPage() {
                 return (
                   <div
                     key={u.id}
-                    className="bg-white rounded-2xl border border-amber-200 shadow-sm p-5 hover:shadow-md transition-all flex flex-col justify-between relative overflow-hidden"
+                    className="bg-white dark:bg-slate-900 rounded-2xl border border-amber-200 dark:border-amber-800/80 shadow-sm p-5 hover:shadow-md transition-all flex flex-col justify-between relative overflow-hidden"
                   >
                     <div className="absolute top-0 right-0 w-2.5 h-full bg-gradient-to-b from-amber-400 to-amber-500" />
 
@@ -337,11 +337,11 @@ export default function AdminUsersPage() {
                       {/* Top Header */}
                       <div className="flex items-start justify-between gap-3 mb-3">
                         <div>
-                          <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 mb-1.5 border border-amber-200">
+                          <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 mb-1.5 border border-amber-200 dark:border-amber-800">
                             <Clock className="w-3 h-3" />
                             <span>Ariza ko‘rib chiqilmoqda</span>
                           </div>
-                          <h3 className="text-lg font-bold text-slate-900">{u.fullName}</h3>
+                          <h3 className="text-lg font-bold text-slate-900 dark:text-white">{u.fullName}</h3>
                         </div>
 
                         {/* Auto assigned role badge */}
@@ -353,46 +353,46 @@ export default function AdminUsersPage() {
                       </div>
 
                       {/* Contact & Department Details */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600 mb-4 bg-slate-50 rounded-xl p-3 border border-slate-100">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600 dark:text-slate-300 mb-4 bg-slate-50 dark:bg-slate-800/70 rounded-xl p-3 border border-slate-100 dark:border-slate-800">
                         <div className="flex items-center gap-2">
-                          <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <span className="font-semibold text-slate-900 truncate">{u.email}</span>
+                          <Mail className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
+                          <span className="font-semibold text-slate-900 dark:text-white truncate">{u.email}</span>
                         </div>
                         {u.phone ? (
                           <div className="flex items-center gap-2">
-                            <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <Phone className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
                             <span>{u.phone}</span>
                           </div>
                         ) : (
-                          <div className="flex items-center gap-2 text-slate-400">
+                          <div className="flex items-center gap-2 text-slate-400 dark:text-slate-500">
                             <Phone className="w-3.5 h-3.5 shrink-0" />
                             <span>Telefon ko‘rsatilmagan</span>
                           </div>
                         )}
                         <div className="flex items-center gap-2">
-                          <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <Building2 className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
                           <span>
-                            Bo‘lim: <strong className="text-slate-800">{u.department?.name || 'Katalogda yo‘q / Yangi bo‘lim'}</strong>
+                            Bo‘lim: <strong className="text-slate-800 dark:text-slate-200">{u.department?.name || 'Katalogda yo‘q / Yangi bo‘lim'}</strong>
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Briefcase className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <Briefcase className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
                           <span>
-                            Lavozim: <strong className="text-slate-800">{u.position}</strong>
+                            Lavozim: <strong className="text-slate-800 dark:text-slate-200">{u.position}</strong>
                           </span>
                         </div>
                       </div>
 
                       {/* What this employee can do on ShortDoc based on their department & position */}
-                      <div className="mb-4 bg-gradient-to-br from-primary-50/50 to-indigo-50/40 rounded-xl p-3.5 border border-primary-100">
-                        <div className="flex items-center gap-1.5 text-xs font-bold text-primary-900 mb-2">
-                          <Layers className="w-3.5 h-3.5 text-primary-600" />
+                      <div className="mb-4 bg-gradient-to-br from-primary-50/50 to-indigo-50/40 dark:from-slate-800/80 dark:to-indigo-950/40 rounded-xl p-3.5 border border-primary-100 dark:border-slate-700">
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-primary-900 dark:text-primary-300 mb-2">
+                          <Layers className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
                           <span>Bo‘limga muvofiq platformadagi vakolat va vazifalari:</span>
                         </div>
                         <ul className="space-y-1.5">
                           {scope.capabilities.map((cap, i) => (
-                            <li key={i} className="flex items-start gap-2 text-[11px] text-slate-700 leading-snug">
-                              <span className="text-primary-600 font-bold shrink-0 mt-0.5">•</span>
+                            <li key={i} className="flex items-start gap-2 text-[11px] text-slate-700 dark:text-slate-300 leading-snug">
+                              <span className="text-primary-600 dark:text-primary-400 font-bold shrink-0 mt-0.5">•</span>
                               <span>{cap}</span>
                             </li>
                           ))}
@@ -401,7 +401,7 @@ export default function AdminUsersPage() {
                     </div>
 
                     {/* Action buttons (Direct 1-click Approval & Reject) */}
-                    <div className="flex gap-2 pt-3 border-t border-slate-100">
+                    <div className="flex gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
                       <button
                         type="button"
                         disabled={actionLoadingId === u.id}
@@ -416,7 +416,7 @@ export default function AdminUsersPage() {
                         type="button"
                         disabled={actionLoadingId === u.id}
                         onClick={() => handleReject(u)}
-                        className="py-2.5 px-3.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                        className="py-2.5 px-3.5 rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 text-xs font-bold transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
                       >
                         <X className="w-4 h-4" />
                         <span>Rad etish</span>
@@ -432,16 +432,16 @@ export default function AdminUsersPage() {
 
       {/* ALL USERS TAB */}
       {activeTab === 'all' && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors duration-200">
           {loading ? (
-            <div className="py-16 text-center text-slate-400">
+            <div className="py-16 text-center text-slate-400 dark:text-slate-500">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mb-2" />
               <p className="text-xs">Foydalanuvchilar yuklanmoqda...</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 uppercase font-semibold">
+                <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 uppercase font-semibold">
                   <tr>
                     <th className="py-3 px-4">F.I.Sh</th>
                     <th className="py-3 px-4">Email</th>
@@ -453,42 +453,42 @@ export default function AdminUsersPage() {
                     <th className="py-3 px-4 text-right">Amal</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 text-slate-700">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
                   {users.map((u) => (
-                    <tr key={u.id} className="hover:bg-slate-50/70 transition-colors">
-                      <td className="py-3 px-4 font-semibold text-slate-900 whitespace-nowrap">{u.fullName}</td>
-                      <td className="py-3 px-4 whitespace-nowrap text-slate-600">{u.email}</td>
+                    <tr key={u.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors">
+                      <td className="py-3 px-4 font-semibold text-slate-900 dark:text-white whitespace-nowrap">{u.fullName}</td>
+                      <td className="py-3 px-4 whitespace-nowrap text-slate-600 dark:text-slate-400">{u.email}</td>
                       <td className="py-3 px-4 whitespace-nowrap">
-                        <span className="font-semibold text-[11px] px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-800">
+                        <span className="font-semibold text-[11px] px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700">
                           {u.role}
                         </span>
                       </td>
-                      <td className="py-3 px-4 whitespace-nowrap text-slate-700">{u.department?.name || '—'}</td>
-                      <td className="py-3 px-4 whitespace-nowrap text-slate-600">{u.position}</td>
+                      <td className="py-3 px-4 whitespace-nowrap text-slate-700 dark:text-slate-300">{u.department?.name || '—'}</td>
+                      <td className="py-3 px-4 whitespace-nowrap text-slate-600 dark:text-slate-400">{u.position}</td>
                       <td className="py-3 px-4 whitespace-nowrap">
                         {u.registrationStatus === 'PENDING' ? (
-                          <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold">
+                          <span className="px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 text-[10px] font-bold border border-amber-200 dark:border-amber-800">
                             Kutilmoqda
                           </span>
                         ) : u.registrationStatus === 'REJECTED' ? (
-                          <span className="px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 text-[10px] font-bold">
+                          <span className="px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/70 text-rose-800 dark:text-rose-300 text-[10px] font-bold border border-rose-200 dark:border-rose-800">
                             Rad etilgan
                           </span>
                         ) : (
-                          <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                          <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold border border-emerald-200 dark:border-emerald-800">
                             Tasdiqlangan
                           </span>
                         )}
                       </td>
                       <td className="py-3 px-4 whitespace-nowrap">
                         {u.isActive ? (
-                          <span className="text-emerald-700 font-semibold flex items-center gap-1">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          <span className="text-emerald-700 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                             Faol
                           </span>
                         ) : (
-                          <span className="text-rose-600 font-semibold flex items-center gap-1">
-                            <XCircle className="w-3.5 h-3.5 text-rose-600" />
+                          <span className="text-rose-600 dark:text-rose-400 font-semibold flex items-center gap-1">
+                            <XCircle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
                             Bloklangan
                           </span>
                         )}
@@ -499,8 +499,8 @@ export default function AdminUsersPage() {
                             onClick={() => handleToggleActive(u)}
                             className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer ${
                               u.isActive
-                                ? 'bg-rose-50 text-rose-700 hover:bg-rose-100'
-                                : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                                ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800'
+                                : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800'
                             }`}
                           >
                             {u.isActive ? 'Bloklash' : 'Faollashtirish'}
@@ -519,12 +519,12 @@ export default function AdminUsersPage() {
       {/* Create User Modal (Manual add by SuperAdmin) */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-lg p-6">
-            <h2 className="text-lg font-bold text-slate-900 mb-1">Yangi Xodim Qo‘shish</h2>
-            <p className="text-xs text-slate-500 mb-4">Tizim foydalanuvchisi uchun login, rol va bo‘limni belgilang</p>
+          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-lg p-6 transition-colors duration-200">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Yangi Xodim Qo‘shish</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">Tizim foydalanuvchisi uchun login, rol va bo‘limni belgilang</p>
 
             {formError && (
-              <div className="mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs flex items-center gap-2">
+              <div className="mb-4 p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 rounded-xl text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{formError}</span>
               </div>
@@ -532,50 +532,50 @@ export default function AdminUsersPage() {
 
             <form onSubmit={handleCreateUser} className="space-y-4 text-xs">
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">To‘liq F.I.Sh *</label>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">To‘liq F.I.Sh *</label>
                 <input
                   type="text"
                   required
                   placeholder="Masalan: Toirov Sardor Rustamovich"
                   value={formData.fullName}
                   onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                  className="w-full p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-500 text-xs"
+                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 text-xs"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Email (Login) *</label>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Email (Login) *</label>
                   <input
                     type="email"
                     required
                     placeholder="xodim@shortdoc.uz"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-500 text-xs"
+                    className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 text-xs"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Boshlang‘ich Parol *</label>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Boshlang‘ich Parol *</label>
                   <input
                     type="password"
                     required
                     placeholder="••••••••"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-500 text-xs"
+                    className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 text-xs"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Tizimdagi Roli *</label>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Tizimdagi Roli *</label>
                   <select
                     value={formData.role}
                     onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-500 text-xs"
+                    className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 text-xs"
                   >
                     <option value="STAFF">Oddiy Xodim / O‘qituvchi</option>
                     <option value="DEPARTMENT_HEAD">Bo‘lim / Kafedra rahbari</option>
@@ -586,11 +586,11 @@ export default function AdminUsersPage() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Bo‘lim / Fakultet</label>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Bo‘lim / Fakultet</label>
                   <select
                     value={formData.departmentId}
                     onChange={(e) => setFormData({ ...formData, departmentId: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-500 text-xs"
+                    className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 text-xs"
                   >
                     <option value="">Bo‘limni tanlang...</option>
                     {departments.map((d) => (
@@ -604,41 +604,41 @@ export default function AdminUsersPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Lavozim *</label>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Lavozim *</label>
                   <input
                     type="text"
                     required
                     placeholder="Masalan: Dotsent, Bosh mutaxassis..."
                     value={formData.position}
                     onChange={(e) => setFormData({ ...formData, position: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-500 text-xs"
+                    className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 text-xs"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Telefon raqam</label>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Telefon raqam</label>
                   <input
                     type="text"
                     placeholder="+998901234567"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-500 text-xs"
+                    className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 text-xs"
                   />
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
+              <div className="flex justify-end gap-2 pt-4 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-semibold cursor-pointer"
+                  className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 font-semibold cursor-pointer transition-colors"
                 >
                   Bekor qilish
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-semibold disabled:opacity-50 cursor-pointer"
+                  className="px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-semibold disabled:opacity-50 cursor-pointer shadow-sm transition-colors"
                 >
                   {submitting ? 'Saqlanmoqda...' : 'Foydalanuvchini Saqlash'}
                 </button>

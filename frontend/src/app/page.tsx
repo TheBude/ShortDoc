@@ -68,17 +68,17 @@ export default function HomePage() {
   return (
     <div className="space-y-8">
       {/* Welcome Banner */}
-      <div className="bg-gradient-to-r from-primary-900 to-slate-900 rounded-2xl p-6 lg:p-8 text-white shadow-md flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="bg-gradient-to-r from-primary-900 to-slate-900 dark:from-slate-900 dark:to-primary-950 rounded-2xl p-6 lg:p-8 text-white shadow-md border border-transparent dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-6 transition-colors duration-200">
         <div className="max-w-3xl">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold bg-white/20 text-white px-3 py-1 rounded-full uppercase tracking-wider">
+            <span className="text-xs font-semibold bg-white/20 dark:bg-white/10 text-white px-3 py-1 rounded-full uppercase tracking-wider">
               Samarqand davlat universiteti (SamDU)
             </span>
           </div>
           <h1 className="text-2xl lg:text-3xl font-bold mt-3 tracking-tight">
             Xush kelibsiz, {user?.fullName}!
           </h1>
-          <p className="text-slate-300 text-sm mt-2 leading-relaxed">
+          <p className="text-slate-300 dark:text-slate-300 text-sm mt-2 leading-relaxed">
             Sharof Rashidov nomidagi SamDU elektron hujjatlar aylanishi va ijro nazorati tizimi orqali xizmat xatlari, bildirgilar va topshiriqlar holatini real vaqtda nazorat qiling.
           </p>
         </div>
@@ -147,32 +147,32 @@ export default function HomePage() {
       {/* Lower Section: Recent Activity & Departments */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Activities (Audit Log) */}
-        <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-          <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+        <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 transition-colors duration-200">
+          <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
             <div className="flex items-center gap-2">
-              <Activity className="w-5 h-5 text-primary-600" />
-              <h3 className="font-bold text-slate-800 text-base">Oxirgi Amallar va Harakatlar Tarixi</h3>
+              <Activity className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+              <h3 className="font-bold text-slate-800 dark:text-white text-base">Oxirgi Amallar va Harakatlar Tarixi</h3>
             </div>
-            <Link href="/documents" className="text-xs font-semibold text-primary-600 hover:text-primary-700 flex items-center gap-1">
+            <Link href="/documents" className="text-xs font-semibold text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 flex items-center gap-1">
               Barchasini ko‘rish <ArrowUpRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-slate-100 dark:divide-slate-800">
             {recentActivities.length === 0 ? (
-              <p className="text-xs text-slate-400 py-4 text-center">Hozircha amallar qayd etilmagan.</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500 py-4 text-center">Hozircha amallar qayd etilmagan.</p>
             ) : (
               recentActivities.map((act: any) => (
                 <div key={act.id} className="py-3 flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-sm font-medium text-slate-800">{act.details || act.action}</p>
-                    <div className="flex items-center gap-2 mt-1 text-xs text-slate-400">
+                    <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{act.details || act.action}</p>
+                    <div className="flex items-center gap-2 mt-1 text-xs text-slate-400 dark:text-slate-500">
                       <span>{act.user?.fullName || 'Tizim'}</span>
                       <span>•</span>
                       <span>{new Date(act.createdAt).toLocaleString('uz-UZ')}</span>
                     </div>
                   </div>
-                  <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-600">
+                  <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                     {act.entity}
                   </span>
                 </div>
@@ -182,20 +182,20 @@ export default function HomePage() {
         </div>
 
         {/* Departments Stat */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-          <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
-            <Building2 className="w-5 h-5 text-primary-600" />
-            <h3 className="font-bold text-slate-800 text-base">Bo‘limlar Faolligi</h3>
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 transition-colors duration-200">
+          <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
+            <Building2 className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+            <h3 className="font-bold text-slate-800 dark:text-white text-base">Bo‘limlar Faolligi</h3>
           </div>
 
           <div className="space-y-4">
             {departmentsStat.map((dep: any) => (
-              <div key={dep.id} className="p-3 rounded-lg bg-slate-50 border border-slate-100">
-                <div className="flex items-center justify-between text-sm font-semibold text-slate-800">
+              <div key={dep.id} className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                <div className="flex items-center justify-between text-sm font-semibold text-slate-800 dark:text-slate-200">
                   <span className="truncate">{dep.name}</span>
-                  <span className="text-primary-600 text-xs">{dep._count?.documents || 0} ta hujjat</span>
+                  <span className="text-primary-600 dark:text-primary-400 text-xs font-bold">{dep._count?.documents || 0} ta hujjat</span>
                 </div>
-                <div className="flex items-center justify-between text-xs text-slate-400 mt-1">
+                <div className="flex items-center justify-between text-xs text-slate-400 dark:text-slate-500 mt-1">
                   <span>Kodi: {dep.code}</span>
                   <span>{dep._count?.users || 0} nafar xodim</span>
                 </div>
