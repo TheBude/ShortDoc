@@ -43,6 +43,20 @@ app.get(['/health', '/api/health'], (req, res) => {
   });
 });
 
+// Asosiy sahifa (Bude Delivery kabi frontend ilovaga avtomatik yo‘naltiradi)
+app.get('/', (req, res) => {
+  const frontendUrl = process.env.APP_URL || process.env.CORS_ORIGIN;
+  if (frontendUrl && frontendUrl !== '*' && !frontendUrl.includes('localhost')) {
+    return res.redirect(frontendUrl);
+  }
+  res.json({
+    service: 'SamDU ShortDoc University API',
+    status: 'running',
+    docs: '/api/docs',
+    health: '/health',
+  });
+});
+
 // REST API yo'nalishlari
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
