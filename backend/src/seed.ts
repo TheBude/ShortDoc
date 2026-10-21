@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { prisma } from './prisma.js';
 
-async function main() {
+export async function runSeed() {
   console.log('================================================================');
   console.log('🏛️  Sharof Rashidov nomidagi SamDU - Tizim Ma’lumotlarini Yangilash (Seed)');
   console.log('================================================================');
@@ -721,11 +721,14 @@ async function main() {
   console.log('================================================================');
 }
 
-main()
-  .catch((e) => {
-    console.error('Seed xatoligi:', e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+// Standalone run if executed directly
+if (process.argv[1]?.endsWith('seed.ts') || process.argv[1]?.endsWith('seed.js')) {
+  runSeed()
+    .catch((e) => {
+      console.error('Seed xatoligi:', e);
+      process.exit(1);
+    })
+    .finally(async () => {
+      await prisma.$disconnect();
+    });
+}
