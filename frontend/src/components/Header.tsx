@@ -58,6 +58,9 @@ export const Header = () => {
         <div className="flex items-center gap-2 shrink-0">
           <img src="/samdu-logo.png" alt="SamDU" className="w-8 h-8 object-contain rounded-full border border-slate-200 dark:border-slate-700 p-0.5 bg-white" />
           <span className="font-extrabold text-sm text-slate-800 dark:text-white hidden sm:inline tracking-tight">SamDU ShortDoc</span>
+          <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
+            Test
+          </span>
         </div>
 
         {user?.department && (

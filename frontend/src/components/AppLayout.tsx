@@ -6,6 +6,21 @@ import { useAuth } from '@/context/AuthContext';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 
+const TestModeBanner = () => (
+  <div className="bg-amber-500/10 dark:bg-amber-950/50 border-b border-amber-500/25 px-3 py-1 text-center text-xs text-amber-800 dark:text-amber-300 flex items-center justify-center gap-2 select-none shrink-0 font-medium z-20">
+    <span className="relative flex h-2 w-2 shrink-0">
+      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+      <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+    </span>
+    <span className="font-extrabold uppercase tracking-wider text-[10px] bg-amber-500/20 dark:bg-amber-400/20 border border-amber-500/40 px-2 py-0.5 rounded-full text-amber-900 dark:text-amber-200 shrink-0">
+      Test rejimi
+    </span>
+    <span className="hidden sm:inline text-[11px] text-amber-800/90 dark:text-amber-300/90 truncate">
+      SamDU ShortDoc axborot tizimi sinov (beta) bosqichida ishlamoqda.
+    </span>
+  </div>
+);
+
 export const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
   const { user, isLoading } = useAuth();
@@ -28,13 +43,20 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
   }
 
   if (isPublicPage) {
-    return <main className="min-h-screen bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100">{children}</main>;
+    const isVerify = pathname?.startsWith('/verify');
+    return (
+      <main className="min-h-screen bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex flex-col">
+        {!isVerify && <TestModeBanner />}
+        <div className="flex-1">{children}</div>
+      </main>
+    );
   }
 
   return (
     <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0 overflow-x-hidden">
+        <TestModeBanner />
         <Header />
         <main className="flex-1 p-3.5 sm:p-6 lg:p-8 overflow-y-auto">{children}</main>
       </div>

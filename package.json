@@ -1,0 +1,28 @@
+{
+  "name": "shortdoc-university-system",
+  "version": "1.0.0",
+  "description": "SamDU ShortDoc — Samarqand Davlat Universiteti Elektron Hujjat Aylanishi va Ijro Intizomi Platformasi",
+  "private": true,
+  "scripts": {
+    "build": "npm run build --prefix backend && npm run build --prefix frontend",
+    "build:backend": "npm run build --prefix backend",
+    "build:frontend": "npm run build --prefix frontend",
+    "db:generate": "npm run prisma:generate --prefix backend",
+    "db:push": "npm run prisma:push --prefix backend",
+    "db:seed": "npm run seed --prefix backend",
+    "start:backend": "npm run start --prefix backend",
+    "start:frontend": "npm run start --prefix frontend",
+    "docker:up": "docker compose up -d --build",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f"
+  },
+  "keywords": [
+    "samdu",
+    "shortdoc",
+    "document-management",
+    "edo",
+    "university"
+  ],
+  "author": "SamDU",
+  "license": "UNLICENSED"
+}

@@ -114,10 +114,13 @@ function SidebarContent() {
                 />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-blue-500" />
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="h-2 w-2 animate-pulse rounded-full bg-blue-500 shrink-0" />
                   <span className="font-black text-sm text-white tracking-tight block truncate">
                     SamDU ShortDoc
+                  </span>
+                  <span className="px-1 py-0.2 rounded text-[8px] font-black uppercase tracking-wider bg-amber-500/25 text-amber-300 border border-amber-500/40 shrink-0">
+                    TEST
                   </span>
                 </div>
                 <span className="block text-[9px] text-blue-300 font-semibold tracking-wider uppercase truncate">

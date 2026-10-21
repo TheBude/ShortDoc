@@ -34,8 +34,13 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Tizim holati tekshiruvi (Healthcheck)
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', service: 'ShortDoc API', timestamp: new Date().toISOString() });
+app.get(['/health', '/api/health'], (req, res) => {
+  res.json({
+    status: 'ok',
+    service: 'ShortDoc University API',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+  });
 });
 
 // REST API yo'nalishlari
@@ -52,12 +57,24 @@ app.use('/api/notifications', notificationRoutes);
 // Xatoliklarni boshqarish
 app.use(errorHandler);
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`=========================================`);
   console.log(`🚀 ShortDoc Backend API muvaffaqiyatli ishga tushdi!`);
   console.log(`📡 URL: http://localhost:${PORT}`);
   console.log(`📚 Swagger Docs: http://localhost:${PORT}/api/docs`);
   console.log(`=========================================`);
 });
+
+// Graceful shutdown
+const gracefulShutdown = (signal: string) => {
+  console.log(`\n🛑 ${signal} qabul qilindi. Server xavfsiz to‘xtatilmoqda...`);
+  server.close(() => {
+    console.log('✅ Barcha ulanishlar yopildi.');
+    process.exit(0);
+  });
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 export default app;
