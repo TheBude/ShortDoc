@@ -40,18 +40,5 @@ yarn-error.log*
 uploads/
 *.sqlite
 *.sqlite-journal
-
-# .NET / C#
-bin/
-obj/
-*.user
-*.userosscache
-*.suo
-*.userprefs
-[Aa]rms/
-[Dd]ebug/
-[Rr]elease/
-appsettings.Local.json
-appsettings.Development.json
-appsettings.*.local.json
+*.log
 

@@ -25,7 +25,7 @@ const PORT = process.env.PORT || 5000;
 
 // Xavfsizlik va yordamchi middlewarelar
 app.use(helmet({ contentSecurityPolicy: false }));
-app.use(cors({ origin: '*', credentials: true }));
+app.use(cors({ origin: true, credentials: true }));
 app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));

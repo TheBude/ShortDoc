@@ -10,7 +10,7 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
   const { user, isLoading } = useAuth();
 
-  const isLoginPage = pathname === '/login';
+  const isPublicPage = pathname === '/login' || pathname === '/welcome' || (!user && pathname === '/');
 
   if (isLoading) {
     return (
@@ -23,8 +23,8 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  if (isLoginPage) {
-    return <main className="min-h-screen bg-slate-50">{children}</main>;
+  if (isPublicPage) {
+    return <main className="min-h-screen bg-white">{children}</main>;
   }
 
   return (

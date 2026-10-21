@@ -29,6 +29,9 @@ export default function DocumentsPage() {
   const [docType, setDocType] = useState<string>('');
   const [status, setStatus] = useState<string>('');
   const [priority, setPriority] = useState<string>('');
+  const [category, setCategory] = useState<string>('');
+  const [pendingMySignature, setPendingMySignature] = useState<boolean>(false);
+  const [activeFilterName, setActiveFilterName] = useState<string>('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
@@ -53,12 +56,59 @@ export default function DocumentsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
+  // Sync URL search params with state
+  useEffect(() => {
+    const handleLocationParams = () => {
+      if (typeof window === 'undefined') return;
+      const params = new URLSearchParams(window.location.search);
+      const dt = params.get('documentType') || '';
+      const st = params.get('status') || '';
+      const cat = params.get('category') || '';
+      const pms = params.get('pendingMySignature') === 'true';
+      const cr = params.get('create') === 'true';
+
+      setDocType(dt);
+      setStatus(st);
+      setCategory(cat);
+      setPendingMySignature(pms);
+
+      // Determine human-readable title for active filter
+      if (pms || st === 'IN_APPROVAL') {
+        setActiveFilterName('Kelishuvda (Imzoga kelgan hujjatlar)');
+      } else if (st === 'REGISTERED') {
+        setActiveFilterName('Ro‘yxatga olish uchun kutilayotganlar');
+      } else if (st === 'ARCHIVED') {
+        setActiveFilterName('Elektron arxivdagi hujjatlar');
+      } else if (cat.toLowerCase().includes('buyruq')) {
+        setActiveFilterName('Rektor buyruqlari va qarorlari');
+      } else if (cat.toLowerCase().includes('murojaat')) {
+        setActiveFilterName('Fuqarolar va talabalar murojaatlari');
+      } else if (dt === 'INTERNAL') {
+        setActiveFilterName('Ichki bildirgilar va xizmat xatlari');
+      } else if (dt === 'INCOMING') {
+        setActiveFilterName('Kiruvchi rasmiy xatlar');
+      } else if (dt === 'OUTGOING') {
+        setActiveFilterName('Chiquvchi xatlar');
+      } else {
+        setActiveFilterName('');
+      }
+
+      if (cr) {
+        setIsModalOpen(true);
+      }
+    };
+
+    handleLocationParams();
+    window.addEventListener('popstate', handleLocationParams);
+    return () => window.removeEventListener('popstate', handleLocationParams);
+  }, []);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       loadDocuments();
     }, 250);
     return () => clearTimeout(timer);
-  }, [search, docType, status, priority, page]);
+  }, [search, docType, status, priority, category, pendingMySignature, page]);
 
   useEffect(() => {
     loadAuxData();
@@ -78,6 +128,8 @@ export default function DocumentsPage() {
     if (docType) query.append('documentType', docType);
     if (status) query.append('status', status);
     if (priority) query.append('priority', priority);
+    if (category) query.append('category', category);
+    if (pendingMySignature) query.append('pendingMySignature', 'true');
     query.append('page', page.toString());
     query.append('limit', '10');
 
@@ -138,7 +190,7 @@ export default function DocumentsPage() {
       case 'REGISTERED':
         return <span className="bg-blue-50 text-blue-700 border border-blue-200 text-xs px-2.5 py-0.5 rounded-full font-medium">Ro‘yxatga olindi</span>;
       case 'IN_APPROVAL':
-        return <span className="bg-amber-50 text-amber-700 border border-amber-200 text-xs px-2.5 py-0.5 rounded-full font-medium">Kelishuvda (Viza)</span>;
+        return <span className="bg-amber-50 text-amber-700 border border-amber-200 text-xs px-2.5 py-0.5 rounded-full font-medium">Kelishuvda (Imzo)</span>;
       case 'IN_EXECUTION':
         return <span className="bg-purple-50 text-purple-700 border border-purple-200 text-xs px-2.5 py-0.5 rounded-full font-medium">Ijroda</span>;
       case 'COMPLETED':
@@ -178,6 +230,32 @@ export default function DocumentsPage() {
           <span>Yangi Hujjat Yaratish</span>
         </button>
       </div>
+
+      {/* Active Filter Pill / Banner */}
+      {activeFilterName && (
+        <div className="flex items-center justify-between p-3.5 bg-primary-50 border border-primary-200 rounded-xl text-xs text-primary-900 font-medium shadow-sm">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-primary-600 animate-pulse" />
+            <span>Tanlangan bo‘lim: <strong className="font-bold text-primary-950 text-sm ml-1">{activeFilterName}</strong></span>
+          </div>
+          <button
+            onClick={() => {
+              setDocType('');
+              setStatus('');
+              setCategory('');
+              setPendingMySignature(false);
+              setActiveFilterName('');
+              setSearch('');
+              if (typeof window !== 'undefined') {
+                window.history.pushState({}, '', '/documents');
+              }
+            }}
+            className="text-primary-700 hover:text-primary-900 underline font-bold cursor-pointer"
+          >
+            Filtrni tozalash
+          </button>
+        </div>
+      )}
 
       {/* Tabs & Filters */}
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-4">
@@ -237,7 +315,7 @@ export default function DocumentsPage() {
           >
             <option value="">Barcha holatlar</option>
             <option value="REGISTERED">Ro‘yxatga olingan</option>
-            <option value="IN_APPROVAL">Kelishuvda (Viza)</option>
+            <option value="IN_APPROVAL">Kelishuvda (Imzo)</option>
             <option value="IN_EXECUTION">Ijroda</option>
             <option value="COMPLETED">Bajarilgan</option>
             <option value="REJECTED">Rad etilgan</option>
@@ -366,7 +444,7 @@ export default function DocumentsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto">
           <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-2xl my-8 p-6">
             <h2 className="text-lg font-bold text-slate-900 mb-1">Yangi Hujjat Ro‘yxatga Olish</h2>
-            <p className="text-xs text-slate-500 mb-4">Hujjat ma’lumotlarini kiriting va viza qo‘yuvchi mas’ullarni belgilang</p>
+            <p className="text-xs text-slate-500 mb-4">Hujjat ma’lumotlarini kiriting va imzo qo‘yuvchi mas’ullarni belgilang</p>
 
             {formError && (
               <div className="mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-xs flex items-center gap-2">
@@ -475,12 +553,12 @@ export default function DocumentsPage() {
                 />
               </div>
 
-              {/* Approvers / Viza yig'ish zanjiri */}
+              {/* Approvers / Imzo yig'ish zanjiri */}
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">
-                  Viza qo‘yuvchi mas’ullar (Kelishuv zanjiri)
+                  Imzo qo‘yuvchi mas’ullar (Kelishuv zanjiri)
                 </label>
-                <p className="text-[11px] text-slate-400 mb-2">Hujjat kimlar tomonidan tasdiqlanishi kerak?</p>
+                <p className="text-[11px] text-slate-400 mb-2">Hujjat kimlar tomonidan tasdiqlanishi (imzolanishi) kerak?</p>
                 <div className="max-h-36 overflow-y-auto border border-slate-200 rounded-lg p-2 space-y-1 bg-slate-50">
                   {usersList
                     .filter((u) => u.id !== user?.id)

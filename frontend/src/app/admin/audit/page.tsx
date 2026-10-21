@@ -29,7 +29,7 @@ export default function AdminAuditPage() {
       <div>
         <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Tizim Xavfsizlik va Audit Jurnali</h1>
         <p className="text-xs text-slate-500 mt-1">
-          Hujjatlar, vizalar va tizimga kirishlar bo‘yicha to‘liq o‘zgarmas tarixiy yozuvlar
+          Hujjatlar, imzolar va tizimga kirishlar bo‘yicha to‘liq o‘zgarmas tarixiy yozuvlar
         </p>
       </div>
 

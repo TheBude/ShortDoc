@@ -1,5 +1,7 @@
 @echo off
-echo Bazani dastlabki ma'lumotlar bilan to'ldirish...
+echo =========================================================
+echo   ShortDoc - SamDU ma'lumotlar bazasini to'ldirish (Seed)
+echo =========================================================
 cd /d D:\ShortDoc\backend
-npm run seed
+call npm run seed
 pause

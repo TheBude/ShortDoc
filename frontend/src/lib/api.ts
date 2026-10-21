@@ -1,5 +1,5 @@
-// Direct Kestrel high-performance API endpoint
-// When in browser, connects directly to C# API (port 5000), eliminating Next.js proxy latency
+// Direct TypeScript API endpoint (port 5000)
+// When in browser, connects directly to Backend API, eliminating Next.js proxy latency
 const getApiBaseUrl = () => {
   if (typeof window !== 'undefined') {
     const host = window.location.hostname || 'localhost';

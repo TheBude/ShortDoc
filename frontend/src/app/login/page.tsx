@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { fetchApi } from '@/lib/api';
 import { Department } from '@/types';
@@ -10,6 +11,7 @@ import {
   Lock,
   Mail,
   ArrowRight,
+  ArrowLeft,
   AlertCircle,
   CheckCircle2,
   Phone,
@@ -86,6 +88,15 @@ export default function LoginPage() {
     "Bosh mutaxassis",
     "Boshqa"
   ];
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('mode') === 'register') {
+        setMode('register');
+      }
+    }
+  }, []);
 
   useEffect(() => {
     // Fetch departments for registration dropdown
@@ -262,14 +273,31 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-primary-950 flex flex-col justify-center items-center p-4 py-8">
       <div className="w-full max-w-xl">
+        {/* Navigation back to landing page */}
+        <div className="mb-4 flex items-center justify-between">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-xs font-semibold text-slate-300 hover:text-white transition-colors bg-white/10 hover:bg-white/15 px-3.5 py-1.5 rounded-xl border border-white/10 shadow-sm"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Asosiy sahifaga qaytish</span>
+          </Link>
+          <span className="text-[11px] text-slate-400 font-medium tracking-wide">
+            SamDU • 1420
+          </span>
+        </div>
+
         {/* Header Branding */}
         <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-primary-600 to-indigo-500 text-white shadow-xl shadow-primary-950/50 mb-3 transform hover:scale-105 transition-transform">
-            <GraduationCap className="w-8 h-8" />
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white p-1 shadow-2xl shadow-primary-950/50 mb-3 transform hover:scale-105 transition-transform border-2 border-primary-400/40">
+            <img src="/samdu-logo.png" alt="Samarqand Davlat Universiteti" className="w-full h-full object-contain rounded-full" />
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">ShortDoc</h1>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-md mx-auto">
-            Universitet Elektron Hujjat Aylanishi va Ijro Nazorati Tizimi
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">SamDU ShortDoc</h1>
+          <p className="text-xs sm:text-sm text-primary-200 font-medium mt-1 max-w-md mx-auto">
+            Sharof Rashidov nomidagi Samarqand Davlat Universiteti
+          </p>
+          <p className="text-[11px] text-slate-400 mt-0.5">
+            Elektron Hujjat Aylanishi va Ijro Nazorati Tizimi
           </p>
         </div>
 
@@ -464,7 +492,7 @@ export default function LoginPage() {
                         className="p-2 text-left rounded-xl border border-amber-200 bg-amber-50/50 hover:bg-amber-100/60 text-amber-900 transition-colors"
                       >
                         <div className="font-semibold">Rektorat</div>
-                        <div className="text-[10px] text-amber-600">Monitoring & Viza</div>
+                        <div className="text-[10px] text-amber-600">Monitoring & Imzo</div>
                       </button>
 
                       <button

@@ -14,6 +14,88 @@ const loginSchema = z.object({
   password: z.string().min(6, 'Parol kamida 6 belgidan iborat bo‘lishi kerak'),
 });
 
+const registerSchema = z.object({
+  fullName: z.string().min(2, 'F.I.Sh kamida 2 ta belgidan iborat bo‘lishi kerak'),
+  email: z.string().email('Noto‘g‘ri email formati'),
+  password: z.string().min(6, 'Parol kamida 6 belgidan iborat bo‘lishi kerak'),
+  departmentId: z.string().optional().nullable(),
+  position: z.string().min(2, 'Lavozim kiritilishi shart'),
+  phone: z.string().optional(),
+});
+
+// Email bandligini tekshirish (Real-time validator)
+router.get('/check-email', async (req, res, next) => {
+  try {
+    const email = req.query.email as string;
+    if (!email) {
+      return sendError(res, 'Email ko‘rsatilmadi', 400);
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: email.trim().toLowerCase() },
+    });
+
+    return sendSuccess(res, {
+      available: !user,
+      exists: !!user,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Yangi foydalanuvchi ariza / ro'yxatdan o'tishi
+router.post('/register', async (req, res, next) => {
+  try {
+    const data = registerSchema.parse(req.body);
+
+    const existing = await prisma.user.findUnique({
+      where: { email: data.email.trim().toLowerCase() },
+    });
+
+    if (existing) {
+      return sendError(res, 'Bu email manzili bilan allaqachon ro‘yxatdan o‘tilgan', 400);
+    }
+
+    const passwordHash = await bcrypt.hash(data.password, 10);
+
+    const user = await prisma.user.create({
+      data: {
+        fullName: data.fullName,
+        email: data.email.trim().toLowerCase(),
+        passwordHash,
+        position: data.position,
+        phone: data.phone || null,
+        departmentId: data.departmentId || null,
+        role: 'STAFF',
+        isActive: true, // Test rejimida darhol kirish imkoni beriladi
+      },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        role: true,
+        position: true,
+        isActive: true,
+      },
+    });
+
+    await logActivity({
+      userId: user.id,
+      action: 'REGISTER',
+      entity: 'USER',
+      entityId: user.id,
+      details: `${user.fullName} tizimda yangi xodim sifatida ro‘yxatdan o‘tdi`,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+
+    return sendSuccess(res, user, 'Arizangiz muvaffaqiyatli qabul qilindi. Endi tizimga kirishingiz mumkin!', 201);
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.post('/login', async (req, res, next) => {
   try {
     const { email, password } = loginSchema.parse(req.body);

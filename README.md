@@ -1,12 +1,12 @@
-# ShortDoc — Universitet Hujjatlar Aylanishi Tizimi
+# ShortDoc — Sharof Rashidov nomidagi SamDU Elektron Hujjatlar Aylanishi Tizimi
 
-ShortDoc — Oliy ta'lim muassasalarida ichki va tashqi hujjatlar harakatini raqamlashtirish, viza yig'ish jarayonini tezlashtirish va ijro intizomini to'liq nazorat qilish platformasi.
+ShortDoc — Samarqand davlat universitetida (SamDU) ichki bildirgilar, rasmiy kiruvchi/chiquvchi xatlar, rektor buyruqlari, fuqarolar murojaatlari va topshiriqlar harakatini to‘liq raqamlashtirish, elektron imzo (kelishuv) zanjirini tezlashtirish va ijro intizomini nazorat qilish platformasi.
 
 ---
 
 ## 🚀 Texnologik Stek
-- **Backend**: **C# (ASP.NET Core 8 Web API)**
-- **ORM & Ma'lumotlar bazasi**: **Entity Framework Core (EF Core 8)** + **PostgreSQL 18**
+- **Backend**: **TypeScript (Node.js + Express)**
+- **ORM & Ma’lumotlar bazasi**: **Prisma ORM** + **PostgreSQL 18**
 - **Autentifikatsiya**: **JWT (JSON Web Tokens)**, Role-Based Access Control (RBAC), BCrypt
 - **API Hujjatlashtirish**: **Swagger / OpenAPI** (`http://localhost:5000/api/docs`)
 - **Frontend**: **Next.js 15 (React 19)**, TypeScript, Tailwind CSS, Lucide Icons
@@ -14,42 +14,43 @@ ShortDoc — Oliy ta'lim muassasalarida ichki va tashqi hujjatlar harakatini raq
 
 ---
 
-## 🛠️ O'rnatish va Ishga Tushirish
+## 🛠️ O‘rnatish va Ishga Tushirish
 
 ### 1. Talablar
-- .NET 8 SDK (Kompyuterda o‘rnatildi)
-- Node.js >= 20 (Kompyuterda v24.21.0 o'rnatilgan)
-- PostgreSQL 18 (`shortdoc_db` bazasi mavjud)
+- Node.js >= 20 (Kompyuterda v24.21.0 o‘rnatilgan)
+- PostgreSQL 18 (`shortdoc_db` bazasi)
 
-### 2. Backend (C#) sozlash va ishga tushirish
+### 2. Backend (TypeScript) sozlash va ishga tushirish
 ```bash
 cd D:\ShortDoc\backend
-dotnet run
+npm run dev
 ```
-API manzili: `http://localhost:5000`
-Swagger Docs: `http://localhost:5000/api/docs`
+- API manzili: `http://localhost:5000`
+- Swagger Docs: `http://localhost:5000/api/docs`
 
-### 3. Frontend sozlash va ishga tushirish
+### 3. Frontend (Next.js) sozlash va ishga tushirish
 ```bash
 cd D:\ShortDoc\frontend
-npm start   # Tezkor ishlab chiqarish (production) rejimi
-# yoki: npm run dev  (Dasturlash / test rejimi)
+npm run dev
 ```
 Tizim brauzerda: `http://localhost:3000`
 
 ### 4. ⚡ Bir bosishda ishga tushirish (One-Click Launchers)
 Loyiha ildizidagi `scripts/` papkasida tayyor skriptlar mavjud:
-- **`scripts\run-all.bat`** — C# Backend va Next.js Frontendni avtomatik ravishda optimal rejimda ishga tushiradi.
-- **`scripts\build-and-start.bat`** — Kodlarni qayta yig'ib (build qilib), yuqori tezlikdagi ishlab chiqarish rejimida ishga tushiradi.
-- **`scripts\start-backend.bat`** — Faqat C# Web API ni ishga tushiradi.
+- **`scripts\run-all.bat`** — TypeScript Backend va Next.js Frontendni avtomatik ravishda bir vaqtda ishga tushiradi.
+- **`scripts\build-and-start.bat`** — Kodlarni qayta yig‘ib (build qilib), ishlab chiqarish (production) rejimida ishga tushiradi.
+- **`scripts\start-backend.bat`** — Faqat TypeScript Backend API ni ishga tushiradi.
+- **`scripts\seed-db.bat`** — Bazani SamDU ma’lumotlari bilan to‘ldiradi.
 
 ---
 
-## 🔐 Boshlang'ich Foydalanuvchilar (Seed Data)
-| Rol | Email | Parol | Tavsif |
+## 🔐 Boshlang‘ich Foydalanuvchilar (Seed Data)
+| Rol | Email | Parol | Lavozim |
 |---|---|---|---|
-| **Super Admin** | `admin@shortdoc.uz` | `Admin123!` | Tizim ma'muri |
-| **Rektorat** | `rektor@shortdoc.uz` | `Rektor123!` | Rahbariyat dashboardi |
-| **Devonxona** | `devonxona@shortdoc.uz` | `Devon123!` | Ro'yxatga oluvchi |
-| **Dekan** | `dekan@shortdoc.uz` | `Dekan123!` | Bo'lim rahbari (viza qo'yuvchi) |
-| **Xodim** | `xodim@shortdoc.uz` | `Xodim123!` | Oddiy o'qituvchi/ijrochi |
+| **Super Admin** | `admin@shortdoc.uz` | `Admin123!` | Bosh tizim administratori |
+| **SamDU Rektori** | `rektor@shortdoc.uz` | `Rektor123!` | Universitet Rektori |
+| **Devonxona** | `devonxona@shortdoc.uz` | `Devon123!` | Devonxona mudiri |
+| **IT Fakulteti Dekani** | `dekan@shortdoc.uz` | `Dekan123!` | IT Fakulteti Dekani |
+| **Matematika Dekani** | `matematika_dekan@shortdoc.uz` | `Dekan123!` | Matematika fakulteti dekani |
+| **Xodim / O‘qituvchi** | `xodim@shortdoc.uz` | `Xodim123!` | Dasturiy injiniring kafedrasi dotsenti |
+| **Murojaatlar mutaxassisi** | `talaba_murojaat@shortdoc.uz` | `Xodim123!` | Fuqarolar murojaatlari bo‘limi inspektori |

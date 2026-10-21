@@ -33,6 +33,11 @@ router.get('/dashboard', authenticate, async (req: AuthRequest, res: Response, n
       inExecutionCount,
       completedCount,
       rejectedCount,
+      inApprovalCount,
+      registeredCount,
+      archivedCount,
+      pendingSignaturesCount,
+      pendingTasksCount,
       overdueTasksCount,
       approachingDeadlineCount,
       recentActivities,
@@ -45,6 +50,21 @@ router.get('/dashboard', authenticate, async (req: AuthRequest, res: Response, n
       prisma.document.count({ where: { ...whereDoc, status: 'IN_EXECUTION' } }),
       prisma.document.count({ where: { ...whereDoc, status: 'COMPLETED' } }),
       prisma.document.count({ where: { ...whereDoc, status: 'REJECTED' } }),
+      prisma.document.count({ where: { ...whereDoc, status: 'IN_APPROVAL' } }),
+      prisma.document.count({ where: { ...whereDoc, status: 'REGISTERED' } }),
+      prisma.document.count({ where: { ...whereDoc, OR: [{ status: 'ARCHIVED' }, { isArchived: true }] } }),
+      prisma.documentApproval.count({
+        where: {
+          approverId: req.user!.userId,
+          status: 'PENDING',
+        },
+      }),
+      prisma.task.count({
+        where: {
+          ...whereTask,
+          status: { in: ['PENDING', 'IN_PROGRESS'] },
+        },
+      }),
       prisma.task.count({
         where: {
           ...whereTask,
@@ -65,7 +85,7 @@ router.get('/dashboard', authenticate, async (req: AuthRequest, res: Response, n
         include: { user: { select: { fullName: true, role: true } } },
       }),
       prisma.department.findMany({
-        take: 6,
+        take: 8,
         select: {
           id: true,
           name: true,
@@ -83,6 +103,11 @@ router.get('/dashboard', authenticate, async (req: AuthRequest, res: Response, n
           incoming: incomingCount,
           outgoing: outgoingCount,
           internal: internalCount,
+          inApproval: inApprovalCount,
+          registered: registeredCount,
+          archived: archivedCount,
+          pendingSignatures: pendingSignaturesCount,
+          pendingTasks: pendingTasksCount,
           inExecution: inExecutionCount,
           completed: completedCount,
           rejected: rejectedCount,

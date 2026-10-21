@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { fetchApi } from '@/lib/api';
 import { StatCard } from '@/components/StatCard';
+import { WelcomeLanding } from '@/components/WelcomeLanding';
 import {
   FileText,
   Inbox,
@@ -17,14 +18,18 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
-export default function DashboardPage() {
-  const { user } = useAuth();
+export default function HomePage() {
+  const { user, isLoading: authLoading } = useAuth();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadDashboard();
-  }, []);
+    if (user) {
+      loadDashboard();
+    } else {
+      setLoading(false);
+    }
+  }, [user]);
 
   const loadDashboard = async () => {
     setLoading(true);
@@ -34,6 +39,19 @@ export default function DashboardPage() {
     }
     setLoading(false);
   };
+
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
+      </div>
+    );
+  }
+
+  // If visitor is not authenticated, render the Welcome Landing page!
+  if (!user) {
+    return <WelcomeLanding />;
+  }
 
   if (loading) {
     return (
@@ -50,17 +68,22 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       {/* Welcome Banner */}
-      <div className="bg-gradient-to-r from-primary-900 to-slate-900 rounded-2xl p-6 lg:p-8 text-white shadow-md">
+      <div className="bg-gradient-to-r from-primary-900 to-slate-900 rounded-2xl p-6 lg:p-8 text-white shadow-md flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="max-w-3xl">
-          <span className="text-xs font-semibold bg-white/20 text-white px-3 py-1 rounded-full uppercase tracking-wider">
-            Universitet boshqaruv paneli
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold bg-white/20 text-white px-3 py-1 rounded-full uppercase tracking-wider">
+              Samarqand davlat universiteti (SamDU)
+            </span>
+          </div>
           <h1 className="text-2xl lg:text-3xl font-bold mt-3 tracking-tight">
             Xush kelibsiz, {user?.fullName}!
           </h1>
           <p className="text-slate-300 text-sm mt-2 leading-relaxed">
-            ShortDoc tizimi orqali hujjatlar ijrosini kuzatib boring, viza bering va topshiriqlar holatini real vaqtda nazorat qiling.
+            Sharof Rashidov nomidagi SamDU elektron hujjatlar aylanishi va ijro nazorati tizimi orqali xizmat xatlari, bildirgilar va topshiriqlar holatini real vaqtda nazorat qiling.
           </p>
+        </div>
+        <div className="w-16 h-16 rounded-full bg-white p-1 shrink-0 hidden md:flex items-center justify-center shadow-lg border border-white/20">
+          <img src="/samdu-logo.png" alt="SamDU Gerbi" className="w-full h-full object-contain" />
         </div>
       </div>
 

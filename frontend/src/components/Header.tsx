@@ -25,6 +25,10 @@ export const Header = () => {
   return (
     <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between sticky top-0 z-10 shadow-sm">
       <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <img src="/samdu-logo.png" alt="SamDU" className="w-8 h-8 object-contain rounded-full border border-slate-200 p-0.5" />
+          <span className="font-extrabold text-sm text-slate-800 hidden sm:inline">SamDU</span>
+        </div>
         {user?.department && (
           <div className="flex items-center gap-1.5 text-xs text-slate-500 bg-slate-50 border border-slate-200 px-3 py-1 rounded-md">
             <Building className="w-3.5 h-3.5 text-slate-400" />

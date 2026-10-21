@@ -4,8 +4,11 @@ import { AuthProvider } from '@/context/AuthContext';
 import { AppLayout } from '@/components/AppLayout';
 
 export const metadata: Metadata = {
-  title: 'ShortDoc — Universitet Hujjatlar Aylanishi Tizimi',
-  description: 'Universitet ma’muriy hujjat aylanishi va ijro intizomi platformasi',
+  title: 'SamDU ShortDoc — Sharof Rashidov nomidagi Samarqand Davlat Universiteti',
+  description: 'Sharof Rashidov nomidagi Samarqand davlat universiteti elektron hujjat aylanishi va ijro intizomi platformasi',
+  icons: {
+    icon: '/samdu-logo.png',
+  },
 };
 
 export default function RootLayout({

@@ -1,10 +1,9 @@
 @echo off
-set "PATH=C:\Program Files\dotnet;%PATH%"
 echo ==================================================================
-echo   ShortDoc (C# ASP.NET Core 8 Backend + Next.js Frontend)
+echo   ShortDoc (TypeScript Express API + Next.js Frontend)
 echo ==================================================================
 
-start "ShortDoc C# Backend API (Port 5000)" cmd /k "set PATH=C:\Program Files\dotnet;%%PATH%% && cd /d D:\ShortDoc\backend && dotnet run"
+start "ShortDoc TypeScript Backend API (Port 5000)" cmd /k "cd /d D:\ShortDoc\backend && npm run dev"
 timeout /t 3 >nul
 
 if exist "D:\ShortDoc\frontend\.next" (
@@ -17,9 +16,9 @@ if exist "D:\ShortDoc\frontend\.next" (
 
 echo.
 echo Tizim ishga tushirilmoqda...
-echo C# Backend API:  http://localhost:5000
-echo Swagger Docs:    http://localhost:5000/api/docs
-echo Next.js Frontend: http://localhost:3000
+echo TypeScript Backend API: http://localhost:5000
+echo Swagger Docs:           http://localhost:5000/api/docs
+echo Next.js Frontend:       http://localhost:3000
 echo.
 echo Brauzerda http://localhost:3000 manzilini oching.
 pause

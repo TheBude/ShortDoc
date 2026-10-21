@@ -164,4 +164,54 @@ router.put('/:id', authenticate, authorize(['SUPER_ADMIN']), async (req: AuthReq
   }
 });
 
+// Foydalanuvchini tasdiqlash (Super Admin)
+router.post('/:id/approve', authenticate, authorize(['SUPER_ADMIN']), async (req: AuthRequest, res, next) => {
+  try {
+    const { id } = req.params;
+    const user = await prisma.user.update({
+      where: { id },
+      data: { isActive: true },
+    });
+
+    await logActivity({
+      userId: req.user!.userId,
+      action: 'APPROVE_USER',
+      entity: 'USER',
+      entityId: user.id,
+      details: `${user.fullName} foydalanuvchisi arizasi tasdiqlandi va faollashtirildi`,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+
+    return sendSuccess(res, user, 'Foydalanuvchi arizasi muvaffaqiyatli tasdiqlandi');
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Foydalanuvchini rad etish / nofaol qilish (Super Admin)
+router.post('/:id/reject', authenticate, authorize(['SUPER_ADMIN']), async (req: AuthRequest, res, next) => {
+  try {
+    const { id } = req.params;
+    const user = await prisma.user.update({
+      where: { id },
+      data: { isActive: false },
+    });
+
+    await logActivity({
+      userId: req.user!.userId,
+      action: 'REJECT_USER',
+      entity: 'USER',
+      entityId: user.id,
+      details: `${user.fullName} foydalanuvchisi rad etildi`,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+
+    return sendSuccess(res, user, 'Foydalanuvchi muvaffaqiyatli rad etildi');
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;

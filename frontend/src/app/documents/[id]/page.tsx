@@ -249,12 +249,12 @@ export default function DocumentDetailPage({
         </div>
       </div>
 
-      {/* Viza (Approval) Voting Action Box - If Current User has Pending Vote */}
+      {/* Imzo (Approval) Voting Action Box - If Current User has Pending Vote */}
       {currentPendingApproval && (
         <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-6 shadow-md">
           <div className="flex items-center gap-2 mb-2 text-amber-900 font-bold text-base">
             <FileCheck2 className="w-5 h-5 text-amber-600" />
-            <span>Sizning kelishuvingiz (Viza) talab qilinadi</span>
+            <span>Sizning tasdig‘ingiz (Imzo) talab qilinadi</span>
           </div>
           <p className="text-xs text-amber-800 mb-4">
             Siz ushbu hujjat bo‘yicha kelishuvchi mas’ul etib belgilangansiz. Hujjatni o‘rganib, o‘z qaroringizni qoldiring:
@@ -276,7 +276,7 @@ export default function DocumentDetailPage({
                 className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs px-5 py-2.5 rounded-lg shadow-sm transition-colors"
               >
                 <CheckCircle2 className="w-4 h-4" />
-                <span>Kelishildi (Viza berish)</span>
+                <span>Tasdiqlandi (Imzo qo‘yish)</span>
               </button>
 
               <button
@@ -292,15 +292,15 @@ export default function DocumentDetailPage({
         </div>
       )}
 
-      {/* Viza Zanjiri (Approval Chain Timeline) */}
+      {/* Imzo Zanjiri (Approval Chain Timeline) */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
         <h2 className="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
           <ShieldCheck className="w-5 h-5 text-primary-600" />
-          <span>Viza Yig‘ish Zanjiri (Kelishuv holati)</span>
+          <span>Imzo Yig‘ish Zanjiri (Kelishuv holati)</span>
         </h2>
 
         {!document.approvals || document.approvals.length === 0 ? (
-          <p className="text-xs text-slate-400">Ushbu hujjat uchun viza zanjiri belgilanmagan.</p>
+          <p className="text-xs text-slate-400">Ushbu hujjat uchun imzo zanjiri belgilanmagan.</p>
         ) : (
           <div className="space-y-3">
             {document.approvals.map((app) => (

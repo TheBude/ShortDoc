@@ -38,7 +38,7 @@ function getDepartmentScope(deptName: string = '', position: string = '') {
       roleBadgeColor: 'bg-purple-100 text-purple-900 border-purple-200',
       capabilities: [
         'Universitet bo‘yicha umumiy ijro intizomi va barcha hujjatlar monitoringi',
-        'Rasmiy buyruq loyihalari va xizmat xatlariga yakuniy viza / imzo qo‘yish',
+        'Rasmiy buyruq loyihalari va xizmat xatlariga yakuniy imzo qo‘yish',
         'Barcha bo‘lim va kafedralar kesimidagi kechikishlar va analitik hisobotlarni ko‘rish',
       ],
     };
@@ -69,7 +69,7 @@ function getDepartmentScope(deptName: string = '', position: string = '') {
       capabilities: [
         'Bo‘lim nomidan rasmiy bildirgi, xizmat xatlari va buyruq loyihalarini kiritish',
         'O‘z bo‘limi mutaxassislariga topshiriqlarni taqsimlash va ijrosini nazorat qilish',
-        'Ichki viza yig‘ish jarayonida o‘z bo‘linmasi nomidan rasmiy viza (kelishuv) qo‘yish',
+        'Ichki kelishuv jarayonida o‘z bo‘linmasi nomidan rasmiy imzo qo‘yish',
       ],
     };
   }

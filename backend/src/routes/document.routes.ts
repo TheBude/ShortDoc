@@ -15,6 +15,8 @@ router.get('/', authenticate, async (req: AuthRequest, res, next) => {
       documentType,
       status,
       priority,
+      category,
+      pendingMySignature,
       departmentId,
       assigneeId,
       isArchived,
@@ -28,13 +30,15 @@ router.get('/', authenticate, async (req: AuthRequest, res, next) => {
 
     const where: any = {};
 
-    // Foydalanuvchi roli bo'yicha cheklov (Oddiy xodim faqat o'ziga tegishli yoki o'zi yaratgan hujjatlarni ko'radi)
+    // Foydalanuvchi roli bo'yicha cheklov
     if (req.user!.role === 'STAFF') {
       where.OR = [
         { creatorId: req.user!.userId },
         { assigneeId: req.user!.userId },
         { approvals: { some: { approverId: req.user!.userId } } },
         { tasks: { some: { assignedToId: req.user!.userId } } },
+        // Umumiy universitet buyruqlari va e'lonlar barcha xodimlar uchun ochiq
+        { category: { contains: 'Buyruq', mode: 'insensitive' } },
       ];
     } else if (req.user!.role === 'DEPARTMENT_HEAD' && req.user!.departmentId) {
       where.OR = [
@@ -42,6 +46,7 @@ router.get('/', authenticate, async (req: AuthRequest, res, next) => {
         { creatorId: req.user!.userId },
         { assigneeId: req.user!.userId },
         { approvals: { some: { approverId: req.user!.userId } } },
+        { category: { contains: 'Buyruq', mode: 'insensitive' } },
       ];
     }
 
@@ -55,13 +60,51 @@ router.get('/', authenticate, async (req: AuthRequest, res, next) => {
             { summary: { contains: search as string, mode: 'insensitive' } },
             { sender: { contains: search as string, mode: 'insensitive' } },
             { receiver: { contains: search as string, mode: 'insensitive' } },
+            { category: { contains: search as string, mode: 'insensitive' } },
           ],
         },
       ];
     }
 
     if (documentType) where.documentType = documentType as any;
-    if (status) where.status = status as any;
+
+    if (status) {
+      if (status === 'ARCHIVED') {
+        where.OR = [
+          { status: 'ARCHIVED' },
+          { isArchived: true },
+        ];
+      } else {
+        where.status = status as any;
+      }
+    }
+
+    if (category) {
+      const catLower = (category as string).toLowerCase();
+      if (catLower.includes('buyru')) {
+        where.OR = [
+          { category: { contains: 'Buyru', mode: 'insensitive' } },
+          { category: { contains: 'Qaror', mode: 'insensitive' } },
+        ];
+      } else if (catLower.includes('murojaat')) {
+        where.OR = [
+          { category: { contains: 'Murojaat', mode: 'insensitive' } },
+          { category: { contains: 'Ariza', mode: 'insensitive' } },
+        ];
+      } else {
+        where.category = { contains: category as string, mode: 'insensitive' };
+      }
+    }
+
+    if (pendingMySignature === 'true') {
+      where.approvals = {
+        some: {
+          approverId: req.user!.userId,
+          status: 'PENDING',
+        },
+      };
+    }
+
     if (priority) where.priority = priority as any;
     if (departmentId) where.departmentId = departmentId as string;
     if (assigneeId) where.assigneeId = assigneeId as string;
