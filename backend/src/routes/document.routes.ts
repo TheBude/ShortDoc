@@ -208,6 +208,54 @@ router.get('/:id', authenticate, async (req: AuthRequest, res, next) => {
   }
 });
 
+// Hujjat haqiqiyligini ommaviy tekshirish (QR-kod orqali autentifikatsiyasiz ochiq ishlaydi)
+router.get('/:id/public-verify', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const document = await prisma.document.findUnique({
+      where: { id },
+      include: {
+        department: true,
+        creator: { select: { id: true, fullName: true, position: true } },
+        approvals: {
+          include: { approver: { select: { fullName: true, position: true } } },
+          orderBy: { stepOrder: 'asc' },
+        },
+      },
+    });
+
+    if (!document) {
+      return sendError(res, 'Hujjat tizimda topilmadi yoki haqiqiy emas', 404);
+    }
+
+    return sendSuccess(
+      res,
+      {
+        id: document.id,
+        regNumber: document.regNumber,
+        title: document.title,
+        category: document.category,
+        documentType: document.documentType,
+        status: document.status,
+        sender: document.sender,
+        receiver: document.receiver,
+        summary: document.summary,
+        createdAt: document.createdAt,
+        deadline: document.deadline,
+        creator: document.creator,
+        department: document.department,
+        approvals: document.approvals,
+        isAuthentic: true,
+        verifiedAt: new Date().toISOString(),
+      },
+      'Hujjat haqiqiyligi tasdiqlandi'
+    );
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Hujjatni rasmiy Word (.docx) formatida yuklab olish (SamDU standarti)
 router.get('/:id/docx', authenticate, async (req: AuthRequest, res, next) => {
   try {
@@ -229,7 +277,17 @@ router.get('/:id/docx', authenticate, async (req: AuthRequest, res, next) => {
       return sendError(res, 'Hujjat topilmadi', 404);
     }
 
-    const docxBuffer = await generateDocumentDocx(document);
+    const origin = req.headers.origin as string | undefined;
+    let verifyBaseUrl = process.env.APP_URL;
+    if (!verifyBaseUrl) {
+      if (origin && !origin.includes('localhost')) {
+        verifyBaseUrl = origin;
+      } else {
+        verifyBaseUrl = 'http://172.16.1.4:3000';
+      }
+    }
+
+    const docxBuffer = await generateDocumentDocx(document, verifyBaseUrl);
 
     const safeRegNumber = document.regNumber.replace(/[\/\\:*"<>|]/g, '_');
     const filename = `${safeRegNumber}_${document.category || 'bildirishnoma'}.docx`;
