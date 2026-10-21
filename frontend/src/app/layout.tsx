@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { AuthProvider } from '@/context/AuthContext';
 import { ThemeProvider } from '@/context/ThemeContext';
+import { SidebarProvider } from '@/context/SidebarContext';
 import { AppLayout } from '@/components/AppLayout';
 
 export const metadata: Metadata = {
@@ -22,7 +23,9 @@ export default function RootLayout({
       <body className="antialiased text-slate-800 dark:text-slate-100 bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
         <ThemeProvider>
           <AuthProvider>
-            <AppLayout>{children}</AppLayout>
+            <SidebarProvider>
+              <AppLayout>{children}</AppLayout>
+            </SidebarProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

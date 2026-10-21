@@ -10,7 +10,11 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
   const { user, isLoading } = useAuth();
 
-  const isPublicPage = pathname === '/login' || pathname === '/welcome' || (!user && pathname === '/');
+  const isPublicPage =
+    pathname === '/login' ||
+    pathname === '/welcome' ||
+    pathname?.startsWith('/verify') ||
+    (!user && pathname === '/');
 
   if (isLoading) {
     return (
@@ -30,9 +34,9 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100">
       <Sidebar />
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 overflow-x-hidden">
         <Header />
-        <main className="flex-1 p-6 lg:p-8 overflow-y-auto">{children}</main>
+        <main className="flex-1 p-3.5 sm:p-6 lg:p-8 overflow-y-auto">{children}</main>
       </div>
     </div>
   );
