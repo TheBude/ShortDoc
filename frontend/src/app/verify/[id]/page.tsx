@@ -18,6 +18,7 @@ import {
   Lock,
 } from 'lucide-react';
 import { downloadDocumentDocx } from '@/lib/downloadDocx';
+import { getApiBaseUrl } from '@/lib/api';
 
 interface VerificationData {
   id: string;
@@ -67,8 +68,8 @@ export default function DocumentVerificationPage({
   useEffect(() => {
     async function verifyDoc() {
       try {
-        const host = typeof window !== 'undefined' ? window.location.hostname || 'localhost' : 'localhost';
-        const res = await fetch(`http://${host}:5000/api/documents/${id}/public-verify`);
+        const baseUrl = getApiBaseUrl();
+        const res = await fetch(`${baseUrl}/documents/${id}/public-verify`);
         const json = await res.json();
         if (json.success && json.data) {
           setDocData(json.data);

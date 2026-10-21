@@ -3,10 +3,18 @@
  */
 export async function downloadDocumentDocx(documentId: string, regNumber?: string, category?: string) {
   try {
-    const host = typeof window !== 'undefined' ? window.location.hostname || 'localhost' : 'localhost';
-    const token = typeof window !== 'undefined' ? localStorage.getItem('shortdoc_token') : null;
+    let baseUrl = '';
+    if (process.env.NEXT_PUBLIC_API_URL) {
+      baseUrl = process.env.NEXT_PUBLIC_API_URL.replace(/\/api\/?$/, '');
+    } else if (typeof window !== 'undefined') {
+      const host = window.location.hostname || 'localhost';
+      if (host === 'localhost' || host.startsWith('192.') || host.startsWith('172.') || host.startsWith('127.')) {
+        baseUrl = `http://${host}:5000`;
+      }
+    }
 
-    const url = `http://${host}:5000/api/documents/${documentId}/docx`;
+    const token = typeof window !== 'undefined' ? localStorage.getItem('shortdoc_token') : null;
+    const url = `${baseUrl}/api/documents/${documentId}/docx`;
 
     const headers: Record<string, string> = {};
     if (token) {
