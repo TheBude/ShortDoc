@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { fetchApi } from '@/lib/api';
 import { Document, User, Department } from '@/types';
@@ -19,7 +20,9 @@ import {
   FileCheck,
 } from 'lucide-react';
 
-export default function DocumentsPage() {
+function DocumentsContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,52 +59,45 @@ export default function DocumentsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
-  // Sync URL search params with state
+  const urlDocType = searchParams.get('documentType') || '';
+  const urlStatus = searchParams.get('status') || '';
+  const urlCategory = searchParams.get('category') || '';
+  const urlPendingMySig = searchParams.get('pendingMySignature') === 'true';
+  const urlCreate = searchParams.get('create') === 'true';
+
+  // React to URL search params whenever sidebar links are clicked
   useEffect(() => {
-    const handleLocationParams = () => {
-      if (typeof window === 'undefined') return;
-      const params = new URLSearchParams(window.location.search);
-      const dt = params.get('documentType') || '';
-      const st = params.get('status') || '';
-      const cat = params.get('category') || '';
-      const pms = params.get('pendingMySignature') === 'true';
-      const cr = params.get('create') === 'true';
+    setDocType(urlDocType);
+    setStatus(urlStatus);
+    setCategory(urlCategory);
+    setPendingMySignature(urlPendingMySig);
+    setPage(1);
 
-      setDocType(dt);
-      setStatus(st);
-      setCategory(cat);
-      setPendingMySignature(pms);
+    // Determine human-readable title for active filter
+    if (urlPendingMySig || urlStatus === 'IN_APPROVAL') {
+      setActiveFilterName('Kelishuvda (Imzoga kelgan hujjatlar)');
+    } else if (urlStatus === 'REGISTERED') {
+      setActiveFilterName('Ro‘yxatga olish uchun kutilayotganlar');
+    } else if (urlStatus === 'ARCHIVED') {
+      setActiveFilterName('Elektron arxivdagi hujjatlar');
+    } else if (urlCategory.toLowerCase().includes('buyruq')) {
+      setActiveFilterName('Rektor buyruqlari va qarorlari');
+    } else if (urlCategory.toLowerCase().includes('murojaat')) {
+      setActiveFilterName('Fuqarolar va talabalar murojaatlari');
+    } else if (urlDocType === 'INTERNAL') {
+      setActiveFilterName('Ichki bildirgilar va xizmat xatlari');
+    } else if (urlDocType === 'INCOMING') {
+      setActiveFilterName('Kiruvchi rasmiy xatlar');
+    } else if (urlDocType === 'OUTGOING') {
+      setActiveFilterName('Chiquvchi xatlar');
+    } else {
+      setActiveFilterName('');
+    }
 
-      // Determine human-readable title for active filter
-      if (pms || st === 'IN_APPROVAL') {
-        setActiveFilterName('Kelishuvda (Imzoga kelgan hujjatlar)');
-      } else if (st === 'REGISTERED') {
-        setActiveFilterName('Ro‘yxatga olish uchun kutilayotganlar');
-      } else if (st === 'ARCHIVED') {
-        setActiveFilterName('Elektron arxivdagi hujjatlar');
-      } else if (cat.toLowerCase().includes('buyruq')) {
-        setActiveFilterName('Rektor buyruqlari va qarorlari');
-      } else if (cat.toLowerCase().includes('murojaat')) {
-        setActiveFilterName('Fuqarolar va talabalar murojaatlari');
-      } else if (dt === 'INTERNAL') {
-        setActiveFilterName('Ichki bildirgilar va xizmat xatlari');
-      } else if (dt === 'INCOMING') {
-        setActiveFilterName('Kiruvchi rasmiy xatlar');
-      } else if (dt === 'OUTGOING') {
-        setActiveFilterName('Chiquvchi xatlar');
-      } else {
-        setActiveFilterName('');
-      }
-
-      if (cr) {
-        setIsModalOpen(true);
-      }
-    };
-
-    handleLocationParams();
-    window.addEventListener('popstate', handleLocationParams);
-    return () => window.removeEventListener('popstate', handleLocationParams);
-  }, []);
+    if (urlCreate) {
+      setIsModalOpen(true);
+    }
+  }, [urlDocType, urlStatus, urlCategory, urlPendingMySig, urlCreate]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -246,9 +242,7 @@ export default function DocumentsPage() {
               setPendingMySignature(false);
               setActiveFilterName('');
               setSearch('');
-              if (typeof window !== 'undefined') {
-                window.history.pushState({}, '', '/documents');
-              }
+              router.push('/documents');
             }}
             className="text-primary-700 dark:text-primary-300 hover:text-primary-900 dark:hover:text-primary-100 underline font-bold cursor-pointer"
           >
@@ -613,5 +607,20 @@ export default function DocumentsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function DocumentsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="py-24 text-center text-slate-400 dark:text-slate-500">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mb-2" />
+          <p className="text-xs">Hujjatlar yuklanmoqda...</p>
+        </div>
+      }
+    >
+      <DocumentsContent />
+    </Suspense>
   );
 }

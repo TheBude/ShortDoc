@@ -8,17 +8,28 @@ const router = Router();
 // Asosiy dashboard statistikasi
 router.get('/dashboard', authenticate, async (req: AuthRequest, res: Response, next) => {
   try {
+    const isLeadershipOrAdmin = ['SUPER_ADMIN', 'LEADERSHIP', 'CHANCELLERY'].includes(req.user!.role);
+
     const whereDoc: any = {};
     const whereTask: any = {};
 
-    if (req.user!.role === 'STAFF') {
-      whereDoc.OR = [
+    if (!isLeadershipOrAdmin) {
+      const staffOr: any[] = [
         { creatorId: req.user!.userId },
         { assigneeId: req.user!.userId },
+        { documentType: 'INCOMING' },
+        { category: { contains: 'Buyru', mode: 'insensitive' } },
+        { category: { contains: 'Qaror', mode: 'insensitive' } },
       ];
-      whereTask.assignedToId = req.user!.userId;
-    } else if (req.user!.role === 'DEPARTMENT_HEAD' && req.user!.departmentId) {
-      whereDoc.departmentId = req.user!.departmentId;
+      if (req.user!.departmentId) {
+        staffOr.push({ departmentId: req.user!.departmentId });
+      }
+      whereDoc.OR = staffOr;
+
+      whereTask.OR = [
+        { assignedToId: req.user!.userId },
+        { createdById: req.user!.userId },
+      ];
     }
 
     const now = new Date();
@@ -50,9 +61,13 @@ router.get('/dashboard', authenticate, async (req: AuthRequest, res: Response, n
       prisma.document.count({ where: { ...whereDoc, status: 'IN_EXECUTION' } }),
       prisma.document.count({ where: { ...whereDoc, status: 'COMPLETED' } }),
       prisma.document.count({ where: { ...whereDoc, status: 'REJECTED' } }),
-      prisma.document.count({ where: { ...whereDoc, status: 'IN_APPROVAL' } }),
-      prisma.document.count({ where: { ...whereDoc, status: 'REGISTERED' } }),
-      prisma.document.count({ where: { ...whereDoc, OR: [{ status: 'ARCHIVED' }, { isArchived: true }] } }),
+      prisma.document.count({ where: { status: 'IN_APPROVAL' } }),
+      prisma.document.count({ where: { status: 'REGISTERED' } }),
+      prisma.document.count({
+        where: whereDoc.OR
+          ? { AND: [{ OR: whereDoc.OR }, { OR: [{ status: 'ARCHIVED' }, { isArchived: true }] }] }
+          : { OR: [{ status: 'ARCHIVED' }, { isArchived: true }] },
+      }),
       prisma.documentApproval.count({
         where: {
           approverId: req.user!.userId,

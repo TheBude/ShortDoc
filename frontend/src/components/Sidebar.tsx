@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { fetchApi } from '@/lib/api';
 import {
@@ -25,8 +25,9 @@ import {
   UserCheck
 } from 'lucide-react';
 
-export const Sidebar = () => {
+function SidebarContent() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
 
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
@@ -40,9 +41,11 @@ export const Sidebar = () => {
     overdue?: number;
   }>({});
 
+  const currentSearch = searchParams.toString() ? `?${searchParams.toString()}` : '';
+
   useEffect(() => {
     loadCounts();
-  }, [pathname]);
+  }, [pathname, currentSearch]);
 
   const loadCounts = async () => {
     try {
@@ -52,8 +55,6 @@ export const Sidebar = () => {
       }
     } catch {}
   };
-
-  const currentSearch = typeof window !== 'undefined' ? window.location.search : '';
 
   const isItemActive = (href: string) => {
     if (href === '/') {
@@ -363,5 +364,17 @@ export const Sidebar = () => {
       </div>
 
     </aside>
+  );
+}
+
+export const Sidebar = () => {
+  return (
+    <Suspense
+      fallback={
+        <aside className="w-72 bg-slate-900 text-slate-200 flex flex-col shrink-0 min-h-screen border-r border-slate-800 select-none animate-pulse" />
+      }
+    >
+      <SidebarContent />
+    </Suspense>
   );
 };

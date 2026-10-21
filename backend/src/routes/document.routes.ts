@@ -28,87 +28,109 @@ router.get('/', authenticate, async (req: AuthRequest, res, next) => {
     const limitNum = parseInt(limit as string, 10) || 10;
     const skip = (pageNum - 1) * limitNum;
 
-    const where: any = {};
+    const andConditions: any[] = [];
 
     // Foydalanuvchi roli bo'yicha cheklov
     if (req.user!.role === 'STAFF') {
-      where.OR = [
+      const staffOr: any[] = [
         { creatorId: req.user!.userId },
         { assigneeId: req.user!.userId },
         { approvals: { some: { approverId: req.user!.userId } } },
         { tasks: { some: { assignedToId: req.user!.userId } } },
-        // Umumiy universitet buyruqlari va e'lonlar barcha xodimlar uchun ochiq
-        { category: { contains: 'Buyruq', mode: 'insensitive' } },
+        // Umumiy universitet buyruqlari, e'lonlar va rasmiy xatlar barcha xodimlar uchun ochiq
+        { category: { contains: 'Buyru', mode: 'insensitive' } },
+        { category: { contains: 'Qaror', mode: 'insensitive' } },
+        { documentType: 'INCOMING' },
+        { isArchived: true },
       ];
-    } else if (req.user!.role === 'DEPARTMENT_HEAD' && req.user!.departmentId) {
-      where.OR = [
-        { departmentId: req.user!.departmentId },
+      if (req.user!.departmentId) {
+        staffOr.push({ departmentId: req.user!.departmentId });
+      }
+      andConditions.push({ OR: staffOr });
+    } else if (req.user!.role === 'DEPARTMENT_HEAD') {
+      const headOr: any[] = [
         { creatorId: req.user!.userId },
         { assigneeId: req.user!.userId },
         { approvals: { some: { approverId: req.user!.userId } } },
-        { category: { contains: 'Buyruq', mode: 'insensitive' } },
+        { category: { contains: 'Buyru', mode: 'insensitive' } },
+        { category: { contains: 'Qaror', mode: 'insensitive' } },
+        { documentType: 'INCOMING' },
+        { isArchived: true },
       ];
+      if (req.user!.departmentId) {
+        headOr.push({ departmentId: req.user!.departmentId });
+      }
+      andConditions.push({ OR: headOr });
     }
 
     if (search) {
-      where.AND = [
-        ...(where.AND || []),
-        {
-          OR: [
-            { regNumber: { contains: search as string, mode: 'insensitive' } },
-            { title: { contains: search as string, mode: 'insensitive' } },
-            { summary: { contains: search as string, mode: 'insensitive' } },
-            { sender: { contains: search as string, mode: 'insensitive' } },
-            { receiver: { contains: search as string, mode: 'insensitive' } },
-            { category: { contains: search as string, mode: 'insensitive' } },
-          ],
-        },
-      ];
+      andConditions.push({
+        OR: [
+          { regNumber: { contains: search as string, mode: 'insensitive' } },
+          { title: { contains: search as string, mode: 'insensitive' } },
+          { summary: { contains: search as string, mode: 'insensitive' } },
+          { sender: { contains: search as string, mode: 'insensitive' } },
+          { receiver: { contains: search as string, mode: 'insensitive' } },
+          { category: { contains: search as string, mode: 'insensitive' } },
+        ],
+      });
     }
 
-    if (documentType) where.documentType = documentType as any;
+    if (documentType) {
+      andConditions.push({ documentType: documentType as any });
+    }
 
     if (status) {
       if (status === 'ARCHIVED') {
-        where.OR = [
-          { status: 'ARCHIVED' },
-          { isArchived: true },
-        ];
+        andConditions.push({
+          OR: [
+            { status: 'ARCHIVED' },
+            { isArchived: true },
+          ],
+        });
       } else {
-        where.status = status as any;
+        andConditions.push({ status: status as any });
       }
     }
 
     if (category) {
       const catLower = (category as string).toLowerCase();
       if (catLower.includes('buyru')) {
-        where.OR = [
-          { category: { contains: 'Buyru', mode: 'insensitive' } },
-          { category: { contains: 'Qaror', mode: 'insensitive' } },
-        ];
+        andConditions.push({
+          OR: [
+            { category: { contains: 'Buyru', mode: 'insensitive' } },
+            { category: { contains: 'Qaror', mode: 'insensitive' } },
+          ],
+        });
       } else if (catLower.includes('murojaat')) {
-        where.OR = [
-          { category: { contains: 'Murojaat', mode: 'insensitive' } },
-          { category: { contains: 'Ariza', mode: 'insensitive' } },
-        ];
+        andConditions.push({
+          OR: [
+            { category: { contains: 'Murojaat', mode: 'insensitive' } },
+            { category: { contains: 'Ariza', mode: 'insensitive' } },
+          ],
+        });
       } else {
-        where.category = { contains: category as string, mode: 'insensitive' };
+        andConditions.push({ category: { contains: category as string, mode: 'insensitive' } });
       }
     }
 
     if (pendingMySignature === 'true') {
-      where.approvals = {
-        some: {
-          approverId: req.user!.userId,
-          status: 'PENDING',
+      andConditions.push({
+        approvals: {
+          some: {
+            approverId: req.user!.userId,
+            status: 'PENDING',
+          },
         },
-      };
+      });
     }
 
-    if (priority) where.priority = priority as any;
-    if (departmentId) where.departmentId = departmentId as string;
-    if (assigneeId) where.assigneeId = assigneeId as string;
-    if (isArchived !== undefined) where.isArchived = isArchived === 'true';
+    if (priority) andConditions.push({ priority: priority as any });
+    if (departmentId) andConditions.push({ departmentId: departmentId as string });
+    if (assigneeId) andConditions.push({ assigneeId: assigneeId as string });
+    if (isArchived !== undefined) andConditions.push({ isArchived: isArchived === 'true' });
+
+    const where = andConditions.length > 0 ? { AND: andConditions } : {};
 
     const [total, documents] = await Promise.all([
       prisma.document.count({ where }),

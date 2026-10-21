@@ -151,7 +151,7 @@ async function main() {
   // A. ICHKI BILDIRGILAR VA XIZMAT XATLARI (INTERNAL)
   const docInt1 = await prisma.document.upsert({
     where: { regNumber: `${year}/ICH-0001` },
-    update: {},
+    update: { status: 'IN_APPROVAL' },
     create: {
       regNumber: `${year}/ICH-0001`,
       title: 'Sun’iy intellekt va data science laboratoriyasini jihozlash bo‘yicha bildirgi',
@@ -171,7 +171,7 @@ async function main() {
 
   const docInt2 = await prisma.document.upsert({
     where: { regNumber: `${year}/ICH-0002` },
-    update: {},
+    update: { status: 'IN_EXECUTION' },
     create: {
       regNumber: `${year}/ICH-0002`,
       title: 'Talabalar respublika fan olimpiadasida g‘olib bo‘lganlarni rag‘batlantirish haqida',
@@ -191,7 +191,7 @@ async function main() {
 
   const docInt3 = await prisma.document.upsert({
     where: { regNumber: `${year}/ICH-0003` },
-    update: {},
+    update: { status: 'COMPLETED' },
     create: {
       regNumber: `${year}/ICH-0003`,
       title: 'Raqamli ta’lim markazi server uskunalarini profilaktik nazoratdan o‘tkazish',
@@ -210,7 +210,7 @@ async function main() {
 
   const docInt4 = await prisma.document.upsert({
     where: { regNumber: `${year}/ICH-0004` },
-    update: {},
+    update: { status: 'REGISTERED' },
     create: {
       regNumber: `${year}/ICH-0004`,
       title: '2026-yilgi bahorgi semestr fan dasturlari va sillabuslarni yangilash bo‘yicha xizmat xati',
@@ -270,7 +270,7 @@ async function main() {
 
   const docInc3 = await prisma.document.upsert({
     where: { regNumber: `${year}/KIR-0003` },
-    update: {},
+    update: { status: 'IN_APPROVAL' },
     create: {
       regNumber: `${year}/KIR-0003`,
       title: 'Yevropa Ittifoqining Erasmus+ dasturi: Yangi grant loyihasi shartnomasi',
@@ -287,10 +287,29 @@ async function main() {
     },
   });
 
+  const docInc4 = await prisma.document.upsert({
+    where: { regNumber: `${year}/KIR-0004` },
+    update: { status: 'REGISTERED' },
+    create: {
+      regNumber: `${year}/KIR-0004`,
+      title: 'Mirzo Ulug‘bek nomidagi O‘zMU dan: Talabalar akademik mobilligi to‘g‘risida rasmiy xat',
+      documentType: 'INCOMING',
+      category: 'Hamkorlik xati',
+      sender: 'O‘zbekiston Milliy Universiteti Rektorati',
+      receiver: 'Devonxona va umumiy bo‘limga',
+      departmentId: depMap.get('CHANC'),
+      creatorId: devonxonaId,
+      assigneeId: devonxonaId,
+      priority: 'MEDIUM',
+      status: 'REGISTERED',
+      summary: '2026-yilgi bahorgi semestr uchun 10 nafar iqtidorli talabalarni almashinuv asosida o‘qitish bo‘yicha taklifnoma.',
+    },
+  });
+
   // C. CHIQUVCHI XATLAR (OUTGOING)
   const docOut1 = await prisma.document.upsert({
     where: { regNumber: `${year}/CHIQ-0001` },
-    update: {},
+    update: { status: 'IN_APPROVAL' },
     create: {
       regNumber: `${year}/CHIQ-0001`,
       title: 'Malayziya Texnologiya Universiteti (UTM) rektoratiga ikki tomonlama memorandum yuborish',
@@ -368,7 +387,7 @@ async function main() {
 
   const docBuy3 = await prisma.document.upsert({
     where: { regNumber: `${year}/BUY-0003` },
-    update: {},
+    update: { status: 'IN_APPROVAL' },
     create: {
       regNumber: `${year}/BUY-0003`,
       title: 'Universitetda Startap loyihalar inkubatsiya markazini tashkil etish to‘g‘risida buyruq loyihasi',
@@ -388,7 +407,7 @@ async function main() {
   // E. FUQAROLAR VA TALABALAR MUROJAATLARI (category: "Murojaat")
   const docMur1 = await prisma.document.upsert({
     where: { regNumber: `${year}/MUR-0001` },
-    update: {},
+    update: { status: 'IN_EXECUTION' },
     create: {
       regNumber: `${year}/MUR-0001`,
       title: '3-bosqich talabasi Mirzayev D.ning talabalar turar joyiga joylashish bo‘yicha arizasi',
@@ -408,7 +427,7 @@ async function main() {
 
   const docMur2 = await prisma.document.upsert({
     where: { regNumber: `${year}/MUR-0002` },
-    update: {},
+    update: { status: 'IN_APPROVAL' },
     create: {
       regNumber: `${year}/MUR-0002`,
       title: 'Magistratura talabasi Karimova S.ning chet el konferensiyasida ma’ruza qilish ruxsatini so‘rab arizasi',
@@ -488,14 +507,7 @@ async function main() {
   console.log('✓ Barcha kategoriyalar bo‘yicha SamDU namunaviy hujjatlari yaratildi.');
 
   // 4. Imzo zanjirlari (DocumentApprovals) - Har bir foydalanuvchida imzoga kelgan hujjat ko'rinishi uchun!
-  // docInt1: xodim yaratgan, Dekan tasdiqlagan, Rektor va Admin ko'rib chiqmoqda
-  await prisma.documentApproval.deleteMany({
-    where: {
-      documentId: {
-        in: [docInt1.id, docInc3.id, docOut1.id, docBuy3.id, docMur2.id],
-      },
-    },
-  });
+  await prisma.documentApproval.deleteMany({});
 
   await prisma.documentApproval.createMany({
     data: [
@@ -559,14 +571,22 @@ async function main() {
         status: 'PENDING',
         comments: null,
       },
+      // docInt4 (Oddiy xodim uchun imzoga kelgan hujjat)
+      {
+        documentId: docInt4.id,
+        approverId: xodimId,
+        stepOrder: 1,
+        status: 'PENDING',
+        comments: null,
+      },
     ],
   });
-  console.log('✓ Imzo zanjirlari (Admin, Rektor, Dekan uchun navbatdagi imzolar) yaratildi.');
+  console.log('✓ Imzo zanjirlari (Admin, Rektor, Dekan, Xodim uchun navbatdagi imzolar) yaratildi.');
 
   // 5. Ijro Topshiriqlari (Tasks)
   await prisma.task.upsert({
     where: { id: 'task-samdu-1' },
-    update: {},
+    update: { status: 'IN_PROGRESS' },
     create: {
       id: 'task-samdu-1',
       documentId: docInc1.id,
@@ -581,7 +601,7 @@ async function main() {
 
   await prisma.task.upsert({
     where: { id: 'task-samdu-2' },
-    update: {},
+    update: { status: 'IN_PROGRESS' },
     create: {
       id: 'task-samdu-2',
       documentId: docInc2.id,
@@ -596,7 +616,7 @@ async function main() {
 
   await prisma.task.upsert({
     where: { id: 'task-samdu-3' },
-    update: {},
+    update: { status: 'IN_PROGRESS' },
     create: {
       id: 'task-samdu-3',
       documentId: docMur1.id,
@@ -611,7 +631,7 @@ async function main() {
 
   await prisma.task.upsert({
     where: { id: 'task-samdu-4' },
-    update: {},
+    update: { status: 'PENDING' },
     create: {
       id: 'task-samdu-4',
       documentId: docBuy1.id,
@@ -621,6 +641,36 @@ async function main() {
       createdById: rektorId,
       deadline: future5,
       status: 'PENDING',
+    },
+  });
+
+  await prisma.task.upsert({
+    where: { id: 'task-samdu-5' },
+    update: { status: 'IN_PROGRESS' },
+    create: {
+      id: 'task-samdu-5',
+      documentId: docInt1.id,
+      title: 'Sun’iy intellekt laboratoriyasi uskunalarining texnik tavsiflarini ishlab chiqish',
+      description: 'GPU serverlar va dasturiy ta’minot litsenziyalari bo‘yicha talablarni tayyorlash.',
+      assignedToId: xodimId,
+      createdById: dekanId,
+      deadline: future5,
+      status: 'IN_PROGRESS',
+    },
+  });
+
+  await prisma.task.upsert({
+    where: { id: 'task-samdu-6' },
+    update: { status: 'IN_PROGRESS' },
+    create: {
+      id: 'task-samdu-6',
+      documentId: docInt4.id,
+      title: 'Yangi semestr fan sillabuslarini kafedra yig‘ilishida muhokama qilish',
+      description: 'Bakalavriat va magistratura o‘quv rejalari bo‘yicha taqrizlarni tayyorlash.',
+      assignedToId: xodimId,
+      createdById: dekanId,
+      deadline: past3, // Muddati o'tgan (OVERDUE) topshiriq
+      status: 'IN_PROGRESS',
     },
   });
 
