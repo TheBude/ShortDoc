@@ -1,5 +1,5 @@
 -- CreateTable
-CREATE TABLE "document_counters" (
+CREATE TABLE IF NOT EXISTS "document_counters" (
     "id" TEXT NOT NULL,
     "year" INTEGER NOT NULL,
     "type" TEXT NOT NULL,
@@ -10,4 +10,4 @@ CREATE TABLE "document_counters" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "document_counters_year_type_key" ON "document_counters"("year", "type");
+CREATE UNIQUE INDEX IF NOT EXISTS "document_counters_year_type_key" ON "document_counters"("year", "type");
