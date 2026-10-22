@@ -6,6 +6,7 @@ import { generateToken } from '../utils/jwt.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
 import { logActivity } from '../middleware/audit.js';
+import { realtime } from '../services/realtime.js';
 
 const router = Router();
 
@@ -129,7 +130,7 @@ router.post('/register', async (req, res, next) => {
         phone: data.phone || null,
         departmentId: finalDepartmentId, // Kafolatlangan haqiqiy UUID yoki null
         role: 'STAFF',
-        isActive: true, // Test rejimida darhol kirish imkoni beriladi
+        isActive: false, // SuperAdmin tasdiqlashi talab etiladi
       },
       select: {
         id: true,
@@ -141,17 +142,46 @@ router.post('/register', async (req, res, next) => {
       },
     });
 
+    // Barcha SuperAdminlarga zudlik bilan bildirishnoma yaratish va Real-time yuborish
+    const superAdmins = await prisma.user.findMany({
+      where: { role: 'SUPER_ADMIN' },
+      select: { id: true },
+    });
+
+    const notifTitle = 'Yangi xodimdan ro‘yxatdan o‘tish arizasi';
+    const notifMessage = `${user.fullName} (${user.position}) tizimga kirish uchun ariza yubordi. Tasdiqlash talab etiladi.`;
+    const notifLink = '/admin/users';
+
+    for (const admin of superAdmins) {
+      await prisma.notification.create({
+        data: {
+          userId: admin.id,
+          title: notifTitle,
+          message: notifMessage,
+          link: notifLink,
+        },
+      });
+
+      realtime.sendToUser(admin.id, 'NOTIFICATION', {
+        title: notifTitle,
+        message: notifMessage,
+        link: notifLink,
+      });
+
+      realtime.sendToUser(admin.id, 'COUNTS_UPDATE', {});
+    }
+
     await logActivity({
       userId: user.id,
       action: 'REGISTER',
       entity: 'USER',
       entityId: user.id,
-      details: `${user.fullName} tizimda yangi xodim sifatida ro‘yxatdan o‘tdi`,
+      details: `${user.fullName} tizimda yangi xodim sifatida ro‘yxatdan o‘tish uchun ariza topshirdi`,
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
     });
 
-    return sendSuccess(res, user, 'Arizangiz muvaffaqiyatli qabul qilindi. Endi tizimga kirishingiz mumkin!', 201);
+    return sendSuccess(res, user, 'Arizangiz muvaffaqiyatli qabul qilindi. SuperAdmin tasdiqlagach tizimdan foydalanasiz!', 201);
   } catch (error) {
     next(error);
   }
@@ -171,7 +201,7 @@ router.post('/login', async (req, res, next) => {
     }
 
     if (!user.isActive) {
-      return sendError(res, 'Sizning hisobingiz bloklangan. Administratorga murojaat qiling.', 403);
+      return sendError(res, 'Sizning arizangiz hali SuperAdmin tomonidan tasdiqlanmagan. Iltimos, arizangiz tasdiqlanishini kuting yoki administratorga murojaat qiling.', 403);
     }
 
     const isMatch = await bcrypt.compare(password, user.passwordHash);

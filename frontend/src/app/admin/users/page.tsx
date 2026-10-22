@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useRealtime } from '@/context/RealtimeContext';
 import { fetchApi } from '@/lib/api';
 import { User, Department, Role } from '@/types';
 import {
@@ -130,6 +131,7 @@ function getDepartmentScope(deptName: string = '', position: string = '') {
 
 export default function AdminUsersPage() {
   const { user } = useAuth();
+  const { refreshCounts, refreshNotifications } = useRealtime();
   const [users, setUsers] = useState<User[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
@@ -170,8 +172,8 @@ export default function AdminUsersPage() {
     setLoading(false);
   };
 
-  const pendingUsers = users.filter((u) => u.registrationStatus === 'PENDING');
-  const activeUsers = users.filter((u) => u.registrationStatus !== 'PENDING');
+  const pendingUsers = users.filter((u) => u.registrationStatus === 'PENDING' || !u.isActive);
+  const activeUsers = users.filter((u) => u.registrationStatus !== 'PENDING' && u.isActive);
 
   // Approve a pending user (No manual role selection needed - fully automated by Department/Position)
   const handleApprove = async (u: User) => {
@@ -185,6 +187,8 @@ export default function AdminUsersPage() {
     setActionLoadingId(null);
     if (res.success) {
       loadData();
+      refreshCounts();
+      refreshNotifications();
     } else {
       alert(res.message || 'Tasdiqlashda xatolik yuz berdi');
     }
@@ -204,6 +208,8 @@ export default function AdminUsersPage() {
     setActionLoadingId(null);
     if (res.success) {
       loadData();
+      refreshCounts();
+      refreshNotifications();
     } else {
       alert(res.message || 'Rad etishda xatolik yuz berdi');
     }

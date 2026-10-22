@@ -157,4 +157,5 @@ export interface RealtimeCounts {
   registered?: number;
   overdue?: number;
   total?: number;
+  pendingUsers?: number;
 }

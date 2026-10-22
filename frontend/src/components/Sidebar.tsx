@@ -507,7 +507,16 @@ function SidebarContent() {
                         isItemActive('/admin/users') ? 'text-blue-400' : 'text-slate-400 group-hover:text-slate-200'
                       }`}
                     />
-                    {!isCollapsed && <span className="truncate">Xodimlar</span>}
+                    {!isCollapsed && (
+                      <div className="flex items-center justify-between w-full min-w-0">
+                        <span className="truncate">Xodimlar</span>
+                        {(counts.pendingUsers || 0) > 0 && (
+                          <span className="ml-auto bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[10px] font-bold px-1.5 py-0.5 rounded-full animate-pulse">
+                            {counts.pendingUsers}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </Link>
                 )}
 

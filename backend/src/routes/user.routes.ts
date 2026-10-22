@@ -5,6 +5,7 @@ import { prisma } from '../prisma.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth.js';
 import { logActivity } from '../middleware/audit.js';
+import { realtime } from '../services/realtime.js';
 
 const router = Router();
 
@@ -38,10 +39,15 @@ router.get('/', authenticate, async (req, res, next) => {
         department: { select: { id: true, name: true, code: true } },
         createdAt: true,
       },
-      orderBy: { fullName: 'asc' },
+      orderBy: { createdAt: 'desc' },
     });
 
-    return sendSuccess(res, users, 'Foydalanuvchilar ro‘yxati');
+    const mappedUsers = users.map((u) => ({
+      ...u,
+      registrationStatus: u.isActive ? 'APPROVED' : 'PENDING',
+    }));
+
+    return sendSuccess(res, mappedUsers, 'Foydalanuvchilar ro‘yxati');
   } catch (error) {
     next(error);
   }
@@ -173,6 +179,21 @@ router.post('/:id/approve', authenticate, authorize(['SUPER_ADMIN']), async (req
       data: { isActive: true },
     });
 
+    await prisma.notification.create({
+      data: {
+        userId: user.id,
+        title: 'Arizangiz tasdiqlandi',
+        message: 'Arizangiz SuperAdmin tomonidan tasdiqlandi. Endi SamDU ShortDoc tizimidan to‘liq foydalanishingiz mumkin.',
+        link: '/',
+      },
+    }).catch(() => null);
+
+    realtime.sendToUser(user.id, 'NOTIFICATION', {
+      title: 'Arizangiz tasdiqlandi',
+      message: 'Arizangiz SuperAdmin tomonidan tasdiqlandi. Endi SamDU ShortDoc tizimidan to‘liq foydalanishingiz mumkin.',
+      link: '/',
+    });
+
     await logActivity({
       userId: req.user!.userId,
       action: 'APPROVE_USER',
@@ -196,6 +217,21 @@ router.post('/:id/reject', authenticate, authorize(['SUPER_ADMIN']), async (req:
     const user = await prisma.user.update({
       where: { id },
       data: { isActive: false },
+    });
+
+    await prisma.notification.create({
+      data: {
+        userId: user.id,
+        title: 'Arizangiz rad etildi',
+        message: 'Arizangiz SuperAdmin tomonidan rad etildi.',
+        link: '/login',
+      },
+    }).catch(() => null);
+
+    realtime.sendToUser(user.id, 'NOTIFICATION', {
+      title: 'Arizangiz rad etildi',
+      message: 'Arizangiz SuperAdmin tomonidan rad etildi.',
+      link: '/login',
     });
 
     await logActivity({

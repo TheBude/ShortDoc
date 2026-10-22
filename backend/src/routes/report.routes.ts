@@ -57,6 +57,7 @@ router.get('/dashboard', authenticate, async (req: AuthRequest, res: Response, n
       pendingMySignaturesDocs,
       myPendingTasksList,
       mySubmittedDocs,
+      pendingUsersCount,
     ] = await Promise.all([
       prisma.document.count({ where: whereDoc }),
       prisma.document.count({ where: { ...whereDoc, documentType: 'INCOMING' } }),
@@ -159,6 +160,8 @@ router.get('/dashboard', authenticate, async (req: AuthRequest, res: Response, n
           },
         },
       }),
+      // SuperAdmin uchun tasdiqlash kutilayotgan foydalanuvchilar soni
+      isLeadershipOrAdmin ? prisma.user.count({ where: { isActive: false } }) : 0,
     ]);
 
     const pendingDocs = (pendingMySignaturesDocs || []) as any[];
@@ -183,6 +186,7 @@ router.get('/dashboard', authenticate, async (req: AuthRequest, res: Response, n
           rejected: rejectedCount,
           overdue: overdueTasksCount,
           approachingDeadline: approachingDeadlineCount,
+          pendingUsers: pendingUsersCount,
         },
         recentActivities,
         departmentsStat,
