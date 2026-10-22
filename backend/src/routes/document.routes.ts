@@ -336,17 +336,17 @@ router.get('/:id/docx', authenticate, async (req: AuthRequest, res, next) => {
 router.post('/', authenticate, async (req: AuthRequest, res, next) => {
   try {
     const schema = z.object({
-      title: z.string().min(3, 'Hujjat nomi talab qilinadi'),
-      documentType: z.enum(['INCOMING', 'OUTGOING', 'INTERNAL']),
+      title: z.string().trim().min(3, 'Hujjat nomi kamida 3 ta belgidan iborat bo‘lishi shart'),
+      documentType: z.enum(['INCOMING', 'OUTGOING', 'INTERNAL']).default('INTERNAL'),
       category: z.string().default('Bildirgi'),
-      sender: z.string().optional(),
-      receiver: z.string().optional(),
-      departmentId: z.string().uuid('Noto‘g‘ri bo‘lim identifikatori').optional().nullable(),
-      assigneeId: z.string().uuid('Noto‘g‘ri mas’ul xodim identifikatori').optional().nullable(),
+      sender: z.string().optional().nullable(),
+      receiver: z.string().optional().nullable(),
+      departmentId: z.preprocess((val) => (typeof val === 'string' && val.trim() === '' ? null : val), z.string().optional().nullable()),
+      assigneeId: z.preprocess((val) => (typeof val === 'string' && val.trim() === '' ? null : val), z.string().optional().nullable()),
       priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).default('MEDIUM'),
-      deadline: z.string().optional().nullable(),
-      summary: z.string().optional(),
-      approverIds: z.array(z.string().uuid('Kelishuvchi ID UUID bo‘lishi shart')).optional(),
+      deadline: z.preprocess((val) => (typeof val === 'string' && val.trim() === '' ? null : val), z.string().optional().nullable()),
+      summary: z.string().optional().nullable(),
+      approverIds: z.array(z.string().min(1)).optional().default([]),
     });
 
     const data = schema.parse(req.body);

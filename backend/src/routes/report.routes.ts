@@ -218,29 +218,29 @@ router.get(['/export-excel', '/export-xlsx'], authenticate, async (req: AuthRequ
     ]);
 
     const formattedDocs = documents.map((d) => ({
-      regNumber: d.regNumber,
-      title: d.title.replace(/[‘’`ʼʻ]/g, "'"),
-      documentType: d.documentType,
-      category: (d.category || 'Xizmat hujjati').replace(/[‘’`ʼʻ]/g, "'"),
-      status: d.status,
-      priority: d.priority,
-      departmentName: (d.department?.name || 'Noma’lum').replace(/[‘’`ʼʻ]/g, "'"),
-      responsiblePerson: (d.assignee?.fullName || d.creator?.fullName || '—').replace(/[‘’`ʼʻ]/g, "'"),
+      regNumber: d.regNumber || '—',
+      title: String(d.title || d.regNumber || 'Hujjat').replace(/[‘’`ʼʻ]/g, "'"),
+      documentType: d.documentType || 'INTERNAL',
+      category: String(d.category || 'Xizmat hujjati').replace(/[‘’`ʼʻ]/g, "'"),
+      status: d.status || 'NEW',
+      priority: d.priority || 'MEDIUM',
+      departmentName: String(d.department?.name || 'Noma’lum').replace(/[‘’`ʼʻ]/g, "'"),
+      responsiblePerson: String(d.assignee?.fullName || d.creator?.fullName || '—').replace(/[‘’`ʼʻ]/g, "'"),
       createdAt: d.createdAt,
       deadline: d.deadline,
     }));
 
     const formattedDeps = departments.map((dp) => ({
-      name: dp.name.replace(/[‘’`ʼʻ]/g, "'"),
-      code: dp.code,
-      usersCount: dp._count.users,
-      documentsCount: dp._count.documents,
+      name: String(dp.name || 'Bo‘lim').replace(/[‘’`ʼʻ]/g, "'"),
+      code: dp.code || 'DEP',
+      usersCount: dp._count?.users || 0,
+      documentsCount: dp._count?.documents || 0,
     }));
 
     const excelBuffer = await generateReportsExcel(
       formattedDocs,
       formattedDeps,
-      (req.user?.fullName || 'Foydalanuvchi').replace(/[‘’`ʼʻ]/g, "'")
+      String(req.user?.fullName || 'Foydalanuvchi').replace(/[‘’`ʼʻ]/g, "'")
     );
 
     const safeDate = new Date().toISOString().split('T')[0];
@@ -252,13 +252,17 @@ router.get(['/export-excel', '/export-xlsx'], authenticate, async (req: AuthRequ
     );
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="${encodeURIComponent(filename)}"; filename*=UTF-8''${encodeURIComponent(filename)}`
+      `attachment; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(filename)}`
     );
     res.setHeader('Content-Length', excelBuffer.length);
 
     return res.end(excelBuffer);
-  } catch (error) {
-    next(error);
+  } catch (error: any) {
+    console.error('❌ [EXPORT-EXCEL XATOLIK]:', error);
+    return res.status(500).json({
+      success: false,
+      message: error?.message || 'Excel hisobotini yaratishda xatolik yuz berdi',
+    });
   }
 });
 

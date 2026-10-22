@@ -3,7 +3,8 @@
 // 2. Otherwise use relative /api (proxied to backend via Next.js rewrites or Nginx)
 export const getApiBaseUrl = () => {
   if (process.env.NEXT_PUBLIC_API_URL) {
-    return process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '');
+    const raw = process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '');
+    return raw.endsWith('/api') ? raw : `${raw}/api`;
   }
   return '/api';
 };

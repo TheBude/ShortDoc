@@ -18,9 +18,12 @@ export const errorHandler = (
       field: e.path.join('.'),
       message: e.message,
     }));
+    const validationMessage = formattedErrors.length > 0
+      ? formattedErrors.map((e) => e.message).join('; ')
+      : 'Kiritilgan ma’lumotlar noto‘g‘ri';
     return res.status(422).json({
       success: false,
-      message: 'Kiritilgan ma’lumotlar noto‘g‘ri',
+      message: validationMessage,
       errors: formattedErrors,
       requestId: reqId,
     });

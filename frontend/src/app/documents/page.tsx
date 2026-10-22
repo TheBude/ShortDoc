@@ -187,9 +187,15 @@ function DocumentsContent() {
     setSubmitting(true);
     setFormError(null);
 
+    const payload = {
+      ...formData,
+      departmentId: formData.departmentId?.trim() || null,
+      deadline: formData.deadline?.trim() || null,
+    };
+
     const res = await fetchApi<Document>('/documents', {
       method: 'POST',
-      body: JSON.stringify(formData),
+      body: JSON.stringify(payload),
     });
 
     setSubmitting(false);
@@ -199,7 +205,10 @@ function DocumentsContent() {
       refreshCounts();
       loadDocuments();
     } else {
-      setFormError(res.message || 'Xatolik yuz berdi');
+      const errorMsg = res.errors && Array.isArray(res.errors) && res.errors.length > 0
+        ? res.errors.map((err: any) => err.message).join('; ')
+        : (res.message || 'Xatolik yuz berdi');
+      setFormError(errorMsg);
     }
   };
 
