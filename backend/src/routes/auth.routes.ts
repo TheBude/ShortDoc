@@ -19,7 +19,9 @@ const registerSchema = z.object({
   email: z.string().email('Noto‘g‘ri email formati'),
   password: z.string().min(6, 'Parol kamida 6 belgidan iborat bo‘lishi kerak'),
   departmentId: z.string().optional().nullable(),
+  customDepartment: z.string().optional().nullable(),
   position: z.string().min(2, 'Lavozim kiritilishi shart'),
+  customPosition: z.string().optional().nullable(),
   phone: z.string().optional(),
 });
 
@@ -57,6 +59,65 @@ router.post('/register', async (req, res, next) => {
       return sendError(res, 'Bu email manzili bilan allaqachon ro‘yxatdan o‘tilgan', 400);
     }
 
+    // Bo'lim ID sini xavfsiz va moslashuvchan aniqlash (Foreign Key xatoligini oldini olish)
+    let finalDepartmentId: string | null = null;
+
+    if (data.departmentId && data.departmentId !== 'Boshqa') {
+      // 1. Agar haqiqiy UUID bo'lsa
+      const depById = await prisma.department.findUnique({
+        where: { id: data.departmentId },
+      }).catch(() => null);
+
+      if (depById) {
+        finalDepartmentId = depById.id;
+      } else {
+        // 2. Agar bo'lim nomi uzatilgan bo'lsa (masalan "Axborot texnologiyalari fakulteti")
+        const depByName = await prisma.department.findFirst({
+          where: {
+            OR: [
+              { name: { equals: data.departmentId, mode: 'insensitive' } },
+              { name: { contains: data.departmentId, mode: 'insensitive' } },
+            ],
+          },
+        });
+
+        if (depByName) {
+          finalDepartmentId = depByName.id;
+        }
+      }
+    }
+
+    // 3. Agar bo'lim topilmagan bo'lsa va customDepartment kiritilgan bo'lsa
+    if (!finalDepartmentId && data.customDepartment && data.customDepartment.trim()) {
+      const depName = data.customDepartment.trim();
+      const depByName = await prisma.department.findFirst({
+        where: {
+          OR: [
+            { name: { equals: depName, mode: 'insensitive' } },
+            { name: { contains: depName, mode: 'insensitive' } },
+          ],
+        },
+      });
+
+      if (depByName) {
+        finalDepartmentId = depByName.id;
+      } else {
+        // Yangi bo'lim sifatida bazaga kiritish
+        const generatedCode = 'DEP-' + Math.floor(100 + Math.random() * 900);
+        const newDep = await prisma.department.create({
+          data: {
+            name: depName,
+            code: generatedCode,
+            type: 'DEPARTMENT',
+          },
+        }).catch(() => null);
+
+        if (newDep) {
+          finalDepartmentId = newDep.id;
+        }
+      }
+    }
+
     const passwordHash = await bcrypt.hash(data.password, 10);
 
     const user = await prisma.user.create({
@@ -66,7 +127,7 @@ router.post('/register', async (req, res, next) => {
         passwordHash,
         position: data.position,
         phone: data.phone || null,
-        departmentId: data.departmentId || null,
+        departmentId: finalDepartmentId, // Kafolatlangan haqiqiy UUID yoki null
         role: 'STAFF',
         isActive: true, // Test rejimida darhol kirish imkoni beriladi
       },

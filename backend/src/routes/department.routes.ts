@@ -7,8 +7,8 @@ import { logActivity } from '../middleware/audit.js';
 
 const router = Router();
 
-// Barcha bo'limlar ro'yxati (barcha tizimga kirganlar uchun ochiq)
-router.get('/', authenticate, async (req, res, next) => {
+// Barcha bo'limlar ro'yxati (ro'yxatdan o'tish va barcha foydalanuvchilar uchun ochiq)
+router.get('/', async (req, res, next) => {
   try {
     const departments = await prisma.department.findMany({
       include: {

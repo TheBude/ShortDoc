@@ -255,7 +255,7 @@ export default function LoginPage() {
       phone: regPhone.trim() || undefined,
       password: regPassword,
       departmentId: !isCustomDepartment ? selectedDept : undefined,
-      customDepartment: isCustomDepartment ? customDept.trim() : undefined,
+      customDepartment: isCustomDepartment ? customDept.trim() : selectedDept,
       position: !isCustomPosition ? selectedPos : customPos.trim(),
       customPosition: isCustomPosition ? customPos.trim() : undefined,
     };
