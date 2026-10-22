@@ -5,6 +5,7 @@ import { sendSuccess, sendError } from '../utils/response.js';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
 import { logActivity } from '../middleware/audit.js';
 import { realtime } from '../services/realtime.js';
+import { canCreateTask, canManageTask } from '../services/access.js';
 
 const router = Router();
 
@@ -49,7 +50,7 @@ router.get('/', authenticate, async (req: AuthRequest, res, next) => {
   }
 });
 
-// Yangi topshiriq yaratish
+// Yangi topshiriq yaratish (Hujjatga kirish huquqi va faol foydalanuvchi tekshiruvi bilan)
 router.post('/', authenticate, async (req: AuthRequest, res, next) => {
   try {
     const schema = z.object({
@@ -61,6 +62,30 @@ router.post('/', authenticate, async (req: AuthRequest, res, next) => {
     });
 
     const data = schema.parse(req.body);
+
+    // 1. Hujjat mavjudligi va unga topshiriq biriktirish ruxsatini tekshirish
+    const doc = await prisma.document.findUnique({
+      where: { id: data.documentId },
+      include: { approvals: true, tasks: true },
+    });
+
+    if (!doc) {
+      return sendError(res, 'Hujjat topilmadi', 404);
+    }
+
+    if (!canCreateTask(req.user!, doc)) {
+      return sendError(res, 'Ushbu hujjat bo‘yicha topshiriq yaratish huquqiga ega emassiz', 403);
+    }
+
+    // 2. Biriktirilayotgan xodim mavjud va faol ekanligini tekshirish
+    const assignedUser = await prisma.user.findUnique({
+      where: { id: data.assignedToId },
+      select: { id: true, fullName: true, isActive: true },
+    });
+
+    if (!assignedUser || !assignedUser.isActive) {
+      return sendError(res, 'Topshiriq biriktirilayotgan xodim tizimda topilmadi yoki faol emas', 400);
+    }
 
     const task = await prisma.task.create({
       data: {
@@ -111,7 +136,7 @@ router.post('/', authenticate, async (req: AuthRequest, res, next) => {
   }
 });
 
-// Topshiriq holatini yangilash
+// Topshiriq holatini yangilash (Ruxsat va barcha topshiriqlar yakunlanganda hujjatni COMPLETED qilish bilan)
 router.patch('/:id/status', authenticate, async (req: AuthRequest, res, next) => {
   try {
     const { id } = req.params;
@@ -121,6 +146,19 @@ router.patch('/:id/status', authenticate, async (req: AuthRequest, res, next) =>
 
     const { status } = schema.parse(req.body);
 
+    const existingTask = await prisma.task.findUnique({
+      where: { id },
+      include: { document: true },
+    });
+
+    if (!existingTask) {
+      return sendError(res, 'Topshiriq topilmadi', 404);
+    }
+
+    if (!canManageTask(req.user!, existingTask, false)) {
+      return sendError(res, 'Ushbu topshiriq holatini o‘zgartirish huquqiga ega emassiz', 403);
+    }
+
     const task = await prisma.task.update({
       where: { id },
       data: {
@@ -129,13 +167,57 @@ router.patch('/:id/status', authenticate, async (req: AuthRequest, res, next) =>
       },
     });
 
+    // Agar topshiriq bajarilgan bo'lsa, hujjatdagi barcha topshiriqlar bajarilganini tekshiramiz
+    if (status === 'COMPLETED') {
+      const allTasks = await prisma.task.findMany({
+        where: { documentId: existingTask.documentId },
+      });
+      const allDone = allTasks.every((t) => t.status === 'COMPLETED');
+
+      if (allDone && existingTask.document.status === 'IN_EXECUTION') {
+        await prisma.document.update({
+          where: { id: existingTask.documentId },
+          data: { status: 'COMPLETED' },
+        });
+
+        await prisma.documentStatusHistory.create({
+          data: {
+            documentId: existingTask.documentId,
+            changedById: req.user!.userId,
+            oldStatus: 'IN_EXECUTION',
+            newStatus: 'COMPLETED',
+            reason: 'Barcha ijro topshiriqlari muvaffaqiyatli yakunlandi',
+          },
+        });
+
+        if (existingTask.document.creatorId) {
+          realtime.sendToUser(existingTask.document.creatorId, 'NOTIFICATION', {
+            title: 'Hujjat ijrosi to‘liq yakunlandi',
+            message: `${existingTask.document.regNumber} hujjati bo‘yicha barcha topshiriqlar bajarildi.`,
+            link: `/documents/${existingTask.documentId}`,
+          });
+          realtime.sendToUser(existingTask.document.creatorId, 'COUNTS_UPDATE', {});
+        }
+      }
+    }
+
+    await logActivity({
+      userId: req.user!.userId,
+      action: 'UPDATE_TASK_STATUS',
+      entity: 'TASK',
+      entityId: task.id,
+      details: `Topshiriq holati ${existingTask.status} dan ${status} ga o‘zgartirildi`,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+
     return sendSuccess(res, task, 'Topshiriq holati yangilandi');
   } catch (error) {
     next(error);
   }
 });
 
-// Topshiriq natijasini topshirish (javob qaytarish)
+// Topshiriq natijasini topshirish (faqat ijrochi uchun)
 router.post('/:id/submit-result', authenticate, async (req: AuthRequest, res, next) => {
   try {
     const { id } = req.params;
@@ -145,6 +227,20 @@ router.post('/:id/submit-result', authenticate, async (req: AuthRequest, res, ne
     });
 
     const { resultComment, resultFileUrl } = schema.parse(req.body);
+
+    const existingTask = await prisma.task.findUnique({
+      where: { id },
+      include: { document: true },
+    });
+
+    if (!existingTask) {
+      return sendError(res, 'Topshiriq topilmadi', 404);
+    }
+
+    // Faqat biriktirilgan ijrochi natija topshira oladi
+    if (!canManageTask(req.user!, existingTask, true)) {
+      return sendError(res, 'Topshiriq natijasini faqat tayinlangan mas’ul ijrochi topshirishi mumkin', 403);
+    }
 
     const task = await prisma.task.update({
       where: { id },
@@ -158,6 +254,38 @@ router.post('/:id/submit-result', authenticate, async (req: AuthRequest, res, ne
         document: { select: { id: true, regNumber: true } },
       },
     });
+
+    // Hujjatdagi barcha topshiriqlar bajarilganini tekshirish
+    const allTasks = await prisma.task.findMany({
+      where: { documentId: existingTask.documentId },
+    });
+    const allDone = allTasks.every((t) => t.status === 'COMPLETED');
+
+    if (allDone && existingTask.document.status === 'IN_EXECUTION') {
+      await prisma.document.update({
+        where: { id: existingTask.documentId },
+        data: { status: 'COMPLETED' },
+      });
+
+      await prisma.documentStatusHistory.create({
+        data: {
+          documentId: existingTask.documentId,
+          changedById: req.user!.userId,
+          oldStatus: 'IN_EXECUTION',
+          newStatus: 'COMPLETED',
+          reason: 'Barcha ijro topshiriqlari muvaffaqiyatli yakunlandi',
+        },
+      });
+
+      if (existingTask.document.creatorId) {
+        realtime.sendToUser(existingTask.document.creatorId, 'NOTIFICATION', {
+          title: 'Hujjat ijrosi to‘liq yakunlandi',
+          message: `${existingTask.document.regNumber} hujjati bo‘yicha barcha topshiriqlar bajarildi.`,
+          link: `/documents/${existingTask.documentId}`,
+        });
+        realtime.sendToUser(existingTask.document.creatorId, 'COUNTS_UPDATE', {});
+      }
+    }
 
     if (task.createdById && task.createdById !== req.user!.userId) {
       await prisma.notification.create({
@@ -182,7 +310,7 @@ router.post('/:id/submit-result', authenticate, async (req: AuthRequest, res, ne
       action: 'COMPLETE_TASK',
       entity: 'TASK',
       entityId: task.id,
-      details: `Topshiriq yakunlandi: ${task.title}`,
+      details: `Topshiriq yakunlandi: ${task.title}. Natija izohi: ${resultComment}`,
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
     });

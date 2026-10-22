@@ -19,6 +19,7 @@ import fileRoutes from './routes/file.routes.js';
 import reportRoutes from './routes/report.routes.js';
 import auditRoutes from './routes/audit.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
+import { startCronJobs, stopCronJobs } from './services/cron.service.js';
 
 const app = express();
 const PORT = config.PORT;
@@ -130,11 +131,14 @@ const server = app.listen(PORT, () => {
   console.log(`[ShortDoc API] URL: http://localhost:${PORT}`);
   console.log(`[ShortDoc API] Swagger Docs: http://localhost:${PORT}/api/docs`);
   console.log(`=========================================`);
+
+  startCronJobs();
 });
 
 // Graceful shutdown
 const gracefulShutdown = (signal: string) => {
   console.log(`\n[ShortDoc] ${signal} qabul qilindi. Server xavfsiz to‘xtatilmoqda...`);
+  stopCronJobs();
   server.close(() => {
     console.log('[ShortDoc] Barcha ulanishlar yopildi.');
     process.exit(0);

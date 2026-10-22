@@ -10,7 +10,7 @@ import { realtime } from '../services/realtime.js';
 const router = Router();
 
 // Foydalanuvchilar ro'yxati (barcha autentifikatsiyadan o'tganlar uchun, yoki role bo'yicha)
-router.get('/', authenticate, async (req, res, next) => {
+router.get('/', authenticate, async (req: AuthRequest, res, next) => {
   try {
     const { role, departmentId, search } = req.query;
 
@@ -42,10 +42,29 @@ router.get('/', authenticate, async (req, res, next) => {
       orderBy: { createdAt: 'desc' },
     });
 
-    const mappedUsers = users.map((u) => ({
-      ...u,
-      registrationStatus: u.isActive ? 'APPROVED' : 'PENDING',
-    }));
+    const isPrivileged = ['SUPER_ADMIN', 'LEADERSHIP', 'CHANCELLERY', 'DEPARTMENT_HEAD'].includes(req.user?.role || '');
+
+    const mappedUsers = users.map((u) => {
+      const baseUser: any = {
+        id: u.id,
+        fullName: u.fullName,
+        role: u.role,
+        position: u.position,
+        departmentId: u.departmentId,
+        department: u.department,
+        registrationStatus: u.isActive ? 'APPROVED' : 'PENDING',
+      };
+
+      // STAFF uchun email va telefon maydonlari yashiriladi (IDOR / Ma'lumotlar sizib chiqishini oldini olish)
+      if (isPrivileged) {
+        baseUser.email = u.email;
+        baseUser.phone = u.phone;
+        baseUser.isActive = u.isActive;
+        baseUser.createdAt = u.createdAt;
+      }
+
+      return baseUser;
+    });
 
     return sendSuccess(res, mappedUsers, 'Foydalanuvchilar ro‘yxati');
   } catch (error) {

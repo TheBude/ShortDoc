@@ -224,19 +224,6 @@ export default function DocumentVerificationPage({
             
             <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800/80 space-y-1">
               <div className="flex items-center gap-2 text-slate-400 dark:text-slate-500 font-semibold text-[11px]">
-                <User className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
-                <span>Tashabbuskor (Muallif):</span>
-              </div>
-              <div className="font-bold text-slate-900 dark:text-white text-sm">
-                {docData.creator?.fullName || docData.sender || '—'}
-              </div>
-              <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                {docData.creator?.position || 'Xodim'}
-              </div>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800/80 space-y-1">
-              <div className="flex items-center gap-2 text-slate-400 dark:text-slate-500 font-semibold text-[11px]">
                 <Building className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
                 <span>Tegishli bo‘linma / Bo‘lim:</span>
               </div>
@@ -261,32 +248,9 @@ export default function DocumentVerificationPage({
               </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800/80 space-y-1">
-              <div className="flex items-center gap-2 text-slate-400 dark:text-slate-500 font-semibold text-[11px]">
-                <Lock className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
-                <span>Qabul qiluvchi (Kimga):</span>
-              </div>
-              <div className="font-bold text-slate-900 dark:text-white text-sm">
-                {docData.receiver || 'Samarqand davlat universiteti rektori prof. R.I. Xalmuradovga'}
-              </div>
-              <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                Rahbariyat nomiga
-              </div>
-            </div>
-
           </div>
 
-          {/* 4. Hujjatning to'liq matni / Mazmuni */}
-          <div className="pt-2">
-            <span className="text-[11px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-semibold block mb-2">
-              Hujjat matni (Mazmuni):
-            </span>
-            <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 text-sm italic font-serif leading-relaxed text-slate-800 dark:text-slate-200 whitespace-pre-wrap">
-              «{docData.summary || docData.title}»
-            </div>
-          </div>
-
-          {/* 5. Imzolar va Kelishuvchilar Zanjiri */}
+          {/* 4. Imzolar va Kelishuvchilar Zanjiri */}
           {docData.approvals && docData.approvals.length > 0 && (
             <div className="pt-2">
               <span className="text-[11px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-semibold block mb-3">

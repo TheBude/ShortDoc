@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { prisma } from '../prisma.js';
 import { sendSuccess } from '../utils/response.js';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
+import { buildDocumentVisibilityWhere } from '../services/access.js';
 import { generateReportsExcel } from '../utils/excelGenerator.js';
 
 const router = Router();
@@ -11,22 +12,10 @@ router.get('/dashboard', authenticate, async (req: AuthRequest, res: Response, n
   try {
     const isLeadershipOrAdmin = ['SUPER_ADMIN', 'LEADERSHIP', 'CHANCELLERY'].includes(req.user!.role);
 
-    const whereDoc: any = {};
+    const whereDoc = buildDocumentVisibilityWhere(req.user!);
     const whereTask: any = {};
 
     if (!isLeadershipOrAdmin) {
-      const staffOr: any[] = [
-        { creatorId: req.user!.userId },
-        { assigneeId: req.user!.userId },
-        { documentType: 'INCOMING' },
-        { category: { contains: 'Buyru', mode: 'insensitive' } },
-        { category: { contains: 'Qaror', mode: 'insensitive' } },
-      ];
-      if (req.user!.departmentId) {
-        staffOr.push({ departmentId: req.user!.departmentId });
-      }
-      whereDoc.OR = staffOr;
-
       whereTask.OR = [
         { assignedToId: req.user!.userId },
         { createdById: req.user!.userId },
@@ -66,8 +55,8 @@ router.get('/dashboard', authenticate, async (req: AuthRequest, res: Response, n
       prisma.document.count({ where: { ...whereDoc, status: 'IN_EXECUTION' } }),
       prisma.document.count({ where: { ...whereDoc, status: 'COMPLETED' } }),
       prisma.document.count({ where: { ...whereDoc, status: 'REJECTED' } }),
-      prisma.document.count({ where: { status: 'IN_APPROVAL' } }),
-      prisma.document.count({ where: { status: 'REGISTERED' } }),
+      prisma.document.count({ where: { ...whereDoc, status: 'IN_APPROVAL' } }),
+      prisma.document.count({ where: { ...whereDoc, status: 'REGISTERED' } }),
       prisma.document.count({
         where: whereDoc.OR
           ? { AND: [{ OR: whereDoc.OR }, { OR: [{ status: 'ARCHIVED' }, { isArchived: true }] }] }
@@ -206,15 +195,7 @@ router.get('/dashboard', authenticate, async (req: AuthRequest, res: Response, n
 // Professional Native Microsoft Excel (.xlsx) formatida hisobot eksport qilish
 router.get(['/export-excel', '/export-xlsx'], authenticate, async (req: AuthRequest, res: Response, next) => {
   try {
-    const where: any = {};
-    if (req.user!.role === 'STAFF') {
-      where.OR = [
-        { creatorId: req.user!.userId },
-        { assigneeId: req.user!.userId },
-      ];
-    } else if (req.user!.role === 'DEPARTMENT_HEAD' && req.user!.departmentId) {
-      where.departmentId = req.user!.departmentId;
-    }
+    const where = buildDocumentVisibilityWhere(req.user!);
 
     const [documents, departments] = await Promise.all([
       prisma.document.findMany({

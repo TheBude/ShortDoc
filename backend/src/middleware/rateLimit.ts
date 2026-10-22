@@ -56,3 +56,16 @@ export const checkEmailLimiter = rateLimit({
     data: null,
   },
 });
+
+// Public verification rate limiter: 60 requests per 15 minutes per IP
+export const publicVerifyLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Hujjat tekshirish so‘rovlari soni cheklovidan oshib ketdi. Birozdan so‘ng qayta urinib ko‘ring.',
+    data: null,
+  },
+});

@@ -7,6 +7,7 @@ import { sendSuccess, sendError } from '../utils/response.js';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
 import { logActivity } from '../middleware/audit.js';
 import { config } from '../config.js';
+import { canViewDocument, canAccessFile } from '../services/access.js';
 
 const router = Router();
 
@@ -49,7 +50,7 @@ const upload = multer({
   },
 });
 
-// Fayl yuklash (Hujjatga biriktirish)
+// Fayl yuklash (Hujjatga kirish huquqi tekshiruvi bilan)
 router.post('/upload', authenticate, upload.single('file'), async (req: AuthRequest, res: Response, next) => {
   try {
     const { documentId } = req.body;
@@ -60,15 +61,23 @@ router.post('/upload', authenticate, upload.single('file'), async (req: AuthRequ
     }
 
     if (!documentId) {
-      // Yuklangan faylni o'chirib tashlash
-      fs.unlinkSync(file.path);
+      if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
       return sendError(res, 'Hujjat ID ko‘rsatilmagan', 400);
     }
 
-    const doc = await prisma.document.findUnique({ where: { id: documentId } });
+    const doc = await prisma.document.findUnique({
+      where: { id: documentId },
+      include: { approvals: true, tasks: true },
+    });
+
     if (!doc) {
-      fs.unlinkSync(file.path);
+      if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
       return sendError(res, 'Hujjat topilmadi', 404);
+    }
+
+    if (!canViewDocument(req.user!, doc)) {
+      if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+      return sendError(res, 'Ushbu hujjatga fayl biriktirish uchun sizda ruxsat yo‘q', 403);
     }
 
     const docFile = await prisma.documentFile.create({
@@ -109,23 +118,19 @@ router.get('/:id/download', authenticate, async (req: AuthRequest, res: Response
 
     const docFile = await prisma.documentFile.findUnique({
       where: { id },
-      include: { document: true },
+      include: {
+        document: {
+          include: { approvals: true, tasks: true },
+        },
+      },
     });
 
     if (!docFile) {
       return sendError(res, 'Fayl topilmadi', 404);
     }
 
-    // Ruxsat tekshiruvi: Oddiy xodim bo'lsa, o'ziga tegishlimi?
-    if (req.user!.role === 'STAFF') {
-      const hasAccess =
-        docFile.document.creatorId === req.user!.userId ||
-        docFile.document.assigneeId === req.user!.userId ||
-        docFile.uploadedById === req.user!.userId;
-
-      if (!hasAccess) {
-        return sendError(res, 'Ushbu faylni ko‘rish uchun sizda ruxsat yo‘q', 403);
-      }
+    if (!canAccessFile(req.user!, docFile, docFile.document)) {
+      return sendError(res, 'Ushbu faylni ko‘rish va yuklab olish uchun sizda ruxsat yo‘q', 403);
     }
 
     if (!fs.existsSync(docFile.filePath)) {
@@ -145,6 +150,53 @@ router.get('/:id/download', authenticate, async (req: AuthRequest, res: Response
     res.setHeader('Content-Type', docFile.mimeType);
     res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(docFile.originalName)}"`);
     return fs.createReadStream(docFile.filePath).pipe(res);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Faylni o'chirish (Ruxsat va audit log bilan)
+router.delete('/:id', authenticate, async (req: AuthRequest, res: Response, next) => {
+  try {
+    const { id } = req.params;
+
+    const docFile = await prisma.documentFile.findUnique({
+      where: { id },
+      include: { document: true },
+    });
+
+    if (!docFile) {
+      return sendError(res, 'Fayl topilmadi', 404);
+    }
+
+    const canDelete =
+      req.user!.role === 'SUPER_ADMIN' ||
+      docFile.uploadedById === req.user!.userId ||
+      docFile.document.creatorId === req.user!.userId;
+
+    if (!canDelete) {
+      return sendError(res, 'Ushbu faylni o‘chirish uchun sizda ruxsat yo‘q', 403);
+    }
+
+    if (fs.existsSync(docFile.filePath)) {
+      try {
+        fs.unlinkSync(docFile.filePath);
+      } catch {}
+    }
+
+    await prisma.documentFile.delete({ where: { id } });
+
+    await logActivity({
+      userId: req.user!.userId,
+      action: 'DELETE_FILE',
+      entity: 'DOCUMENT_FILE',
+      entityId: docFile.id,
+      details: `Fayl o‘chirildi: ${docFile.originalName}`,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+
+    return sendSuccess(res, null, 'Fayl muvaffaqiyatli o‘chirildi');
   } catch (error) {
     next(error);
   }

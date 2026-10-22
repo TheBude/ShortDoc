@@ -243,3 +243,15 @@ model Notification {
   @@index([userId, isRead])
   @@map("notifications")
 }
+
+model DocumentCounter {
+  id         String   @id @default(uuid())
+  year       Int
+  type       String
+  lastNumber Int      @default(0)
+  updatedAt  DateTime @updatedAt
+
+  @@unique([year, type])
+  @@map("document_counters")
+}
+

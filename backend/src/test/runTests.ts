@@ -3,6 +3,13 @@ import { prisma } from '../prisma.js';
 import { generateToken } from '../utils/jwt.js';
 import { config } from '../config.js';
 import { createStreamTicket, consumeStreamTicket } from '../services/ticket.service.js';
+import {
+  canViewDocument,
+  canChangeStatus,
+  canManageTask,
+  isValidStatusTransition,
+  buildDocumentVisibilityWhere,
+} from '../services/access.js';
 
 let passed = 0;
 let failed = 0;
@@ -133,7 +140,47 @@ async function runTests() {
     const normalized = rawEmail.trim().toLowerCase();
     assert(normalized === 'admin@shortdoc.uz', 'Faza 1: Email normalizatsiyasi (trim va lowercase) to‘g‘ri ishladi');
 
-    // Tozalash (test hujjatini o'chirish)
+    // 7. Faza 2: Hujjat hisoblagichi parallel poyga (Race condition) testi (25 ta parallel so'rov)
+    const testYear = 2026;
+    const testType = `CONCURRENT_TEST_${Date.now()}`;
+    const parallelRequests = Array.from({ length: 25 }, async () => {
+      return prisma.$transaction(async (tx) => {
+        const counter = await tx.documentCounter.upsert({
+          where: { year_type: { year: testYear, type: testType } },
+          update: { lastNumber: { increment: 1 } },
+          create: { year: testYear, type: testType, lastNumber: 1 },
+        });
+        return `${testYear}/${testType}-${counter.lastNumber.toString().padStart(4, '0')}`;
+      });
+    });
+
+    const generatedRegNumbers = await Promise.all(parallelRequests);
+    assert(generatedRegNumbers.length === 25, 'Faza 2: 25 ta parallel tranzaksiya muvaffaqiyatli yakunlandi');
+    const uniqueRegNumbers = new Set(generatedRegNumbers);
+    assert(uniqueRegNumbers.size === 25, 'Faza 2: Barcha 25 ta ro‘yxat raqami mutlaqo noyob (poyga bartaraf etildi)');
+
+    // 8. Faza 2: State Machine va Holatlar O'tishi qoidalari testi
+    assert(isValidStatusTransition('NEW', 'REGISTERED') === true, 'Faza 2: NEW -> REGISTERED holatiga o‘tish ruxsat etilgan');
+    assert(isValidStatusTransition('REGISTERED', 'IN_APPROVAL') === true, 'Faza 2: REGISTERED -> IN_APPROVAL ruxsat etilgan');
+    assert(isValidStatusTransition('IN_APPROVAL', 'IN_EXECUTION') === true, 'Faza 2: IN_APPROVAL -> IN_EXECUTION ruxsat etilgan');
+    assert(isValidStatusTransition('IN_EXECUTION', 'COMPLETED') === true, 'Faza 2: IN_EXECUTION -> COMPLETED ruxsat etilgan');
+    assert(isValidStatusTransition('COMPLETED', 'IN_APPROVAL') === false, 'Faza 2: COMPLETED -> IN_APPROVAL qat’iy bloklandi (409)');
+    assert(isValidStatusTransition('ARCHIVED', 'REGISTERED') === false, 'Faza 2: ARCHIVED -> REGISTERED qat’iy bloklandi (409)');
+
+    // 9. Faza 2: Markaziy RBAC va IDOR himoyasi testi
+    const sampleDoc = {
+      creatorId: admin!.id,
+      documentType: 'INTERNAL',
+      category: 'Bildirgi',
+      departmentId: 'dept-alpha',
+    };
+    const unrelatedStaff = { userId: 'unrelated-staff-uuid', role: 'STAFF', departmentId: 'dept-beta' };
+    assert(canViewDocument(unrelatedStaff, sampleDoc) === false, 'Faza 2: Begona xodimga begona ichki bildirgi ko‘rinishi bloklandi (IDOR)');
+    assert(canViewDocument({ userId: admin!.id, role: 'SUPER_ADMIN' }, sampleDoc) === true, 'Faza 2: SuperAdmin barcha hujjatlarni ko‘radi');
+    assert(canViewDocument(unrelatedStaff, { ...sampleDoc, category: 'Buyruq' }) === true, 'Faza 2: Umumiy Buyruq toifasidagi hujjat xodimga ochiq');
+
+    // Tozalash (test hisoblagichi va hujjatini o'chirish)
+    await prisma.documentCounter.deleteMany({ where: { type: testType } });
     await prisma.document.delete({ where: { id: doc.id } });
     assert(true, 'Sinov ma’lumotlari muvaffaqiyatli tozalandi');
 
