@@ -251,10 +251,11 @@ router.get('/:id/public-verify', publicVerifyLimiter, async (req, res, next) => 
       return sendError(res, 'Hujjat tizimda topilmadi yoki haqiqiy emas', 404);
     }
 
-    // Faqat ruxsat etilgan umumiy maydonlar qaytariladi (summary, sender, receiver, izohlar va ichki ID lar qaytmaydi)
+    // Ommaviy tekshiruv uchun xavfsiz maydonlar qaytariladi
     return sendSuccess(
       res,
       {
+        id: document.id,
         regNumber: document.regNumber,
         title: document.title,
         category: document.category,
@@ -275,6 +276,54 @@ router.get('/:id/public-verify', publicVerifyLimiter, async (req, res, next) => 
       },
       'Hujjat haqiqiyligi tasdiqlandi'
     );
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Tasdiqlangan hujjatni Word (.docx) formatida ommaviy yuklab olish (QR-kod tekshiruvchilar uchun)
+router.get('/:id/public-docx', publicVerifyLimiter, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const uuidCheck = z.string().uuid('Noto‘g‘ri hujjat identifikatori').safeParse(id);
+    if (!uuidCheck.success) {
+      return sendError(res, 'Noto‘g‘ri hujjat identifikatori (UUID)', 400);
+    }
+
+    const document = await prisma.document.findUnique({
+      where: { id },
+      include: {
+        department: true,
+        creator: { select: { id: true, fullName: true, position: true } },
+        approvals: {
+          include: { approver: { select: { fullName: true, position: true } } },
+          orderBy: { stepOrder: 'asc' },
+        },
+        tasks: true,
+      },
+    });
+
+    if (!document) {
+      return sendError(res, 'Hujjat topilmadi yoki mavjud emas', 404);
+    }
+
+    const verifyBaseUrl = config.APP_URL;
+    const docxBuffer = await generateDocumentDocx(document, verifyBaseUrl);
+
+    const safeRegNumber = document.regNumber.replace(/[\/\\:*"<>|]/g, '_');
+    const filename = `${safeRegNumber}_${document.category || 'bildirishnoma'}.docx`;
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    );
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${encodeURIComponent(filename)}"; filename*=UTF-8''${encodeURIComponent(filename)}`
+    );
+    res.setHeader('Content-Length', docxBuffer.length);
+
+    return res.end(docxBuffer);
   } catch (error) {
     next(error);
   }

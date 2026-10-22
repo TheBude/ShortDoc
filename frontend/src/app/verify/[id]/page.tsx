@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useEffect, useState, use } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import {
   ShieldCheck,
   CheckCircle2,
@@ -21,7 +22,7 @@ import { downloadDocumentDocx } from '@/lib/downloadDocx';
 import { getApiBaseUrl } from '@/lib/api';
 
 interface VerificationData {
-  id: string;
+  id?: string;
   regNumber: string;
   title: string;
   category: string;
@@ -38,7 +39,7 @@ interface VerificationData {
     position?: string | null;
   } | null;
   department?: {
-    id: string;
+    id?: string;
     name: string;
     code: string;
   } | null;
@@ -54,35 +55,56 @@ interface VerificationData {
   verifiedAt: string;
 }
 
-export default function DocumentVerificationPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = use(params);
+export default function DocumentVerificationPage() {
+  const routeParams = useParams();
+  const id = typeof routeParams?.id === 'string'
+    ? routeParams.id
+    : Array.isArray(routeParams?.id)
+    ? routeParams.id[0]
+    : '';
 
   const [loading, setLoading] = useState(true);
   const [docData, setDocData] = useState<VerificationData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!id) {
+      setError('Hujjat identifikatori ko‘rsatilmadi');
+      setLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+
     async function verifyDoc() {
       try {
         const baseUrl = getApiBaseUrl();
-        const res = await fetch(`${baseUrl}/documents/${id}/public-verify`);
-        const json = await res.json();
+        const res = await fetch(`${baseUrl}/documents/${encodeURIComponent(id)}/public-verify`);
+        const json = await res.json().catch(() => ({}));
+        
+        if (!isMounted) return;
+
         if (json.success && json.data) {
           setDocData(json.data);
         } else {
           setError(json.message || 'Hujjat topilmadi yoki haqiqiy emas.');
         }
       } catch (e: any) {
-        setError('Server bilan aloqa o‘rnatib bo‘lmadi.');
+        if (isMounted) {
+          setError('Server bilan aloqa o‘rnatib bo‘lmadi.');
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     }
+
     verifyDoc();
+
+    return () => {
+      isMounted = false;
+    };
   }, [id]);
 
   if (loading) {
@@ -123,13 +145,35 @@ export default function DocumentVerificationPage({
     );
   }
 
-  const createdDate = new Date(docData.createdAt).toLocaleDateString('uz-UZ', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
+  const docId = docData.id || id || '';
 
-  const verifiedDate = new Date(docData.verifiedAt).toLocaleString('uz-UZ');
+  const createdDate = (() => {
+    if (!docData.createdAt) return '—';
+    try {
+      const d = new Date(docData.createdAt);
+      return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('uz-UZ', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      });
+    } catch {
+      return '—';
+    }
+  })();
+
+  const verifiedDate = (() => {
+    if (!docData.verifiedAt) return new Date().toLocaleString('uz-UZ');
+    try {
+      const d = new Date(docData.verifiedAt);
+      return isNaN(d.getTime()) ? new Date().toLocaleString('uz-UZ') : d.toLocaleString('uz-UZ');
+    } catch {
+      return new Date().toLocaleString('uz-UZ');
+    }
+  })();
+
+  const verificationCode = docId
+    ? `SD-VERIFY-${docId.replace(/-/g, '').slice(0, 12).toUpperCase()}`
+    : 'SD-VERIFY-SAMDU';
 
   return (
     <div className="min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 py-8 px-4 sm:px-6">
@@ -267,8 +311,8 @@ export default function DocumentVerificationPage({
                         <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                       </div>
                       <div>
-                        <div className="font-bold text-slate-900 dark:text-white">{app.approver.fullName}</div>
-                        <div className="text-[11px] text-slate-400 dark:text-slate-500">{app.approver.position || 'Mas’ul xodim'}</div>
+                        <div className="font-bold text-slate-900 dark:text-white">{app.approver?.fullName || 'Noma’lum'}</div>
+                        <div className="text-[11px] text-slate-400 dark:text-slate-500">{app.approver?.position || 'Mas’ul xodim'}</div>
                       </div>
                     </div>
 
@@ -277,7 +321,7 @@ export default function DocumentVerificationPage({
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         Tasdiqlangan
                       </span>
-                      {app.signedAt && (
+                      {app.signedAt && !isNaN(new Date(app.signedAt).getTime()) && (
                         <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 font-mono">
                           {new Date(app.signedAt).toLocaleString('uz-UZ')}
                         </div>
@@ -289,10 +333,10 @@ export default function DocumentVerificationPage({
             </div>
           )}
 
-          {/* 6. Action Buttons: Download DOCX & Print */}
+          {/* 5. Action Buttons: Download DOCX & Print */}
           <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
             <button
-              onClick={() => downloadDocumentDocx(docData.id, docData.regNumber, docData.category)}
+              onClick={() => downloadDocumentDocx(docId, docData.regNumber, docData.category, true)}
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-600/30 transition-all cursor-pointer"
             >
               <Download className="w-4 h-4" />
@@ -310,7 +354,7 @@ export default function DocumentVerificationPage({
 
         </div>
 
-        {/* 7. Legal Guarantee Footer */}
+        {/* 6. Legal Guarantee Footer */}
         <div className="p-6 rounded-3xl bg-slate-200/60 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/60 text-center text-xs text-slate-500 dark:text-slate-400 space-y-2">
           <div className="flex items-center justify-center gap-1.5 font-bold text-slate-700 dark:text-slate-300">
             <QrCode className="w-4 h-4 text-primary-600 dark:text-primary-400" />
@@ -320,7 +364,7 @@ export default function DocumentVerificationPage({
             Ushbu elektron hujjat O‘zbekiston Respublikasining 2004-yil 29-apreldagi «Elektron hujjat aylanishi to‘g‘risida»gi hamda «Elektron raqamli imzo to‘g‘risida»gi Qonunlariga muvofiq qog‘oz shaklidagi hujjat bilan bir xil yuridik kuchga ega.
           </p>
           <div className="text-[10px] text-slate-400 dark:text-slate-500 pt-1 font-mono">
-            Verifikatsiya kodi: SD-VERIFY-{docData.id.slice(0, 12).toUpperCase()}
+            Verifikatsiya kodi: {verificationCode}
           </div>
         </div>
 

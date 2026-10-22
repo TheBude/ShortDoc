@@ -1,13 +1,24 @@
+import { getApiBaseUrl } from './api';
+
 /**
  * Download a document in official Word (.docx) format
  */
-export async function downloadDocumentDocx(documentId: string, regNumber?: string, category?: string) {
+export async function downloadDocumentDocx(
+  documentId: string,
+  regNumber?: string,
+  category?: string,
+  isPublic: boolean = false
+) {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL
-      ? process.env.NEXT_PUBLIC_API_URL.replace(/\/api\/?$/, '')
-      : '';
+    if (!documentId) {
+      throw new Error('Hujjat identifikatori topilmadi');
+    }
+
+    const baseUrl = getApiBaseUrl();
     const token = typeof window !== 'undefined' ? localStorage.getItem('shortdoc_token') : null;
-    const url = `${baseUrl}/api/documents/${documentId}/docx`;
+    const url = isPublic
+      ? `${baseUrl}/documents/${encodeURIComponent(documentId)}/public-docx`
+      : `${baseUrl}/documents/${encodeURIComponent(documentId)}/docx`;
 
     const headers: Record<string, string> = {};
     if (token) {
