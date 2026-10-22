@@ -87,6 +87,25 @@ export const errorHandler = (
     });
   }
 
+  // CORS xatoligi
+  if (err.message && err.message.includes('CORS xatoligi')) {
+    return res.status(403).json({
+      success: false,
+      message: err.message,
+      requestId: reqId,
+    });
+  }
+
+  // Prisma ma'lumotlar bazasi ustun/jadval xatoliklari (P2021, P2022)
+  if (err.code && typeof err.code === 'string' && err.code.startsWith('P')) {
+    console.error(`[Prisma Database Error ${err.code}]`, err.message);
+    return res.status(500).json({
+      success: false,
+      message: `Ma’lumotlar bazasi xatosi (${err.code}): ${err.message}`,
+      requestId: reqId,
+    });
+  }
+
   const statusCode = typeof err.statusCode === 'number' ? err.statusCode : 500;
 
   // 5. Production xavfsizligi: 500 xatolarda ichki xabar va stack trace chiqmasin

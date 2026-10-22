@@ -59,11 +59,21 @@ const allowedOrigins = config.CORS_ORIGIN.split(',').map((o) => o.trim());
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Server-to-server so'rovlar yoki mobile ilovalar uchun origin undefined bo'lishi mumkin
-      if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+      // Server-to-server so'rovlar, mobile ilovalar yoki Vercel / Render domenlari uchun avtomatik ruxsat
+      if (
+        !origin ||
+        allowedOrigins.includes(origin) ||
+        allowedOrigins.includes('*') ||
+        origin.endsWith('.vercel.app') ||
+        origin.endsWith('.onrender.com') ||
+        origin.includes('localhost') ||
+        origin.includes('127.0.0.1')
+      ) {
         callback(null, true);
       } else {
-        callback(new Error(`CORS xatoligi: '${origin}' manzili uchun kirish taqiqlangan`));
+        const corsErr = new Error(`CORS xatoligi: '${origin}' manzili uchun kirish taqiqlangan`);
+        (corsErr as any).statusCode = 403;
+        callback(corsErr);
       }
     },
     credentials: true,
