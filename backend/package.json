@@ -35,8 +35,6 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@rolldown/binding-win32-x64-msvc": "^1.2.15",
-    "@rollup/wasm-node": "^4.64.12",
     "@types/bcryptjs": "^2.4.6",
     "@types/compression": "^1.7.5",
     "@types/cors": "^2.8.17",
