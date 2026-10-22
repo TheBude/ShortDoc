@@ -14,11 +14,17 @@ router.get('/', authenticate, async (req: AuthRequest, res, next) => {
 
     const where: any = {};
 
-    // Oddiy xodim faqat o'ziga biriktirilgan yoki o'zi yaratgan topshiriqlarni ko'radi
-    if (req.user!.role === 'STAFF') {
+    // Oddiy xodim yoki shaxsiy topshiriqlarini so'raganlar faqat o'ziga tegishlisini ko'radi
+    if (req.user!.role === 'STAFF' || req.query.myTasks === 'true') {
       where.OR = [
         { assignedToId: req.user!.userId },
         { createdById: req.user!.userId },
+      ];
+    } else if (req.user!.role === 'DEPARTMENT_HEAD' && !req.query.all) {
+      where.OR = [
+        { assignedToId: req.user!.userId },
+        { createdById: req.user!.userId },
+        ...(req.user!.departmentId ? [{ assignedTo: { departmentId: req.user!.departmentId } }] : []),
       ];
     }
 

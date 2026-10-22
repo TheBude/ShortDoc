@@ -1,11 +1,15 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useAuth } from '@/context/AuthContext';
 import { fetchApi } from '@/lib/api';
 import { Department } from '@/types';
 import { Building2, Plus, AlertCircle } from 'lucide-react';
 
 export default function AdminDepartmentsPage() {
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -60,13 +64,15 @@ export default function AdminDepartmentsPage() {
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Universitet tashkiliy tuzilmasi va bo‘linmalarini boshqarish</p>
         </div>
 
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="inline-flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold px-4 py-2.5 rounded-lg shadow-sm transition-colors cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Yangi Bo‘lim Qo‘shish</span>
-        </button>
+        {isSuperAdmin && (
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="inline-flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold px-4 py-2.5 rounded-lg shadow-sm transition-colors cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Yangi Bo‘lim Qo‘shish</span>
+          </button>
+        )}
       </div>
 
       {/* Departments Table */}

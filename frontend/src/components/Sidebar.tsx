@@ -38,6 +38,9 @@ function SidebarContent() {
 
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const isLeadership = user?.role === 'LEADERSHIP';
+  const isChancellery = user?.role === 'CHANCELLERY';
+  const isDepartmentHead = user?.role === 'DEPARTMENT_HEAD';
+  const isStaff = user?.role === 'STAFF';
 
   const [counts, setCounts] = useState<{
     inApproval?: number;
@@ -94,7 +97,7 @@ function SidebarContent() {
             : '-translate-x-full md:translate-x-0'
         } ${isDesktopCollapsed ? 'md:w-20' : 'md:w-72'}`}
       >
-        {/* 1. Header (SamDU Logo & Morphing Burger) */}
+        {/* 1. Header (SamDU Logo & Collapse Toggle) */}
         <div
           className={`flex h-[73px] shrink-0 items-center border-b border-slate-800/90 bg-[#090f20] transition-colors ${
             isCollapsed ? 'justify-center px-2' : 'justify-between px-4 sm:px-5'
@@ -119,7 +122,7 @@ function SidebarContent() {
                     SamDU ShortDoc
                   </span>
                   <span className="px-1.5 py-0.2 rounded text-[8px] font-bold uppercase tracking-wider bg-slate-800 text-slate-300 border border-slate-700 shrink-0">
-                    TEST
+                    Test
                   </span>
                 </div>
                 <span className="block text-[9px] text-slate-400 font-medium tracking-wide uppercase truncate">
@@ -129,7 +132,7 @@ function SidebarContent() {
             </Link>
           )}
 
-          {/* Morphing Burger / Close Toggle Button */}
+          {/* Morphing Toggle Button (Mobile: close; Desktop: collapse) */}
           <button
             type="button"
             onClick={isMobileOpen ? closeMobile : toggleDesktopCollapsed}
@@ -137,17 +140,17 @@ function SidebarContent() {
               isMobileOpen
                 ? 'Menyuni yopish'
                 : isDesktopCollapsed
-                ? 'Bo‘limlar panelini kengaytirish'
-                : 'Bo‘limlar panelini ixchamlashtirish'
+                ? 'Panelni kengaytirish'
+                : 'Panelni ixchamlashtirish'
             }
             title={
               isMobileOpen
                 ? 'Menyuni yopish'
                 : isDesktopCollapsed
-                ? 'Bo‘limlar panelini kengaytirish'
-                : 'Bo‘limlar panelini ixchamlashtirish'
+                ? 'Panelni kengaytirish'
+                : 'Panelni ixchamlashtirish'
             }
-            className="rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-slate-100 transition-colors cursor-pointer shrink-0 focus:outline-none focus:ring-1 focus:ring-slate-600"
+            className="rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-slate-100 transition-colors cursor-pointer shrink-0 focus:outline-none"
           >
             <svg
               className="h-5 w-5"
@@ -180,7 +183,7 @@ function SidebarContent() {
           </button>
         </div>
 
-        {/* 2. New Document Action Button */}
+        {/* 2. Primary Action: Yangi hujjat yaratish */}
         <div className={`p-3 border-b border-slate-800/90 bg-[#090f20]/50 ${isCollapsed ? 'flex justify-center' : ''}`}>
           <Link
             href="/documents?create=true"
@@ -195,29 +198,50 @@ function SidebarContent() {
           </Link>
         </div>
 
-        {/* 3. Navigation Sections (Scrollable) */}
+        {/* 3. Navigation Sections (Scrollable & Role-based) */}
         <div className="flex-1 py-3 px-2 space-y-4 overflow-y-auto text-xs">
           
-          {/* SECTION 1: MENING ISH STOLIM */}
+          {/* SECTION 1: ASOSIY ISH MENYUSI */}
           <div>
             {!isCollapsed ? (
               <div className="px-3 pb-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                Mening ish stolim
+                Asosiy
               </div>
             ) : (
               <div className="border-t border-slate-800 my-2" />
             )}
 
             <div className="space-y-1">
-              {/* Kelishuvda (Imzoga kelganlar) */}
+              {/* Mening ishlarim (Bosh sahifa) */}
               <Link
-                href="/documents?status=IN_APPROVAL"
+                href="/"
                 onClick={closeMobile}
-                title={isCollapsed ? 'Kelishuvda (Imzoga kelgan)' : undefined}
-                className={`group relative flex items-center rounded-lg font-medium transition-all ${
-                  isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'justify-between px-3 py-2.5'
+                title={isCollapsed ? 'Mening ishlarim' : undefined}
+                className={`group flex items-center rounded-lg font-medium transition-all ${
+                  isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-2.5 px-3 py-2'
                 } ${
-                  isItemActive('/documents?status=IN_APPROVAL')
+                  isItemActive('/')
+                    ? 'bg-slate-800 text-white font-semibold border border-slate-700'
+                    : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
+                }`}
+              >
+                <LayoutDashboard
+                  className={`w-4 h-4 shrink-0 transition-colors ${
+                    isItemActive('/') ? 'text-blue-400' : 'text-slate-400 group-hover:text-slate-200'
+                  }`}
+                />
+                {!isCollapsed && <span className="truncate">Mening ishlarim</span>}
+              </Link>
+
+              {/* Imzolashim kerak (Aynan ushbu foydalanuvchining imzosi kutilayotganlar) */}
+              <Link
+                href="/documents?pendingMySignature=true"
+                onClick={closeMobile}
+                title={isCollapsed ? 'Imzolashim kerak' : undefined}
+                className={`group relative flex items-center rounded-lg font-medium transition-all ${
+                  isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'justify-between px-3 py-2'
+                } ${
+                  isItemActive('/documents?pendingMySignature=true')
                     ? 'bg-slate-800 text-white font-semibold border border-slate-700'
                     : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
                 }`}
@@ -225,32 +249,32 @@ function SidebarContent() {
                 <div className="flex items-center gap-2.5 truncate">
                   <FileCheck2
                     className={`w-4 h-4 shrink-0 transition-colors ${
-                      isItemActive('/documents?status=IN_APPROVAL')
+                      isItemActive('/documents?pendingMySignature=true')
                         ? 'text-blue-400'
                         : 'text-slate-400 group-hover:text-slate-200'
                     }`}
                   />
-                  {!isCollapsed && <span className="truncate">Kelishuvda (Imzoga kelgan)</span>}
+                  {!isCollapsed && <span className="truncate">Imzolashim kerak</span>}
                 </div>
 
-                {(counts.pendingSignatures || counts.inApproval || 0) > 0 && (
+                {(counts.pendingSignatures || 0) > 0 && (
                   isCollapsed ? (
-                    <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-slate-400 ring-2 ring-[#0b1329]" />
+                    <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-blue-400 ring-2 ring-[#0b1329]" />
                   ) : (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-200 border border-slate-700">
-                      {counts.pendingSignatures || counts.inApproval}
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-900/60 text-blue-200 border border-blue-700/60">
+                      {counts.pendingSignatures}
                     </span>
                   )
                 )}
               </Link>
 
-              {/* Mening topshiriqlarim (Dedlaynlar) */}
+              {/* Bajarishim kerak (Topshiriqlar) */}
               <Link
                 href="/tasks"
                 onClick={closeMobile}
-                title={isCollapsed ? 'Mening topshiriqlarim' : undefined}
+                title={isCollapsed ? 'Bajarishim kerak' : undefined}
                 className={`group relative flex items-center rounded-lg font-medium transition-all ${
-                  isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'justify-between px-3 py-2.5'
+                  isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'justify-between px-3 py-2'
                 } ${
                   isItemActive('/tasks')
                     ? 'bg-slate-800 text-white font-semibold border border-slate-700'
@@ -265,7 +289,7 @@ function SidebarContent() {
                         : 'text-slate-400 group-hover:text-slate-200'
                     }`}
                   />
-                  {!isCollapsed && <span className="truncate">Mening topshiriqlarim</span>}
+                  {!isCollapsed && <span className="truncate">Bajarishim kerak</span>}
                 </div>
 
                 {(counts.overdue || 0) > 0 ? (
@@ -286,317 +310,254 @@ function SidebarContent() {
                   )
                 ) : null}
               </Link>
-            </div>
-          </div>
 
-          {/* SECTION 2: HUJJATLAR AYLANISHI */}
-          <div>
-            {!isCollapsed ? (
-              <div className="px-3 pb-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                Hujjatlar aylanishi
-              </div>
-            ) : (
-              <div className="border-t border-slate-800 my-2" />
-            )}
-
-            <div className="space-y-1">
-              {/* Ichki bildirgilar va xizmat xatlari */}
+              {/* Barcha hujjatlar */}
               <Link
-                href="/documents?documentType=INTERNAL"
+                href="/documents"
                 onClick={closeMobile}
-                title={isCollapsed ? 'Ichki bildirgilar va xizmat xatlari' : undefined}
+                title={isCollapsed ? 'Barcha hujjatlar' : undefined}
                 className={`group flex items-center rounded-lg font-medium transition-all ${
                   isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-2.5 px-3 py-2'
                 } ${
-                  isItemActive('/documents?documentType=INTERNAL')
+                  isItemActive('/documents')
                     ? 'bg-slate-800 text-white font-semibold border border-slate-700'
                     : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
                 }`}
               >
                 <FileText
                   className={`w-4 h-4 shrink-0 transition-colors ${
-                    isItemActive('/documents?documentType=INTERNAL')
-                      ? 'text-blue-400'
-                      : 'text-slate-400 group-hover:text-slate-200'
+                    isItemActive('/documents') ? 'text-blue-400' : 'text-slate-400 group-hover:text-slate-200'
                   }`}
                 />
-                {!isCollapsed && <span className="truncate">Ichki bildirgilar</span>}
+                {!isCollapsed && <span className="truncate">Barcha hujjatlar</span>}
               </Link>
+            </div>
+          </div>
 
-              {/* Kiruvchi rasmiy xatlar */}
-              <Link
-                href="/documents?documentType=INCOMING"
-                onClick={closeMobile}
-                title={isCollapsed ? 'Kiruvchi rasmiy xatlar' : undefined}
-                className={`group flex items-center rounded-lg font-medium transition-all ${
-                  isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-2.5 px-3 py-2'
-                } ${
-                  isItemActive('/documents?documentType=INCOMING')
-                    ? 'bg-slate-800 text-white font-semibold border border-slate-700'
-                    : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
-                }`}
-              >
-                <Inbox
-                  className={`w-4 h-4 shrink-0 transition-colors ${
+          {/* SECTION 2: DEVONXONA / REKTORAT BO'LIMLARI (faqat tegishli rollar ko'radi) */}
+          {(isChancellery || isLeadership || isSuperAdmin) && (
+            <div>
+              {!isCollapsed ? (
+                <div className="px-3 pb-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                  Devonxona va Ijro
+                </div>
+              ) : (
+                <div className="border-t border-slate-800 my-2" />
+              )}
+
+              <div className="space-y-1">
+                {/* Yangi kelgan xatlar (Ro'yxatga olish uchun) */}
+                <Link
+                  href="/documents?status=REGISTERED"
+                  onClick={closeMobile}
+                  title={isCollapsed ? 'Yangi kelgan xatlar' : undefined}
+                  className={`group relative flex items-center rounded-lg font-medium transition-all ${
+                    isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'justify-between px-3 py-2'
+                  } ${
+                    isItemActive('/documents?status=REGISTERED')
+                      ? 'bg-slate-800 text-white font-semibold border border-slate-700'
+                      : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 truncate">
+                    <Hourglass
+                      className={`w-4 h-4 shrink-0 transition-colors ${
+                        isItemActive('/documents?status=REGISTERED')
+                          ? 'text-blue-400'
+                          : 'text-slate-400 group-hover:text-slate-200'
+                      }`}
+                    />
+                    {!isCollapsed && <span className="truncate">Yangi kelgan xatlar</span>}
+                  </div>
+                  {(counts.registered || 0) > 0 && (
+                    isCollapsed ? (
+                      <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-slate-400 ring-2 ring-[#0b1329]" />
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700">
+                        {counts.registered}
+                      </span>
+                    )
+                  )}
+                </Link>
+
+                {/* Kiruvchi xatlar */}
+                <Link
+                  href="/documents?documentType=INCOMING"
+                  onClick={closeMobile}
+                  title={isCollapsed ? 'Kiruvchi xatlar' : undefined}
+                  className={`group flex items-center rounded-lg font-medium transition-all ${
+                    isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-2.5 px-3 py-2'
+                  } ${
                     isItemActive('/documents?documentType=INCOMING')
-                      ? 'text-blue-400'
-                      : 'text-slate-400 group-hover:text-slate-200'
+                      ? 'bg-slate-800 text-white font-semibold border border-slate-700'
+                      : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
                   }`}
-                />
-                {!isCollapsed && <span className="truncate">Kiruvchi rasmiy xatlar</span>}
-              </Link>
-
-              {/* Chiquvchi xatlar */}
-              <Link
-                href="/documents?documentType=OUTGOING"
-                onClick={closeMobile}
-                title={isCollapsed ? 'Chiquvchi xatlar' : undefined}
-                className={`group flex items-center rounded-lg font-medium transition-all ${
-                  isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-2.5 px-3 py-2'
-                } ${
-                  isItemActive('/documents?documentType=OUTGOING')
-                    ? 'bg-slate-800 text-white font-semibold border border-slate-700'
-                    : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
-                }`}
-              >
-                <Send
-                  className={`w-4 h-4 shrink-0 transition-colors ${
-                    isItemActive('/documents?documentType=OUTGOING')
-                      ? 'text-blue-400'
-                      : 'text-slate-400 group-hover:text-slate-200'
-                  }`}
-                />
-                {!isCollapsed && <span className="truncate">Chiquvchi xatlar</span>}
-              </Link>
-
-              {/* Rektor buyruqlari va qarorlari */}
-              <Link
-                href="/documents?category=Buyruq"
-                onClick={closeMobile}
-                title={isCollapsed ? 'Rektor buyruqlari va qarorlari' : undefined}
-                className={`group flex items-center rounded-lg font-medium transition-all ${
-                  isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-2.5 px-3 py-2'
-                } ${
-                  isItemActive('/documents?category=Buyruq')
-                    ? 'bg-slate-800 text-white font-semibold border border-slate-700'
-                    : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
-                }`}
-              >
-                <Scale
-                  className={`w-4 h-4 shrink-0 transition-colors ${
-                    isItemActive('/documents?category=Buyruq')
-                      ? 'text-blue-400'
-                      : 'text-slate-400 group-hover:text-slate-200'
-                  }`}
-                />
-                {!isCollapsed && <span className="truncate">Buyruq va qarorlar</span>}
-              </Link>
-
-              {/* Fuqarolar va talabalar murojaatlari */}
-              <Link
-                href="/documents?category=Murojaat"
-                onClick={closeMobile}
-                title={isCollapsed ? 'Fuqarolar va talabalar murojaati' : undefined}
-                className={`group flex items-center rounded-lg font-medium transition-all ${
-                  isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-2.5 px-3 py-2'
-                } ${
-                  isItemActive('/documents?category=Murojaat')
-                    ? 'bg-slate-800 text-white font-semibold border border-slate-700'
-                    : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
-                }`}
-              >
-                <Users
-                  className={`w-4 h-4 shrink-0 transition-colors ${
-                    isItemActive('/documents?category=Murojaat')
-                      ? 'text-blue-400'
-                      : 'text-slate-400 group-hover:text-slate-200'
-                  }`}
-                />
-                {!isCollapsed && <span className="truncate">Fuqarolar murojaati</span>}
-              </Link>
-
-              {/* Ro‘yxatga olish uchun */}
-              <Link
-                href="/documents?status=REGISTERED"
-                onClick={closeMobile}
-                title={isCollapsed ? 'Ro‘yxatga olish uchun' : undefined}
-                className={`group relative flex items-center rounded-lg font-medium transition-all ${
-                  isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'justify-between px-3 py-2'
-                } ${
-                  isItemActive('/documents?status=REGISTERED')
-                    ? 'bg-slate-800 text-white font-semibold border border-slate-700'
-                    : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
-                }`}
-              >
-                <div className="flex items-center gap-2.5 truncate">
-                  <Hourglass
+                >
+                  <Inbox
                     className={`w-4 h-4 shrink-0 transition-colors ${
-                      isItemActive('/documents?status=REGISTERED')
+                      isItemActive('/documents?documentType=INCOMING')
                         ? 'text-blue-400'
                         : 'text-slate-400 group-hover:text-slate-200'
                     }`}
                   />
-                  {!isCollapsed && <span className="truncate">Ro‘yxatga olish uchun</span>}
-                </div>
-                {(counts.registered || 0) > 0 && (
-                  isCollapsed ? (
-                    <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-slate-400 ring-2 ring-[#0b1329]" />
-                  ) : (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700">
-                      {counts.registered}
-                    </span>
-                  )
-                )}
-              </Link>
-            </div>
-          </div>
+                  {!isCollapsed && <span className="truncate">Kiruvchi xatlar</span>}
+                </Link>
 
-          {/* SECTION 3: TAHLIL VA SOZLAMALAR */}
-          <div>
-            {!isCollapsed ? (
-              <div className="px-3 pb-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                Tahlil va sozlamalar
+                {/* Chiquvchi xatlar */}
+                <Link
+                  href="/documents?documentType=OUTGOING"
+                  onClick={closeMobile}
+                  title={isCollapsed ? 'Chiquvchi xatlar' : undefined}
+                  className={`group flex items-center rounded-lg font-medium transition-all ${
+                    isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-2.5 px-3 py-2'
+                  } ${
+                    isItemActive('/documents?documentType=OUTGOING')
+                      ? 'bg-slate-800 text-white font-semibold border border-slate-700'
+                      : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
+                  }`}
+                >
+                  <Send
+                    className={`w-4 h-4 shrink-0 transition-colors ${
+                      isItemActive('/documents?documentType=OUTGOING')
+                        ? 'text-blue-400'
+                        : 'text-slate-400 group-hover:text-slate-200'
+                    }`}
+                  />
+                  {!isCollapsed && <span className="truncate">Chiquvchi xatlar</span>}
+                </Link>
+
+                {/* Elektron arxiv */}
+                <Link
+                  href="/documents?status=ARCHIVED"
+                  onClick={closeMobile}
+                  title={isCollapsed ? 'Elektron arxiv' : undefined}
+                  className={`group flex items-center rounded-lg font-medium transition-all ${
+                    isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-2.5 px-3 py-2'
+                  } ${
+                    isItemActive('/documents?status=ARCHIVED')
+                      ? 'bg-slate-800 text-white font-semibold border border-slate-700'
+                      : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
+                  }`}
+                >
+                  <Archive
+                    className={`w-4 h-4 shrink-0 transition-colors ${
+                      isItemActive('/documents?status=ARCHIVED') ? 'text-blue-400' : 'text-slate-400 group-hover:text-slate-200'
+                    }`}
+                  />
+                  {!isCollapsed && <span className="truncate">Elektron arxiv</span>}
+                </Link>
               </div>
-            ) : (
-              <div className="border-t border-slate-800 my-2" />
-            )}
-
-            <div className="space-y-1">
-              {/* Dashboard */}
-              <Link
-                href="/"
-                onClick={closeMobile}
-                title={isCollapsed ? 'Boshqaruv paneli' : undefined}
-                className={`group flex items-center rounded-lg font-medium transition-all ${
-                  isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-2.5 px-3 py-2'
-                } ${
-                  isItemActive('/')
-                    ? 'bg-slate-800 text-white font-semibold border border-slate-700'
-                    : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
-                }`}
-              >
-                <LayoutDashboard
-                  className={`w-4 h-4 shrink-0 transition-colors ${
-                    isItemActive('/') ? 'text-blue-400' : 'text-slate-400 group-hover:text-slate-200'
-                  }`}
-                />
-                {!isCollapsed && <span className="truncate">Boshqaruv paneli</span>}
-              </Link>
-
-              {/* Ijro intizomi va hisobotlar */}
-              <Link
-                href="/reports"
-                onClick={closeMobile}
-                title={isCollapsed ? 'Ijro intizomi va hisobotlar' : undefined}
-                className={`group flex items-center rounded-lg font-medium transition-all ${
-                  isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-2.5 px-3 py-2'
-                } ${
-                  isItemActive('/reports')
-                    ? 'bg-slate-800 text-white font-semibold border border-slate-700'
-                    : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
-                }`}
-              >
-                <BarChart3
-                  className={`w-4 h-4 shrink-0 transition-colors ${
-                    isItemActive('/reports') ? 'text-blue-400' : 'text-slate-400 group-hover:text-slate-200'
-                  }`}
-                />
-                {!isCollapsed && <span className="truncate">Ijro intizomi</span>}
-              </Link>
-
-              {/* Elektron arxiv */}
-              <Link
-                href="/documents?status=ARCHIVED"
-                onClick={closeMobile}
-                title={isCollapsed ? 'Elektron arxiv' : undefined}
-                className={`group flex items-center rounded-lg font-medium transition-all ${
-                  isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-2.5 px-3 py-2'
-                } ${
-                  isItemActive('/documents?status=ARCHIVED')
-                    ? 'bg-slate-800 text-white font-semibold border border-slate-700'
-                    : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
-                }`}
-              >
-                <Archive
-                  className={`w-4 h-4 shrink-0 transition-colors ${
-                    isItemActive('/documents?status=ARCHIVED') ? 'text-blue-400' : 'text-slate-400 group-hover:text-slate-200'
-                  }`}
-                />
-                {!isCollapsed && <span className="truncate">Elektron arxiv</span>}
-              </Link>
-
-              {/* Universitet tuzilmasi */}
-              <Link
-                href="/admin/departments"
-                onClick={closeMobile}
-                title={isCollapsed ? 'Universitet tuzilmasi' : undefined}
-                className={`group flex items-center rounded-lg font-medium transition-all ${
-                  isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-2.5 px-3 py-2'
-                } ${
-                  isItemActive('/admin/departments')
-                    ? 'bg-slate-800 text-white font-semibold border border-slate-700'
-                    : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
-                }`}
-              >
-                <Building2
-                  className={`w-4 h-4 shrink-0 transition-colors ${
-                    isItemActive('/admin/departments') ? 'text-blue-400' : 'text-slate-400 group-hover:text-slate-200'
-                  }`}
-                />
-                {!isCollapsed && <span className="truncate">Universitet tuzilmasi</span>}
-              </Link>
-
-              {/* Xodimlar - SuperAdmin */}
-              {isSuperAdmin && (
-                <Link
-                  href="/admin/users"
-                  onClick={closeMobile}
-                  title={isCollapsed ? 'Xodimlar va arizalar' : undefined}
-                  className={`group flex items-center rounded-lg font-medium transition-all ${
-                    isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-2.5 px-3 py-2'
-                  } ${
-                    isItemActive('/admin/users')
-                      ? 'bg-slate-800 text-white font-semibold border border-slate-700'
-                      : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
-                  }`}
-                >
-                  <UserCheck
-                    className={`w-4 h-4 shrink-0 transition-colors ${
-                      isItemActive('/admin/users') ? 'text-blue-400' : 'text-slate-400 group-hover:text-slate-200'
-                    }`}
-                  />
-                  {!isCollapsed && <span className="truncate">Xodimlar</span>}
-                </Link>
-              )}
-
-              {/* Audit jurnali */}
-              {(isSuperAdmin || isLeadership) && (
-                <Link
-                  href="/admin/audit"
-                  onClick={closeMobile}
-                  title={isCollapsed ? 'Xavfsizlik & Audit jurnali' : undefined}
-                  className={`group flex items-center rounded-lg font-medium transition-all ${
-                    isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-2.5 px-3 py-2'
-                  } ${
-                    isItemActive('/admin/audit')
-                      ? 'bg-slate-800 text-white font-semibold border border-slate-700'
-                      : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
-                  }`}
-                >
-                  <ShieldCheck
-                    className={`w-4 h-4 shrink-0 transition-colors ${
-                      isItemActive('/admin/audit') ? 'text-blue-400' : 'text-slate-400 group-hover:text-slate-200'
-                    }`}
-                  />
-                  {!isCollapsed && <span className="truncate">Audit jurnali</span>}
-                </Link>
-              )}
             </div>
-          </div>
+          )}
+
+          {/* SECTION 3: TAHLIL VA BOSHQARUV (faqat Dekan, Rektorat, SuperAdmin) */}
+          {(isDepartmentHead || isLeadership || isSuperAdmin) && (
+            <div>
+              {!isCollapsed ? (
+                <div className="px-3 pb-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                  Tahlil va monitoring
+                </div>
+              ) : (
+                <div className="border-t border-slate-800 my-2" />
+              )}
+
+              <div className="space-y-1">
+                {/* Hisobotlar */}
+                <Link
+                  href="/reports"
+                  onClick={closeMobile}
+                  title={isCollapsed ? 'Hisobotlar' : undefined}
+                  className={`group flex items-center rounded-lg font-medium transition-all ${
+                    isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-2.5 px-3 py-2'
+                  } ${
+                    isItemActive('/reports')
+                      ? 'bg-slate-800 text-white font-semibold border border-slate-700'
+                      : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
+                  }`}
+                >
+                  <BarChart3
+                    className={`w-4 h-4 shrink-0 transition-colors ${
+                      isItemActive('/reports') ? 'text-blue-400' : 'text-slate-400 group-hover:text-slate-200'
+                    }`}
+                  />
+                  {!isCollapsed && <span className="truncate">Hisobotlar</span>}
+                </Link>
+
+                {/* Universitet tuzilmasi (faqat Super Admin va Rektorat) */}
+                {(isSuperAdmin || isLeadership) && (
+                  <Link
+                    href="/admin/departments"
+                    onClick={closeMobile}
+                    title={isCollapsed ? 'Universitet tuzilmasi' : undefined}
+                    className={`group flex items-center rounded-lg font-medium transition-all ${
+                      isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-2.5 px-3 py-2'
+                    } ${
+                      isItemActive('/admin/departments')
+                        ? 'bg-slate-800 text-white font-semibold border border-slate-700'
+                        : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
+                    }`}
+                  >
+                    <Building2
+                      className={`w-4 h-4 shrink-0 transition-colors ${
+                        isItemActive('/admin/departments') ? 'text-blue-400' : 'text-slate-400 group-hover:text-slate-200'
+                      }`}
+                    />
+                    {!isCollapsed && <span className="truncate">Universitet tuzilmasi</span>}
+                  </Link>
+                )}
+
+                {/* Xodimlar (faqat Super Admin) */}
+                {isSuperAdmin && (
+                  <Link
+                    href="/admin/users"
+                    onClick={closeMobile}
+                    title={isCollapsed ? 'Xodimlar ro‘yxati' : undefined}
+                    className={`group flex items-center rounded-lg font-medium transition-all ${
+                      isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-2.5 px-3 py-2'
+                    } ${
+                      isItemActive('/admin/users')
+                        ? 'bg-slate-800 text-white font-semibold border border-slate-700'
+                        : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
+                    }`}
+                  >
+                    <UserCheck
+                      className={`w-4 h-4 shrink-0 transition-colors ${
+                        isItemActive('/admin/users') ? 'text-blue-400' : 'text-slate-400 group-hover:text-slate-200'
+                      }`}
+                    />
+                    {!isCollapsed && <span className="truncate">Xodimlar</span>}
+                  </Link>
+                )}
+
+                {/* Audit jurnali (faqat Super Admin va Rektorat) */}
+                {(isSuperAdmin || isLeadership) && (
+                  <Link
+                    href="/admin/audit"
+                    onClick={closeMobile}
+                    title={isCollapsed ? 'Xavfsizlik & audit jurnali' : undefined}
+                    className={`group flex items-center rounded-lg font-medium transition-all ${
+                      isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-2.5 px-3 py-2'
+                    } ${
+                      isItemActive('/admin/audit')
+                        ? 'bg-slate-800 text-white font-semibold border border-slate-700'
+                        : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
+                    }`}
+                  >
+                    <ShieldCheck
+                      className={`w-4 h-4 shrink-0 transition-colors ${
+                        isItemActive('/admin/audit') ? 'text-blue-400' : 'text-slate-400 group-hover:text-slate-200'
+                      }`}
+                    />
+                    {!isCollapsed && <span className="truncate">Audit jurnali</span>}
+                  </Link>
+                )}
+              </div>
+            </div>
+          )}
 
         </div>
 
-        {/* 4. Footer (Support & ID Info) */}
+        {/* 4. Footer */}
         <div className={`shrink-0 border-t border-slate-800 bg-[#090f20] text-xs text-slate-400 ${
           isCollapsed ? 'py-3 flex justify-center' : 'p-3.5 space-y-2'
         }`}>

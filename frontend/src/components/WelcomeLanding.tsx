@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { useTheme } from '@/context/ThemeContext';
 import {
@@ -33,10 +33,12 @@ import {
   Moon,
   Check,
   X,
+  Menu,
 } from 'lucide-react';
 
 export const WelcomeLanding = () => {
   const { theme, toggleTheme } = useTheme();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex flex-col font-sans selection:bg-primary-100 dark:selection:bg-primary-900 selection:text-primary-900 dark:selection:text-primary-100 transition-colors duration-200">
@@ -66,7 +68,7 @@ export const WelcomeLanding = () => {
           </Link>
 
           {/* Navigation Links (Desktop) */}
-          <nav className="hidden md:flex items-center gap-7 text-sm font-semibold text-slate-600 dark:text-slate-300">
+          <nav className="hidden lg:flex items-center gap-7 text-sm font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">
             <a href="#about" className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Bosh sahifa</a>
             <a href="#features" className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Tizim imkoniyatlari</a>
             <a href="#benefits" className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Qulayliklar</a>
@@ -74,11 +76,11 @@ export const WelcomeLanding = () => {
           </nav>
 
           {/* Action Buttons (Right) */}
-          <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             {/* Theme Toggle Button */}
             <button
               onClick={toggleTheme}
-              className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+              className="p-2 sm:p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
               title={theme === 'dark' ? "Yorug' rejimga o'tish" : "Qorong'u rejimga o'tish"}
               aria-label="Toggle theme"
             >
@@ -91,21 +93,71 @@ export const WelcomeLanding = () => {
 
             <Link
               href="/login"
-              className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all whitespace-nowrap"
             >
               <span className="w-2 h-2 rounded-full bg-emerald-500" />
               <span>ONE ID</span>
+              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-normal">(Tez kunda)</span>
             </Link>
 
             <Link
               href="/login"
-              className="inline-flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white text-xs sm:text-sm font-bold shadow-md shadow-primary-600/30 hover:shadow-lg hover:shadow-primary-600/40 transition-all group cursor-pointer"
+              className="inline-flex items-center gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white text-xs sm:text-sm font-bold shadow-md shadow-primary-600/30 hover:shadow-lg hover:shadow-primary-600/40 transition-all group cursor-pointer whitespace-nowrap"
             >
-              <span>Tizimga kirish</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+              <span>Kirish</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
             </Link>
+
+            {/* Mobile Menu Hamburger Toggle */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 sm:p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 lg:hidden transition-colors cursor-pointer"
+              aria-label="Navigatsiya menyusi"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile Navigation Drawer */}
+        {mobileMenuOpen && (
+          <div className="lg:hidden border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-4 py-4 space-y-3">
+            <nav className="flex flex-col space-y-2 text-sm font-medium text-slate-700 dark:text-slate-200">
+              <a
+                href="#about"
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                Bosh sahifa
+              </a>
+              <a
+                href="#features"
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                Tizim imkoniyatlari
+              </a>
+              <a
+                href="#benefits"
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                Qulayliklar
+              </a>
+              <a
+                href="#hierarchy"
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                SamDU Tuzilmasi
+              </a>
+            </nav>
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <span className="text-xs text-slate-500">ONE ID orqali kirish:</span>
+              <span className="text-xs text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">Tez kunda</span>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* 2. HERO SECTION (Customized for SamDU) */}

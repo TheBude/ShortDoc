@@ -17,16 +17,14 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // Check saved preference or system preference
+    // Check saved preference; default to clean Light theme for official academic documents
     const saved = localStorage.getItem('shortdoc_theme') as Theme | null;
-    if (saved === 'dark' || saved === 'light') {
-      setThemeState(saved);
-      applyTheme(saved);
+    if (saved === 'dark') {
+      setThemeState('dark');
+      applyTheme('dark');
     } else {
-      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-      const initialTheme = prefersDark ? 'dark' : 'light';
-      setThemeState(initialTheme);
-      applyTheme(initialTheme);
+      setThemeState('light');
+      applyTheme('light');
     }
     setMounted(true);
   }, []);

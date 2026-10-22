@@ -53,6 +53,9 @@ router.get('/dashboard', authenticate, async (req: AuthRequest, res: Response, n
       approachingDeadlineCount,
       recentActivities,
       departmentsStat,
+      pendingMySignaturesDocs,
+      myPendingTasksList,
+      mySubmittedDocs,
     ] = await Promise.all([
       prisma.document.count({ where: whereDoc }),
       prisma.document.count({ where: { ...whereDoc, documentType: 'INCOMING' } }),
@@ -95,6 +98,7 @@ router.get('/dashboard', authenticate, async (req: AuthRequest, res: Response, n
         },
       }),
       prisma.auditLog.findMany({
+        where: !isLeadershipOrAdmin ? { userId: req.user!.userId } : {},
         take: 8,
         orderBy: { createdAt: 'desc' },
         include: { user: { select: { fullName: true, role: true } } },
@@ -108,7 +112,57 @@ router.get('/dashboard', authenticate, async (req: AuthRequest, res: Response, n
           _count: { select: { documents: true, users: true } },
         },
       }),
+      // Foydalanuvchining shaxsan o'zi imzolashi kerak bo'lgan hujjatlar (Top 5)
+      prisma.document.findMany({
+        where: {
+          approvals: {
+            some: {
+              approverId: req.user!.userId,
+              status: 'PENDING',
+            },
+          },
+        },
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          creator: { select: { fullName: true, position: true } },
+          department: { select: { name: true } },
+          approvals: {
+            orderBy: { stepOrder: 'asc' },
+            include: { approver: { select: { fullName: true, role: true } } },
+          },
+        },
+      }),
+      // Foydalanuvchining shaxsiy topshiriqlari (Top 5)
+      prisma.task.findMany({
+        where: {
+          assignedToId: req.user!.userId,
+          status: { in: ['PENDING', 'IN_PROGRESS'] },
+        },
+        take: 5,
+        orderBy: [{ deadline: 'asc' }, { createdAt: 'desc' }],
+        include: {
+          document: { select: { id: true, regNumber: true, title: true } },
+          createdBy: { select: { fullName: true } },
+        },
+      }),
+      // Foydalanuvchi yuborgan so'nggi hujjatlar va ularning hozirgi bosqichi (Top 5)
+      prisma.document.findMany({
+        where: { creatorId: req.user!.userId },
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          approvals: {
+            orderBy: { stepOrder: 'asc' },
+            include: { approver: { select: { fullName: true, position: true, role: true } } },
+          },
+        },
+      }),
     ]);
+
+    const pendingDocs = (pendingMySignaturesDocs || []) as any[];
+    const myTasks = (myPendingTasksList || []) as any[];
+    const mySubmitted = (mySubmittedDocs || []) as any[];
 
     return sendSuccess(
       res,
@@ -118,7 +172,7 @@ router.get('/dashboard', authenticate, async (req: AuthRequest, res: Response, n
           incoming: incomingCount,
           outgoing: outgoingCount,
           internal: internalCount,
-          inApproval: inApprovalCount,
+          inApproval: pendingSignaturesCount, // Foydalanuvchining shaxsiy imzosi kutilayotganlar soni
           registered: registeredCount,
           archived: archivedCount,
           pendingSignatures: pendingSignaturesCount,
@@ -131,6 +185,11 @@ router.get('/dashboard', authenticate, async (req: AuthRequest, res: Response, n
         },
         recentActivities,
         departmentsStat,
+        actionItems: {
+          pendingSignatures: pendingDocs,
+          myTasks: myTasks,
+          mySubmitted: mySubmitted,
+        },
       },
       'Dashboard ko‘rsatkichlari'
     );

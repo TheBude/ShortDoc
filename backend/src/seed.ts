@@ -526,20 +526,14 @@ export async function runSeed() {
         status: 'PENDING',
         comments: null,
       },
-      {
-        documentId: docInt1.id,
-        approverId: adminId,
-        stepOrder: 3,
-        status: 'PENDING',
-        comments: null,
-      },
-      // docOut1 (Xalqaro UTM memorandumi)
+      // docOut1 (Xalqaro UTM memorandumi: Devonxona -> Rektor)
       {
         documentId: docOut1.id,
-        approverId: adminId,
+        approverId: devonxonaId,
         stepOrder: 1,
-        status: 'PENDING',
-        comments: null,
+        status: 'APPROVED',
+        comments: 'Ro‘yxatdan o‘tkazildi, rektoratga ma’qullash uchun yuborildi.',
+        signedAt: new Date(),
       },
       {
         documentId: docOut1.id,
@@ -548,7 +542,7 @@ export async function runSeed() {
         status: 'PENDING',
         comments: null,
       },
-      // docBuy3 (Startap inkubatsiya markazi buyrug'i)
+      // docBuy3 (Startap inkubatsiya markazi buyrug'i: Dekan -> Rektor)
       {
         documentId: docBuy3.id,
         approverId: dekanId,
@@ -563,11 +557,19 @@ export async function runSeed() {
         status: 'PENDING',
         comments: null,
       },
-      // docMur2 (Talaba xalqaro anjuman arizasi)
+      // docMur2 (Talaba xalqaro anjuman arizasi: Devonxona -> Dekan)
       {
         documentId: docMur2.id,
-        approverId: adminId,
+        approverId: devonxonaId,
         stepOrder: 1,
+        status: 'APPROVED',
+        comments: 'Qabul qilindi va mutaxassis xulosasi uchun yo‘naltirildi.',
+        signedAt: new Date(),
+      },
+      {
+        documentId: docMur2.id,
+        approverId: dekanId,
+        stepOrder: 2,
         status: 'PENDING',
         comments: null,
       },
@@ -581,7 +583,7 @@ export async function runSeed() {
       },
     ],
   });
-  console.log('[Seed OK] Imzo zanjirlari (Admin, Rektor, Dekan, Xodim uchun navbatdagi imzolar) yaratildi.');
+  console.log('[Seed OK] Imzo zanjirlari (Dekan, Devonxona, Rektor, Xodim uchun rasmiy navbatdagi imzolar) yaratildi.');
 
   // 5. Ijro Topshiriqlari (Tasks)
   await prisma.task.upsert({

@@ -40,6 +40,33 @@ export default function DocumentDetailPage({
   const [commentText, setCommentText] = useState('');
   const [submittingComment, setSubmittingComment] = useState(false);
 
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'IN_APPROVAL': return 'Imzolanmoqda';
+      case 'IN_EXECUTION': return 'Ijroda';
+      case 'COMPLETED': return 'Bajarildi';
+      case 'REJECTED': return 'Qaytarildi';
+      case 'DRAFT': return 'Qoralama';
+      case 'ARCHIVED': return 'Arxivlangan';
+      default: return status;
+    }
+  };
+
+  const getStatusStyle = (status: string) => {
+    switch (status) {
+      case 'IN_APPROVAL':
+        return 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800';
+      case 'IN_EXECUTION':
+        return 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800';
+      case 'COMPLETED':
+        return 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800';
+      case 'REJECTED':
+        return 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800';
+      default:
+        return 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700';
+    }
+  };
+
   // Approval action modal/form
   const [approvalComment, setApprovalComment] = useState('');
   const [approving, setApproving] = useState(false);
@@ -199,6 +226,49 @@ export default function DocumentDetailPage({
         </button>
       </div>
 
+      {/* Imzo (Approval) Voting Action Box - Prominently at TOP for instant review */}
+      {currentPendingApproval && (
+        <div className="bg-amber-50 dark:bg-amber-950/40 border-2 border-amber-300 dark:border-amber-700/70 rounded-2xl p-6 shadow-sm transition-colors">
+          <div className="flex items-center gap-2 mb-2 text-amber-900 dark:text-amber-200 font-bold text-base">
+            <FileCheck2 className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+            <span>Sizning tasdig‘ingiz (Imzo) talab qilinadi</span>
+          </div>
+          <p className="text-xs text-amber-800 dark:text-amber-300 mb-4">
+            Siz ushbu hujjat bo‘yicha kelishuvchi mas’ul etib belgilangansiz. Hujjatni ko‘rib chiqib, o‘z qaroringizni tasdiqlang:
+          </p>
+
+          <div className="space-y-3">
+            <input
+              type="text"
+              placeholder="Qaror yuzasidan izoh yoki xulosa (ixtiyoriy)..."
+              value={approvalComment}
+              onChange={(e) => setApprovalComment(e.target.value)}
+              className="w-full p-2.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-lg border border-amber-300 dark:border-amber-700/70 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 placeholder-slate-400"
+            />
+
+            <div className="flex flex-wrap gap-3">
+              <button
+                disabled={approving}
+                onClick={() => handleApprovalAction('APPROVED')}
+                className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs px-5 py-2.5 rounded-lg shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>{approving ? 'Bajarilmoqda...' : 'Tasdiqlash (Imzo qo‘yish)'}</span>
+              </button>
+
+              <button
+                disabled={approving}
+                onClick={() => handleApprovalAction('REJECTED')}
+                className="inline-flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs px-5 py-2.5 rounded-lg shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+              >
+                <XCircle className="w-4 h-4" />
+                <span>{approving ? 'Bajarilmoqda...' : 'Qaytarish (E’tiroz bilan)'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main Document Header Card */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 lg:p-8 transition-colors duration-200">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-6 border-b border-slate-100 dark:border-slate-800">
@@ -210,8 +280,8 @@ export default function DocumentDetailPage({
               <span className="text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-2.5 py-1 rounded">
                 {document.category}
               </span>
-              <span className="text-xs font-semibold px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700">
-                {document.status}
+              <span className={`text-xs font-semibold px-2.5 py-1 rounded border ${getStatusStyle(document.status)}`}>
+                {getStatusLabel(document.status)}
               </span>
             </div>
             <h1 className="text-xl lg:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">{document.title}</h1>
@@ -227,6 +297,88 @@ export default function DocumentDetailPage({
                 <span>Dedlayn: {new Date(document.deadline).toLocaleDateString('uz-UZ')}</span>
               </div>
             )}
+          </div>
+        </div>
+
+        {/* Visual Pipeline Bar */}
+        <div className="py-5 border-b border-slate-100 dark:border-slate-800">
+          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-3">
+            Hujjat harakati bosqichlari
+          </div>
+          <div className="flex items-center overflow-x-auto pb-1 no-scrollbar gap-1">
+            {/* Step 1: Created */}
+            <div className="flex items-center shrink-0">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs shadow-sm">
+                  ✓
+                </div>
+                <div className="text-left">
+                  <div className="text-xs font-semibold text-slate-900 dark:text-white">Yaratildi</div>
+                  <div className="text-[10px] text-slate-400 dark:text-slate-500">{document.creator?.fullName?.split(' ')[0] || 'Tashabbuskor'}</div>
+                </div>
+              </div>
+              <div className="w-6 sm:w-10 h-0.5 bg-emerald-500 mx-2" />
+            </div>
+
+            {/* Steps: Approvals */}
+            {document.approvals?.map((app) => {
+              const isApproved = app.status === 'APPROVED';
+              const isRejected = app.status === 'REJECTED';
+
+              return (
+                <div key={app.id} className="flex items-center shrink-0">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs shadow-sm ${
+                        isApproved
+                          ? 'bg-emerald-600 text-white'
+                          : isRejected
+                          ? 'bg-rose-600 text-white'
+                          : 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-700'
+                      }`}
+                    >
+                      {isApproved ? '✓' : isRejected ? '✕' : '⏳'}
+                    </div>
+                    <div className="text-left">
+                      <div className="text-xs font-semibold text-slate-900 dark:text-white truncate max-w-[120px]">
+                        {app.approver.position || app.approver.fullName}
+                      </div>
+                      <div className="text-[10px] text-slate-400 dark:text-slate-500">
+                        {isApproved ? 'Kelishildi' : isRejected ? 'Rad etildi' : 'Kutilmoqda'}
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    className={`w-6 sm:w-10 h-0.5 mx-2 ${
+                      isApproved ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-700'
+                    }`}
+                  />
+                </div>
+              );
+            })}
+
+            {/* Step Final: Completed */}
+            <div className="flex items-center shrink-0">
+              <div className="flex items-center gap-2">
+                <div
+                  className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs shadow-sm ${
+                    document.status === 'COMPLETED'
+                      ? 'bg-emerald-600 text-white'
+                      : document.status === 'REJECTED'
+                      ? 'bg-rose-600 text-white'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-300 dark:border-slate-700'
+                  }`}
+                >
+                  {document.status === 'COMPLETED' ? '✓' : document.status === 'REJECTED' ? '✕' : '○'}
+                </div>
+                <div className="text-left">
+                  <div className="text-xs font-semibold text-slate-900 dark:text-white">Bajarildi</div>
+                  <div className="text-[10px] text-slate-400 dark:text-slate-500">
+                    {document.status === 'COMPLETED' ? 'Yakunlangan' : document.status === 'REJECTED' ? 'Qaytarilgan' : 'Ijro'}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -258,49 +410,6 @@ export default function DocumentDetailPage({
           </p>
         </div>
       </div>
-
-      {/* Imzo (Approval) Voting Action Box - If Current User has Pending Vote */}
-      {currentPendingApproval && (
-        <div className="bg-amber-50 dark:bg-amber-950/40 border-2 border-amber-300 dark:border-amber-700/70 rounded-2xl p-6 shadow-md transition-colors">
-          <div className="flex items-center gap-2 mb-2 text-amber-900 dark:text-amber-200 font-bold text-base">
-            <FileCheck2 className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-            <span>Sizning tasdig‘ingiz (Imzo) talab qilinadi</span>
-          </div>
-          <p className="text-xs text-amber-800 dark:text-amber-300 mb-4">
-            Siz ushbu hujjat bo‘yicha kelishuvchi mas’ul etib belgilangansiz. Hujjatni o‘rganib, o‘z qaroringizni qoldiring:
-          </p>
-
-          <div className="space-y-3">
-            <input
-              type="text"
-              placeholder="Qaror yuzasidan izoh yoki xulosa (ixtiyoriy)..."
-              value={approvalComment}
-              onChange={(e) => setApprovalComment(e.target.value)}
-              className="w-full p-2.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-lg border border-amber-300 dark:border-amber-700/70 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 placeholder-slate-400"
-            />
-
-            <div className="flex flex-wrap gap-3">
-              <button
-                disabled={approving}
-                onClick={() => handleApprovalAction('APPROVED')}
-                className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs px-5 py-2.5 rounded-lg shadow-sm transition-colors cursor-pointer"
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                <span>Tasdiqlandi (Imzo qo‘yish)</span>
-              </button>
-
-              <button
-                disabled={approving}
-                onClick={() => handleApprovalAction('REJECTED')}
-                className="inline-flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs px-5 py-2.5 rounded-lg shadow-sm transition-colors cursor-pointer"
-              >
-                <XCircle className="w-4 h-4" />
-                <span>E’tiroz bilan rad etish</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Imzo Zanjiri (Approval Chain Timeline) */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 transition-colors duration-200">

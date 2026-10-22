@@ -436,8 +436,8 @@ export default function LoginPage() {
 
                   <form onSubmit={handleLoginSubmit} className="space-y-4">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
-                        Elektron pochta (Email)
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                        Elektron pochta (email)
                       </label>
                       <div className="relative">
                         <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -445,7 +445,7 @@ export default function LoginPage() {
                           type="email"
                           value={loginEmail}
                           onChange={(e) => setLoginEmail(e.target.value)}
-                          placeholder="nomi@shortdoc.uz"
+                          placeholder="xodim@shortdoc.uz"
                           required
                           className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
                         />
@@ -453,8 +453,8 @@ export default function LoginPage() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
-                        Maxfiy parol
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                        Parol
                       </label>
                       <div className="relative">
                         <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -487,53 +487,35 @@ export default function LoginPage() {
 
                   {/* Quick Demo Credentials */}
                   <div className="mt-8 pt-5 border-t border-slate-100 dark:border-slate-800">
-                    <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3 text-center">
-                      Tezkor sinov uchun rollar (Demo):
+                    <p className="text-[12px] font-medium text-slate-500 dark:text-slate-400 mb-3 text-center">
+                      Sinov uchun namunaviy hisoblar:
                     </p>
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <button
                         type="button"
-                        onClick={() => handleQuickLogin('admin@shortdoc.uz', 'Admin123!')}
-                        className="p-2.5 text-left rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 transition-colors cursor-pointer"
-                      >
-                        <div className="font-semibold text-slate-900 dark:text-slate-100">Super Admin</div>
-                        <div className="text-[10px] text-slate-500 dark:text-slate-400">Boshqaruv</div>
-                      </button>
-
-                      <button
-                        type="button"
                         onClick={() => handleQuickLogin('rektor@shortdoc.uz', 'Rektor123!')}
-                        className="p-2.5 text-left rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 transition-colors cursor-pointer"
+                        className="p-2.5 text-left rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 transition-colors cursor-pointer"
                       >
                         <div className="font-semibold text-slate-900 dark:text-slate-100">Rektorat</div>
-                        <div className="text-[10px] text-slate-500 dark:text-slate-400">Monitoring & Imzo</div>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleQuickLogin('devonxona@shortdoc.uz', 'Devon123!')}
-                        className="p-2.5 text-left rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 transition-colors cursor-pointer"
-                      >
-                        <div className="font-semibold text-slate-900 dark:text-slate-100">Devonxona</div>
-                        <div className="text-[10px] text-slate-500 dark:text-slate-400">Ro‘yxatga olish</div>
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400">Monitoring & imzo</div>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => handleQuickLogin('dekan@shortdoc.uz', 'Dekan123!')}
-                        className="p-2.5 text-left rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 transition-colors cursor-pointer"
+                        className="p-2.5 text-left rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 transition-colors cursor-pointer"
                       >
-                        <div className="font-semibold text-slate-900 dark:text-slate-100">Dekan</div>
-                        <div className="text-[10px] text-slate-500 dark:text-slate-400">Fakultet boshqaruvi</div>
+                        <div className="font-semibold text-slate-900 dark:text-slate-100">Dekanat</div>
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400">Fakultet boshqaruvi</div>
                       </button>
                     </div>
 
                     <button
                       type="button"
                       onClick={() => handleQuickLogin('xodim@shortdoc.uz', 'Xodim123!')}
-                      className="w-full mt-2 p-2.5 text-center rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold transition-colors cursor-pointer"
+                      className="w-full mt-2 p-2.5 text-center rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold transition-colors cursor-pointer"
                     >
-                      Xodim / O‘qituvchi (xodim@shortdoc.uz)
+                      Xodim / O‘qituvchi hisobi (xodim@shortdoc.uz)
                     </button>
                   </div>
                 </div>
