@@ -1,4 +1,5 @@
 import QRCode from 'qrcode';
+import { config } from '../config.js';
 import {
   Document,
   Packer,
@@ -69,7 +70,7 @@ function formatDate(date: Date): string {
 
 export async function generateDocumentDocx(
   docData: DocumentDataForDocx,
-  verifyBaseUrl: string = 'http://172.16.1.4:3000'
+  verifyBaseUrl: string = config.APP_URL
 ): Promise<Buffer> {
   const INK_COLOR = '002060'; // Royal Navy Blue ink color matching photo
 

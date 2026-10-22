@@ -72,6 +72,24 @@ class RealtimeService {
       });
     });
   }
+
+  closeAll() {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
+    this.clients.forEach((resSet) => {
+      resSet.forEach((res) => {
+        try {
+          res.write('event: shutdown\ndata: {"status":"server_shutdown"}\n\n');
+          res.end();
+        } catch {
+          // ignore
+        }
+      });
+    });
+    this.clients.clear();
+  }
 }
 
 export const realtime = new RealtimeService();

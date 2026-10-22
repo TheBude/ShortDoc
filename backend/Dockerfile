@@ -38,14 +38,15 @@ RUN npx prisma generate
 # Copy built artifacts from builder
 COPY --from=builder /app/dist ./dist
 
-# Create uploads directory
+# Create uploads directory and ensure node user permissions
 RUN mkdir -p uploads && chown -R node:node /app
 
 USER node
 
 EXPOSE 5000
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+HEALTHCHECK --interval=15s --timeout=5s --start-period=15s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:5000/health || exit 1
 
-CMD ["node", "dist/index.js"]
+# Productionda avval Prisma migratsiyalarini qo'llaydi, keyin serverni ishga tushiradi
+CMD ["sh", "-c", "npx prisma migrate deploy && exec node dist/server.js"]

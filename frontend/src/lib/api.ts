@@ -1,19 +1,11 @@
-// Dynamic API endpoint resolution:
-// 1. If NEXT_PUBLIC_API_URL is set (Vercel / Production), use it directly
-// 2. If in browser on public domain, fallback to relative /api
-// 3. Otherwise (Local dev), connect to port 5000 directly
+// API endpoint resolution:
+// 1. If NEXT_PUBLIC_API_URL is set, use it directly (e.g. https://api.shortdoc.samdu.uz)
+// 2. Otherwise use relative /api (proxied to backend via Next.js rewrites or Nginx)
 export const getApiBaseUrl = () => {
   if (process.env.NEXT_PUBLIC_API_URL) {
     return process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '');
   }
-  if (typeof window !== 'undefined') {
-    const host = window.location.hostname || 'localhost';
-    if (host !== 'localhost' && !host.startsWith('192.') && !host.startsWith('172.') && !host.startsWith('127.')) {
-      return '/api';
-    }
-    return `http://${host}:5000/api`;
-  }
-  return 'http://127.0.0.1:5000/api';
+  return '/api';
 };
 
 // In-memory cache for fast UI transitions (e.g., users, departments)

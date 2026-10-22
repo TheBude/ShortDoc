@@ -310,16 +310,7 @@ router.get('/:id/docx', authenticate, async (req: AuthRequest, res, next) => {
       return sendError(res, 'Hujjat topilmadi', 404);
     }
 
-    const origin = req.headers.origin as string | undefined;
-    let verifyBaseUrl = config.APP_URL;
-    if (!verifyBaseUrl) {
-      if (origin && !origin.includes('localhost')) {
-        verifyBaseUrl = origin;
-      } else {
-        verifyBaseUrl = 'http://localhost:3000';
-      }
-    }
-
+    const verifyBaseUrl = config.APP_URL;
     const docxBuffer = await generateDocumentDocx(document, verifyBaseUrl);
 
     const safeRegNumber = document.regNumber.replace(/[\/\\:*"<>|]/g, '_');
