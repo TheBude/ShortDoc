@@ -5,14 +5,15 @@ import { prisma } from './prisma.js';
 import { realtime } from './services/realtime.js';
 import { startCronJobs, stopCronJobs } from './services/cron.service.js';
 
-const PORT = config.PORT;
+const PORT = Number(process.env.PORT) || config.PORT || 10000;
+const HOST = '0.0.0.0';
 
-export const server = app.listen(PORT, () => {
+export const server = app.listen(PORT, HOST, () => {
   console.log('=========================================');
   console.log('[ShortDoc API] Server muvaffaqiyatli ishga tushdi.');
   console.log(`[ShortDoc API] Muhit: ${config.NODE_ENV}`);
-  console.log(`[ShortDoc API] URL: http://localhost:${PORT}`);
-  console.log(`[ShortDoc API] Swagger Docs: http://localhost:${PORT}/api/docs`);
+  console.log(`[ShortDoc API] Tinglanayotgan manzil: http://${HOST}:${PORT}`);
+  console.log(`[ShortDoc API] Swagger Docs: http://${HOST}:${PORT}/api/docs`);
   console.log('=========================================');
 
   startCronJobs();
@@ -68,5 +69,13 @@ export const gracefulShutdown = async (signal: string) => {
 
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+process.on('uncaughtException', (err) => {
+  console.error('❌ [ShortDoc Server Uncaught Exception]:', err);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('❌ [ShortDoc Server Unhandled Rejection]:', reason);
+});
 
 export default server;

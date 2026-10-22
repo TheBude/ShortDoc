@@ -22,15 +22,22 @@ const envSchema = z.object({
 const parsedEnv = envSchema.safeParse(process.env);
 
 if (!parsedEnv.success) {
-  console.error('❌ [Konfiguratsiya xatosi] Muhit o‘zgaruvchilari noto‘g‘ri yoki yetarli emas:');
-  console.error(parsedEnv.error.format());
+  console.error('\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+  console.error('❌ [ShortDoc XATOLIK] Render Muhit O‘zgaruvchilarida (Environment Variables) xatolik:');
+  console.error(JSON.stringify(parsedEnv.error.format(), null, 2));
+  console.error('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n');
   process.exit(1);
 }
 
 const env = parsedEnv.data;
 
 if (env.NODE_ENV === 'production' && env.JWT_SECRET.length < 32) {
-  console.error('❌ [Xavfsizlik xatosi] Production muhitida JWT_SECRET uzunligi kamida 32 ta belgidan iborat bo‘lishi shart.');
+  console.error('\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+  console.error('❌ [Xavfsizlik Xatosi] JWT_SECRET kamida 32 ta belgidan iborat bo‘lishi shart!');
+  console.error(`Joriy uzunlik: ${env.JWT_SECRET.length} ta belgi.`);
+  console.error('Render Environment bo‘limida JWT_SECRET qiymatini kamida 32 belgili qilib o‘rnating!');
+  console.error('Masalan: 64 belgili kuchli kalit: openssl rand -hex 32');
+  console.error('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n');
   process.exit(1);
 }
 
