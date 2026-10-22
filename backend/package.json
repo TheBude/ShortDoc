@@ -10,7 +10,7 @@
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:deploy": "prisma migrate deploy",
+    "prisma:deploy": "node scripts/deploy-migrate.js",
     "seed": "tsx src/seed.ts",
     "seed:prod": "node dist/seed.js",
     "test": "cross-env ROLLUP_FORCE_WASM=true vitest run"
