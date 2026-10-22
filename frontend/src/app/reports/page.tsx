@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { fetchApi } from '@/lib/api';
+import { fetchApi, getApiBaseUrl } from '@/lib/api';
 import { Download, BarChart3, FileSpreadsheet, CheckCircle2, AlertTriangle, Clock } from 'lucide-react';
 
 export default function ReportsPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     loadReports();
@@ -19,8 +20,40 @@ export default function ReportsPage() {
     setLoading(false);
   };
 
-  const handleExportCsv = () => {
-    window.open('/api/reports/export-csv', '_blank');
+  const handleExportCsv = async () => {
+    try {
+      setExporting(true);
+      const baseUrl = getApiBaseUrl();
+      const token = typeof window !== 'undefined' ? localStorage.getItem('shortdoc_token') : null;
+      const url = `${baseUrl}/reports/export-csv`;
+
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(url, { headers });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.message || 'Hisobotni yuklab olishda xatolik yuz berdi');
+      }
+
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      const today = new Date().toISOString().split('T')[0];
+      link.download = `SamDU_ShortDoc_Hisobot_${today}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error: any) {
+      console.error('Export error:', error);
+      alert(error.message || 'Hisobot faylini yuklab olishda xatolik yuz berdi');
+    } finally {
+      setExporting(false);
+    }
   };
 
   const counts = data?.counts || {};
@@ -36,11 +69,17 @@ export default function ReportsPage() {
         </div>
 
         <button
+          type="button"
+          disabled={exporting}
           onClick={handleExportCsv}
-          className="inline-flex items-center gap-2 bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 text-sm font-semibold px-4 py-2.5 rounded-lg shadow-sm transition-colors cursor-pointer"
+          className="inline-flex items-center gap-2 bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 text-sm font-semibold px-4 py-2.5 rounded-lg shadow-sm transition-colors cursor-pointer disabled:opacity-50"
         >
-          <FileSpreadsheet className="w-4 h-4" />
-          <span>Excel / CSV formatida yuklab olish</span>
+          {exporting ? (
+            <div className="w-4 h-4 border-2 border-white dark:border-slate-900 border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
+          )}
+          <span>{exporting ? 'Fayl tayyorlanmoqda...' : 'Excel / CSV formatida yuklab olish'}</span>
         </button>
       </div>
 

@@ -198,7 +198,7 @@ router.get('/dashboard', authenticate, async (req: AuthRequest, res: Response, n
   }
 });
 
-// CSV formatida hisobot eksport qilish
+// CSV / Excel formatida hisobot eksport qilish
 router.get('/export-csv', authenticate, async (req: AuthRequest, res: Response, next) => {
   try {
     const where: any = {};
@@ -221,15 +221,46 @@ router.get('/export-csv', authenticate, async (req: AuthRequest, res: Response, 
       orderBy: { createdAt: 'desc' },
     });
 
+    const formatType = (type: string) => {
+      switch (type) {
+        case 'INCOMING': return 'Kiruvchi xat';
+        case 'OUTGOING': return 'Chiquvchi xat';
+        case 'INTERNAL': return 'Ichki hujjat';
+        default: return type;
+      }
+    };
+
+    const formatStatus = (st: string) => {
+      switch (st) {
+        case 'REGISTERED': return 'Ro‘yxatga olingan';
+        case 'IN_APPROVAL': return 'Imzolanmoqda';
+        case 'IN_EXECUTION': return 'Ijroda';
+        case 'COMPLETED': return 'Bajarildi';
+        case 'REJECTED': return 'Qaytarildi';
+        case 'ARCHIVED': return 'Arxivda';
+        default: return st;
+      }
+    };
+
+    const formatPriority = (p: string) => {
+      switch (p) {
+        case 'URGENT': return 'Shoshilinch';
+        case 'HIGH': return 'Yuqori';
+        case 'MEDIUM': return 'O‘rta';
+        case 'LOW': return 'Past';
+        default: return p;
+      }
+    };
+
     const headers = [
       'Ro‘yxat raqami',
       'Hujjat nomi',
       'Turi',
       'Kategoriya',
       'Holati',
-      'Muhimlik',
-      'Bo‘lim',
-      'Mas’ul shaxs',
+      'Muhimlik darajasi',
+      'Bo‘lim / Fakultet',
+      'Mas’ul shaxs / Muallif',
       'Yaratilgan sana',
       'Ijro muddati',
     ];
@@ -237,21 +268,21 @@ router.get('/export-csv', authenticate, async (req: AuthRequest, res: Response, 
     const rows = documents.map((d) => [
       `"${d.regNumber}"`,
       `"${d.title.replace(/"/g, '""')}"`,
-      d.documentType,
-      d.category,
-      d.status,
-      d.priority,
+      `"${formatType(d.documentType)}"`,
+      `"${d.category || 'Hujjat'}"`,
+      `"${formatStatus(d.status)}"`,
+      `"${formatPriority(d.priority)}"`,
       `"${d.department?.name || 'Noma’lum'}"`,
       `"${d.assignee?.fullName || d.creator?.fullName || ''}"`,
-      d.createdAt.toISOString().split('T')[0],
-      d.deadline ? d.deadline.toISOString().split('T')[0] : 'Belgilanmagan',
+      d.createdAt ? new Date(d.createdAt).toLocaleDateString('uz-UZ') : '',
+      d.deadline ? new Date(d.deadline).toLocaleDateString('uz-UZ') : 'Belgilanmagan',
     ]);
 
-    const csvContent = [headers.join(','), ...rows.map((e) => e.join(','))].join('\r\n');
+    const csvContent = ['sep=,', headers.join(','), ...rows.map((e) => e.join(','))].join('\r\n');
 
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Content-Disposition', 'attachment; filename="shortdoc-hisobot.csv"');
-    return res.send('\uFEFF' + csvContent); // UTF-8 BOM for Excel compatibility
+    res.setHeader('Content-Disposition', 'attachment; filename="SamDU_ShortDoc_Hisobot.csv"');
+    return res.send('\uFEFF' + csvContent); // UTF-8 BOM + sep=, for Excel compatibility
   } catch (error) {
     next(error);
   }
