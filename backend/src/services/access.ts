@@ -77,14 +77,13 @@ export function buildDocumentVisibilityWhere(user: UserAuth) {
   }
 
   // Umumiy qoida: o'zi yaratgan, biriktirilgan, vizachi bo'lgan, topshiriq berilgan,
-  // va umumiy universitet "Buyruq/Qaror" hamda "INCOMING" hujjatlar
+  // va umumiy universitet "Buyruq/Qaror" (ORDER, DECISION enumlari) hamda "INCOMING" hujjatlar
   const conditions: any[] = [
     { creatorId: user.userId },
     { assigneeId: user.userId },
     { approvals: { some: { approverId: user.userId } } },
     { tasks: { some: { assignedToId: user.userId } } },
-    { category: { contains: 'Buyru', mode: 'insensitive' } },
-    { category: { contains: 'Qaror', mode: 'insensitive' } },
+    { category: { in: ['ORDER', 'DECISION'] } },
     { documentType: 'INCOMING' },
   ];
 
@@ -107,8 +106,8 @@ export function canViewDocument(user: UserAuth, doc: DocumentAccessData): boolea
   if (doc.creatorId === user.userId) return true;
   if (doc.assigneeId === user.userId) return true;
 
-  // Umumiy ochiq hujjat toifalari
-  if (doc.category && (/buyru/i.test(doc.category) || /qaror/i.test(doc.category))) {
+  // Umumiy ochiq hujjat toifalari (Buyruq va Qarorlar: ORDER, DECISION enum)
+  if (doc.category === 'ORDER' || doc.category === 'DECISION' || (doc.category && (/buyru/i.test(doc.category) || /qaror/i.test(doc.category)))) {
     return true;
   }
   if (doc.documentType === 'INCOMING') {

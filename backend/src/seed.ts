@@ -1,13 +1,14 @@
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
+import { DepartmentType } from '@prisma/client';
 import { prisma } from './prisma.js';
 import { config } from './config.js';
 
 function getOrGeneratePassword(envVar?: string): string {
-  if (envVar && envVar.trim().length >= 6) {
+  if (envVar && envVar.trim().length >= 8) {
     return envVar.trim();
   }
-  // Tasodifiy xavfsiz parol generatsiya qilish
+  // Tasodifiy xavfsiz parol generatsiya qilish (kamida 8 belgi)
   return crypto.randomBytes(9).toString('base64').replace(/[^a-zA-Z0-9]/g, 'A') + '!1a';
 }
 
@@ -22,7 +23,7 @@ export async function runSeed() {
   console.log('================================================================');
 
   // 1. Bo'limlar va Fakultetlar (SamDU tuzilmasi)
-  const departmentsData = [
+  const departmentsData: Array<{ code: string; name: string; type: DepartmentType }> = [
     { code: 'RECTOR', name: 'Rektorat va Rahbariyat', type: 'RECTORATE' },
     { code: 'CHANC', name: 'Devonxona va murojaatlar bilan ishlash bo‘limi', type: 'CHANCELLERY' },
     { code: 'DIGITAL', name: 'Raqamli ta’lim texnologiyalari markazi', type: 'DEPARTMENT' },
@@ -177,7 +178,7 @@ export async function runSeed() {
       regNumber: `${year}/ICH-0001`,
       title: 'Sun’iy intellekt va data science laboratoriyasini jihozlash bo‘yicha bildirgi',
       documentType: 'INTERNAL',
-      category: 'Bildirgi',
+      category: 'BILDIRGI',
       sender: 'Axborot texnologiyalari fakulteti',
       receiver: 'Universitet Rektoriga',
       departmentId: depMap.get('IT-FAC'),
@@ -197,7 +198,7 @@ export async function runSeed() {
       regNumber: `${year}/ICH-0002`,
       title: 'Talabalar respublika fan olimpiadasida g‘olib bo‘lganlarni rag‘batlantirish haqida',
       documentType: 'INTERNAL',
-      category: 'Xizmat xati',
+      category: 'OFFICIAL_NOTE',
       sender: 'Matematika fakulteti dekanati',
       receiver: 'Universitet Rektoriga',
       departmentId: depMap.get('MATH-FAC'),
@@ -217,7 +218,7 @@ export async function runSeed() {
       regNumber: `${year}/ICH-0003`,
       title: 'Raqamli ta’lim markazi server uskunalarini profilaktik nazoratdan o‘tkazish',
       documentType: 'INTERNAL',
-      category: 'Bildirgi',
+      category: 'BILDIRGI',
       sender: 'Raqamli ta’lim texnologiyalari markazi',
       receiver: 'Devonxona va umumiy bo‘limga',
       departmentId: depMap.get('DIGITAL'),
@@ -236,7 +237,7 @@ export async function runSeed() {
       regNumber: `${year}/ICH-0004`,
       title: '2026-yilgi bahorgi semestr fan dasturlari va sillabuslarni yangilash bo‘yicha xizmat xati',
       documentType: 'INTERNAL',
-      category: 'Xizmat xati',
+      category: 'OFFICIAL_NOTE',
       sender: 'Dasturiy injiniring kafedrasi',
       receiver: 'O‘quv-uslubiy boshqarmaga',
       departmentId: depMap.get('IT-FAC'),
@@ -256,7 +257,7 @@ export async function runSeed() {
       regNumber: `${year}/KIR-0001`,
       title: 'Oliy ta’lim, fan va innovatsiyalar vazirligidan: 2026/2027 o‘quv yili davlat grantlari kvotasi to‘g‘risida',
       documentType: 'INCOMING',
-      category: 'Vazirlik xati',
+      category: 'LETTER',
       sender: 'Oliy ta’lim, fan va innovatsiyalar vazirligi',
       receiver: 'SamDU Rektoriga',
       departmentId: depMap.get('RECTOR'),
@@ -276,7 +277,7 @@ export async function runSeed() {
       regNumber: `${year}/KIR-0002`,
       title: 'Samarqand viloyati hokimligidan: Xalqaro yoshlar forumini o‘tkazish haqida',
       documentType: 'INCOMING',
-      category: 'Hokimlik xati',
+      category: 'LETTER',
       sender: 'Samarqand viloyati hokimligi',
       receiver: 'Universitet Rektoriga',
       departmentId: depMap.get('RECTOR'),
@@ -296,7 +297,7 @@ export async function runSeed() {
       regNumber: `${year}/KIR-0003`,
       title: 'Yevropa Ittifoqining Erasmus+ dasturi: Yangi grant loyihasi shartnomasi',
       documentType: 'INCOMING',
-      category: 'Xalqaro shartnoma',
+      category: 'CONTRACT',
       sender: 'Erasmus+ National Office Uzbekistan',
       receiver: 'Xalqaro hamkorlik boshqarmasiga',
       departmentId: depMap.get('INT-REL'),
@@ -315,7 +316,7 @@ export async function runSeed() {
       regNumber: `${year}/KIR-0004`,
       title: 'Mirzo Ulug‘bek nomidagi O‘zMU dan: Talabalar akademik mobilligi to‘g‘risida rasmiy xat',
       documentType: 'INCOMING',
-      category: 'Hamkorlik xati',
+      category: 'LETTER',
       sender: 'O‘zbekiston Milliy Universiteti Rektorati',
       receiver: 'Devonxona va umumiy bo‘limga',
       departmentId: depMap.get('CHANC'),
@@ -335,7 +336,7 @@ export async function runSeed() {
       regNumber: `${year}/CHIQ-0001`,
       title: 'Malayziya Texnologiya Universiteti (UTM) rektoratiga ikki tomonlama memorandum yuborish',
       documentType: 'OUTGOING',
-      category: 'Hamkorlik xati',
+      category: 'LETTER',
       sender: 'SamDU Xalqaro hamkorlik boshqarmasi',
       receiver: 'Universiti Teknologi Malaysia (UTM)',
       departmentId: depMap.get('INT-REL'),
@@ -355,7 +356,7 @@ export async function runSeed() {
       regNumber: `${year}/CHIQ-0002`,
       title: 'Oliy ta’lim vazirligiga: SamDU 2025-yilgi ilmiy nashrlar va Scopus maqolalari reytingi hisoboti',
       documentType: 'OUTGOING',
-      category: 'Hisobot xati',
+      category: 'REPORT',
       sender: 'SamDU Ilmiy bo‘limi',
       receiver: 'Oliy ta’lim, fan va innovatsiyalar vazirligiga',
       departmentId: depMap.get('RECTOR'),
@@ -375,7 +376,7 @@ export async function runSeed() {
       regNumber: `${year}/BUY-0001`,
       title: 'SamDU iqtidorli talabalariga Sharof Rashidov nomidagi maxsus stipendiyani tayinlash to‘g‘risida',
       documentType: 'INTERNAL',
-      category: 'Rektor buyrug‘i',
+      category: 'ORDER',
       sender: 'Universitet Rektorati',
       receiver: 'Barcha fakultetlar va bo‘limlarga',
       departmentId: depMap.get('RECTOR'),
@@ -394,7 +395,7 @@ export async function runSeed() {
       regNumber: `${year}/BUY-0002`,
       title: 'SamDU Ilmiy Kengashining 2026-yil 1-sonli majlisi Qarori ijrosini ta’minlash haqida',
       documentType: 'INTERNAL',
-      category: 'Kengash qarori',
+      category: 'DECISION',
       sender: 'Universitet Ilmiy Kotibiyati',
       receiver: 'Dekanatlar va Kafedralarga',
       departmentId: depMap.get('RECTOR'),
@@ -413,7 +414,7 @@ export async function runSeed() {
       regNumber: `${year}/BUY-0003`,
       title: 'Universitetda Startap loyihalar inkubatsiya markazini tashkil etish to‘g‘risida buyruq loyihasi',
       documentType: 'INTERNAL',
-      category: 'Rektor buyrug‘i',
+      category: 'ORDER',
       sender: 'Axborot texnologiyalari fakulteti',
       receiver: 'Universitet Rektoriga',
       departmentId: depMap.get('IT-FAC'),
@@ -433,7 +434,7 @@ export async function runSeed() {
       regNumber: `${year}/MUR-0001`,
       title: '3-bosqich talabasi Mirzayev D.ning talabalar turar joyiga joylashish bo‘yicha arizasi',
       documentType: 'INCOMING',
-      category: 'Talaba murojaati',
+      category: 'APPEAL',
       sender: 'Mirzayev Dilshod (Talaba, IT fakulteti)',
       receiver: 'Talabalar turar joylari komissiyasiga',
       departmentId: depMap.get('CHANC'),
@@ -453,7 +454,7 @@ export async function runSeed() {
       regNumber: `${year}/MUR-0002`,
       title: 'Magistratura talabasi Karimova S.ning chet el konferensiyasida ma’ruza qilish ruxsatini so‘rab arizasi',
       documentType: 'INCOMING',
-      category: 'Talaba murojaati',
+      category: 'APPEAL',
       sender: 'Karimova Shahlo (Magistrant, Fizika fakulteti)',
       receiver: 'Ilmiy ishlar bo‘yicha prorektorga',
       departmentId: depMap.get('CHANC'),
@@ -472,7 +473,7 @@ export async function runSeed() {
       regNumber: `${year}/MUR-0003`,
       title: 'Samarqand shahri fuqarosi Aliyev B.ning ilmiy kutubxonadan foydalanish arizasi',
       documentType: 'INCOMING',
-      category: 'Fuqaro murojaati',
+      category: 'APPEAL',
       sender: 'Aliyev Baxtiyor (Mustaqil tadqiqotchi)',
       receiver: 'SamDU Axborot-resurs markaziga',
       departmentId: depMap.get('CHANC'),
@@ -492,7 +493,7 @@ export async function runSeed() {
       regNumber: `${year - 1}/ARX-0001`,
       title: '2024/2025 o‘quv yili kadrlar malaka attestatsiyasi yakunlari to‘g‘risidagi yig‘ma hisobot',
       documentType: 'INTERNAL',
-      category: 'Arxiv hisoboti',
+      category: 'ARCHIVE',
       sender: 'Inson resurslari boshqarmasi',
       receiver: 'Devonxona arxivi',
       departmentId: depMap.get('HR-DEPT'),
@@ -512,7 +513,7 @@ export async function runSeed() {
       regNumber: `${year - 1}/ARX-0002`,
       title: 'Sharof Rashidov nomidagi SamDU 600 yillik faoliyatiga doir xalqaro simpozium materiallari to‘plami',
       documentType: 'INTERNAL',
-      category: 'Arxiv to‘plami',
+      category: 'ARCHIVE',
       sender: 'Tarix fakulteti',
       receiver: 'Universitet muzeyi va arxivi',
       departmentId: depMap.get('HIST-FAC'),

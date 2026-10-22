@@ -7,6 +7,8 @@ import { logActivity } from '../middleware/audit.js';
 
 const router = Router();
 
+const departmentTypeEnum = z.enum(['RECTORATE', 'FACULTY', 'CHANCELLERY', 'DEPARTMENT', 'DIVISION']);
+
 // Barcha bo'limlar ro'yxati (ro'yxatdan o'tish va barcha foydalanuvchilar uchun ochiq)
 router.get('/', async (req, res, next) => {
   try {
@@ -31,7 +33,7 @@ router.post('/', authenticate, authorize(['SUPER_ADMIN']), async (req: AuthReque
     const schema = z.object({
       name: z.string().min(2, 'Bo‘lim nomi talab qilinadi'),
       code: z.string().min(2, 'Bo‘lim kodi talab qilinadi'),
-      type: z.string().default('DEPARTMENT'),
+      type: departmentTypeEnum.default('DEPARTMENT'),
     });
 
     const data = schema.parse(req.body);
@@ -54,6 +56,7 @@ router.post('/', authenticate, authorize(['SUPER_ADMIN']), async (req: AuthReque
       details: `Yangi bo‘lim yaratildi: ${department.name} (${department.code})`,
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
+      requestId: (req as any).id,
     });
 
     return sendSuccess(res, department, 'Bo‘lim muvaffaqiyatli yaratildi', 201);
@@ -66,10 +69,15 @@ router.post('/', authenticate, authorize(['SUPER_ADMIN']), async (req: AuthReque
 router.put('/:id', authenticate, authorize(['SUPER_ADMIN']), async (req: AuthRequest, res, next) => {
   try {
     const { id } = req.params;
+    const uuidCheck = z.string().uuid('Noto‘g‘ri bo‘lim identifikatori').safeParse(id);
+    if (!uuidCheck.success) {
+      return sendError(res, 'Noto‘g‘ri bo‘lim identifikatori (UUID)', 400);
+    }
+
     const schema = z.object({
       name: z.string().min(2).optional(),
       code: z.string().min(2).optional(),
-      type: z.string().optional(),
+      type: departmentTypeEnum.optional(),
     });
 
     const data = schema.parse(req.body);
@@ -87,6 +95,7 @@ router.put('/:id', authenticate, authorize(['SUPER_ADMIN']), async (req: AuthReq
       details: `Bo‘lim tahrirlandi: ${department.name}`,
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
+      requestId: (req as any).id,
     });
 
     return sendSuccess(res, department, 'Bo‘lim ma’lumotlari yangilandi');

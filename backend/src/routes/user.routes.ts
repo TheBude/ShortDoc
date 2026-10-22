@@ -9,38 +9,54 @@ import { realtime } from '../services/realtime.js';
 
 const router = Router();
 
-// Foydalanuvchilar ro'yxati (barcha autentifikatsiyadan o'tganlar uchun, yoki role bo'yicha)
+const listUsersQuerySchema = z.object({
+  role: z.enum(['SUPER_ADMIN', 'LEADERSHIP', 'CHANCELLERY', 'DEPARTMENT_HEAD', 'STAFF']).optional(),
+  departmentId: z.string().uuid('Noto‘g‘ri bo‘lim identifikatori').optional(),
+  search: z.string().optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+});
+
+// Foydalanuvchilar ro'yxati (filtrlash, sahifalash va xavfsiz ma'lumot cheklovi)
 router.get('/', authenticate, async (req: AuthRequest, res, next) => {
   try {
-    const { role, departmentId, search } = req.query;
+    const query = listUsersQuerySchema.parse(req.query);
+    const { role, departmentId, search, page, limit } = query;
 
     const where: any = {};
-    if (role) where.role = role as any;
-    if (departmentId) where.departmentId = departmentId as string;
+    if (role) where.role = role;
+    if (departmentId) where.departmentId = departmentId;
     if (search) {
       where.OR = [
-        { fullName: { contains: search as string, mode: 'insensitive' } },
-        { email: { contains: search as string, mode: 'insensitive' } },
-        { position: { contains: search as string, mode: 'insensitive' } },
+        { fullName: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+        { position: { contains: search, mode: 'insensitive' } },
       ];
     }
 
-    const users = await prisma.user.findMany({
-      where,
-      select: {
-        id: true,
-        email: true,
-        fullName: true,
-        role: true,
-        position: true,
-        phone: true,
-        isActive: true,
-        departmentId: true,
-        department: { select: { id: true, name: true, code: true } },
-        createdAt: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+    const skip = (page - 1) * limit;
+
+    const [total, users] = await Promise.all([
+      prisma.user.count({ where }),
+      prisma.user.findMany({
+        where,
+        select: {
+          id: true,
+          email: true,
+          fullName: true,
+          role: true,
+          position: true,
+          phone: true,
+          isActive: true,
+          departmentId: true,
+          department: { select: { id: true, name: true, code: true } },
+          createdAt: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+    ]);
 
     const isPrivileged = ['SUPER_ADMIN', 'LEADERSHIP', 'CHANCELLERY', 'DEPARTMENT_HEAD'].includes(req.user?.role || '');
 
@@ -66,7 +82,12 @@ router.get('/', authenticate, async (req: AuthRequest, res, next) => {
       return baseUser;
     });
 
-    return sendSuccess(res, mappedUsers, 'Foydalanuvchilar ro‘yxati');
+    return sendSuccess(res, mappedUsers, 'Foydalanuvchilar ro‘yxati', 200, {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    });
   } catch (error) {
     next(error);
   }
@@ -77,12 +98,12 @@ router.post('/', authenticate, authorize(['SUPER_ADMIN']), async (req: AuthReque
   try {
     const schema = z.object({
       email: z.string().email('Noto‘g‘ri email formati'),
-      password: z.string().min(6, 'Parol kamida 6 ta belgi bo‘lishi kerak'),
+      password: z.string().min(8, 'Parol kamida 8 ta belgidan iborat bo‘lishi shart'),
       fullName: z.string().min(2, 'F.I.Sh talab qilinadi'),
       role: z.enum(['SUPER_ADMIN', 'LEADERSHIP', 'CHANCELLERY', 'DEPARTMENT_HEAD', 'STAFF']),
       position: z.string().min(2, 'Lavozim talab qilinadi'),
       phone: z.string().optional(),
-      departmentId: z.string().optional().nullable(),
+      departmentId: z.string().uuid('Noto‘g‘ri bo‘lim identifikatori').optional().nullable(),
     });
 
     const data = schema.parse(req.body);
@@ -107,6 +128,7 @@ router.post('/', authenticate, authorize(['SUPER_ADMIN']), async (req: AuthReque
         position: data.position,
         phone: data.phone,
         departmentId: data.departmentId || null,
+        tokenVersion: 1,
       },
       select: {
         id: true,
@@ -129,6 +151,7 @@ router.post('/', authenticate, authorize(['SUPER_ADMIN']), async (req: AuthReque
       details: `Yangi xodim qo‘shildi: ${user.fullName} (${user.role})`,
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
+      requestId: (req as any).id,
     });
 
     return sendSuccess(res, user, 'Foydalanuvchi muvaffaqiyatli yaratildi', 201);
@@ -141,22 +164,41 @@ router.post('/', authenticate, authorize(['SUPER_ADMIN']), async (req: AuthReque
 router.put('/:id', authenticate, authorize(['SUPER_ADMIN']), async (req: AuthRequest, res, next) => {
   try {
     const { id } = req.params;
+    const uuidCheck = z.string().uuid('Noto‘g‘ri foydalanuvchi identifikatori').safeParse(id);
+    if (!uuidCheck.success) {
+      return sendError(res, 'Noto‘g‘ri foydalanuvchi identifikatori (UUID)', 400);
+    }
+
+    const existingUser = await prisma.user.findUnique({ where: { id } });
+    if (!existingUser) {
+      return sendError(res, 'Foydalanuvchi topilmadi', 404);
+    }
+
     const schema = z.object({
       fullName: z.string().min(2).optional(),
       position: z.string().min(2).optional(),
       phone: z.string().optional(),
       role: z.enum(['SUPER_ADMIN', 'LEADERSHIP', 'CHANCELLERY', 'DEPARTMENT_HEAD', 'STAFF']).optional(),
-      departmentId: z.string().optional().nullable(),
+      departmentId: z.string().uuid().optional().nullable(),
       isActive: z.boolean().optional(),
-      password: z.string().min(6).optional(),
+      password: z.string().min(8, 'Parol kamida 8 ta belgidan iborat bo‘lishi shart').optional(),
     });
 
     const data = schema.parse(req.body);
 
     const updateData: any = { ...data };
+    let passwordChanged = false;
+    let roleChanged = false;
+
     if (data.password) {
       updateData.passwordHash = await bcrypt.hash(data.password, 10);
+      updateData.tokenVersion = { increment: 1 };
       delete updateData.password;
+      passwordChanged = true;
+    }
+
+    if (data.role && data.role !== existingUser.role) {
+      roleChanged = true;
     }
 
     const user = await prisma.user.update({
@@ -174,6 +216,33 @@ router.put('/:id', authenticate, authorize(['SUPER_ADMIN']), async (req: AuthReq
       },
     });
 
+    // Audit logs
+    if (passwordChanged) {
+      await logActivity({
+        userId: req.user!.userId,
+        action: 'CHANGE_PASSWORD',
+        entity: 'USER',
+        entityId: user.id,
+        details: `${user.fullName} paroli administrator tomonidan yangilandi (eski sessiyalar bekor qilindi)`,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+        requestId: (req as any).id,
+      });
+    }
+
+    if (roleChanged) {
+      await logActivity({
+        userId: req.user!.userId,
+        action: 'CHANGE_ROLE',
+        entity: 'USER',
+        entityId: user.id,
+        details: `${user.fullName} roli ${existingUser.role} dan ${data.role} ga o‘zgartirildi`,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+        requestId: (req as any).id,
+      });
+    }
+
     await logActivity({
       userId: req.user!.userId,
       action: 'UPDATE_USER',
@@ -182,6 +251,7 @@ router.put('/:id', authenticate, authorize(['SUPER_ADMIN']), async (req: AuthReq
       details: `Foydalanuvchi ma’lumotlari tahrirlandi: ${user.fullName}`,
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
+      requestId: (req as any).id,
     });
 
     return sendSuccess(res, user, 'Foydalanuvchi muvaffaqiyatli yangilandi');
@@ -194,6 +264,11 @@ router.put('/:id', authenticate, authorize(['SUPER_ADMIN']), async (req: AuthReq
 router.post('/:id/approve', authenticate, authorize(['SUPER_ADMIN']), async (req: AuthRequest, res, next) => {
   try {
     const { id } = req.params;
+    const uuidCheck = z.string().uuid('Noto‘g‘ri foydalanuvchi identifikatori').safeParse(id);
+    if (!uuidCheck.success) {
+      return sendError(res, 'Noto‘g‘ri foydalanuvchi identifikatori (UUID)', 400);
+    }
+
     const user = await prisma.user.update({
       where: { id },
       data: { isActive: true },
@@ -222,6 +297,7 @@ router.post('/:id/approve', authenticate, authorize(['SUPER_ADMIN']), async (req
       details: `${user.fullName} foydalanuvchisi arizasi tasdiqlandi va faollashtirildi`,
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
+      requestId: (req as any).id,
     });
 
     return sendSuccess(res, user, 'Foydalanuvchi arizasi muvaffaqiyatli tasdiqlandi');
@@ -234,6 +310,11 @@ router.post('/:id/approve', authenticate, authorize(['SUPER_ADMIN']), async (req
 router.post('/:id/reject', authenticate, authorize(['SUPER_ADMIN']), async (req: AuthRequest, res, next) => {
   try {
     const { id } = req.params;
+    const uuidCheck = z.string().uuid('Noto‘g‘ri foydalanuvchi identifikatori').safeParse(id);
+    if (!uuidCheck.success) {
+      return sendError(res, 'Noto‘g‘ri foydalanuvchi identifikatori (UUID)', 400);
+    }
+
     const user = await prisma.user.update({
       where: { id },
       data: { isActive: false },
@@ -262,6 +343,7 @@ router.post('/:id/reject', authenticate, authorize(['SUPER_ADMIN']), async (req:
       details: `${user.fullName} foydalanuvchisi rad etildi`,
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
+      requestId: (req as any).id,
     });
 
     return sendSuccess(res, user, 'Foydalanuvchi muvaffaqiyatli rad etildi');

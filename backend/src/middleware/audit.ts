@@ -8,6 +8,7 @@ export const logActivity = async (params: {
   details?: string;
   ipAddress?: string;
   userAgent?: string;
+  requestId?: string;
 }) => {
   try {
     await prisma.auditLog.create({
@@ -22,6 +23,18 @@ export const logActivity = async (params: {
       },
     });
   } catch (err) {
-    console.error('Audit log creation failed:', err);
+    console.error(
+      JSON.stringify({
+        level: 'error',
+        type: 'AUDIT_LOG_FAILURE',
+        requestId: params.requestId || 'unknown',
+        action: params.action,
+        entity: params.entity,
+        entityId: params.entityId,
+        userId: params.userId,
+        error: err instanceof Error ? err.message : String(err),
+        timestamp: new Date().toISOString(),
+      })
+    );
   }
 };

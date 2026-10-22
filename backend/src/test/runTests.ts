@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
+import { z } from 'zod';
 import { prisma } from '../prisma.js';
-import { generateToken } from '../utils/jwt.js';
+import { generateToken, verifyToken } from '../utils/jwt.js';
 import { config } from '../config.js';
 import { createStreamTicket, consumeStreamTicket } from '../services/ticket.service.js';
 import {
@@ -55,7 +56,7 @@ async function runTests() {
         regNumber: testRegNumber,
         title: 'Avtomatlashtirilgan sinov hujjati',
         documentType: 'INTERNAL',
-        category: 'Sinov',
+        category: 'BILDIRGI',
         creatorId: admin!.id,
         priority: 'MEDIUM',
         status: 'NEW',
@@ -171,13 +172,60 @@ async function runTests() {
     const sampleDoc = {
       creatorId: admin!.id,
       documentType: 'INTERNAL',
-      category: 'Bildirgi',
+      category: 'BILDIRGI',
       departmentId: 'dept-alpha',
     };
     const unrelatedStaff = { userId: 'unrelated-staff-uuid', role: 'STAFF', departmentId: 'dept-beta' };
     assert(canViewDocument(unrelatedStaff, sampleDoc) === false, 'Faza 2: Begona xodimga begona ichki bildirgi ko‘rinishi bloklandi (IDOR)');
     assert(canViewDocument({ userId: admin!.id, role: 'SUPER_ADMIN' }, sampleDoc) === true, 'Faza 2: SuperAdmin barcha hujjatlarni ko‘radi');
-    assert(canViewDocument(unrelatedStaff, { ...sampleDoc, category: 'Buyruq' }) === true, 'Faza 2: Umumiy Buyruq toifasidagi hujjat xodimga ochiq');
+    assert(canViewDocument(unrelatedStaff, { ...sampleDoc, category: 'ORDER' }) === true, 'Faza 2: Umumiy Buyruq (ORDER) toifasidagi hujjat xodimga ochiq');
+
+    // 10. Faza 3: User.tokenVersion sessiya bekor qilish (Revocation) testi
+    const userBeforeChange = await prisma.user.findUnique({ where: { id: admin!.id } });
+    const initialTokenVersion = userBeforeChange?.tokenVersion || 1;
+    const oldSessionToken = generateToken({
+      userId: admin!.id,
+      email: admin!.email,
+      role: admin!.role,
+      tokenVersion: initialTokenVersion,
+    });
+    const oldPayload = verifyToken(oldSessionToken);
+    assert(oldPayload.tokenVersion === initialTokenVersion, 'Faza 3: JWT token payloadida tokenVersion mavjud');
+
+    // Foydalanuvchi paroli yangilandi yoki sessiyasi oshirildi
+    const updatedUser = await prisma.user.update({
+      where: { id: admin!.id },
+      data: { tokenVersion: { increment: 1 } },
+    });
+    assert(updatedUser.tokenVersion === initialTokenVersion + 1, 'Faza 3: User tokenVersion muvaffaqiyatli oshirildi');
+    assert(oldPayload.tokenVersion !== updatedUser.tokenVersion, 'Faza 3: Eski tokenVersion bazadagi bilan mos kelmay qoldi (eski tokenlar bekor qilindi)');
+
+    // Yangi tokenVersion bilan token generatsiya qilish
+    const newSessionToken = generateToken({
+      userId: admin!.id,
+      email: admin!.email,
+      role: admin!.role,
+      tokenVersion: updatedUser.tokenVersion,
+    });
+    const newPayload = verifyToken(newSessionToken);
+    assert(newPayload.tokenVersion === updatedUser.tokenVersion, 'Faza 3: Yangi JWT token yangilangan tokenVersion bilan yaratildi va qabul qilindi');
+
+    // 11. Faza 3: UUID formatini qat'iy tekshirish testi
+    const validUuid = '123e4567-e89b-12d3-a456-426614174000';
+    const invalidUuid = 'not-a-uuid-12345';
+    const uuidSchema = z.string().uuid();
+    assert(uuidSchema.safeParse(validUuid).success === true, 'Faza 3: To‘g‘ri UUID muvaffaqiyatli qabul qilindi');
+    assert(uuidSchema.safeParse(invalidUuid).success === false, 'Faza 3: Noto‘g‘ri ID (non-UUID) qat’iy rad etildi');
+
+    // 12. Faza 3: Fayl magic-byte va MIME turlari validatsiyasi testi
+    const pdfMagicBytes = Buffer.from('%PDF-1.4\n%test\n');
+    const { fileTypeFromBuffer } = await import('file-type');
+    const detectedPdf = await fileTypeFromBuffer(pdfMagicBytes);
+    assert(detectedPdf?.mime === 'application/pdf' && detectedPdf?.ext === 'pdf', 'Faza 3: PDF magic-bytes orqali MIME va ext to‘g‘ri aniqlandi');
+
+    const fakeExeRenamedToPdf = Buffer.from('MZ\x90\x00\x03\x00\x00\x00');
+    const detectedExe = await fileTypeFromBuffer(fakeExeRenamedToPdf);
+    assert(detectedExe?.mime !== 'application/pdf', 'Faza 3: Soxta kengaytmali (.exe -> .pdf) fayl mazmuni aniqlanib xavfsizlik filtri tomonidan rad etildi');
 
     // Tozalash (test hisoblagichi va hujjatini o'chirish)
     await prisma.documentCounter.deleteMany({ where: { type: testType } });

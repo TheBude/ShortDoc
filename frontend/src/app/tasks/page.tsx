@@ -22,6 +22,9 @@ export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalTasks, setTotalTasks] = useState(0);
 
   // Modal for new task
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -44,22 +47,30 @@ export default function TasksPage() {
   const [submittingResult, setSubmittingResult] = useState(false);
 
   useEffect(() => {
-    loadTasks();
+    loadTasks(1);
   }, [statusFilter]);
 
   useEffect(() => {
     loadAuxData();
   }, []);
 
-  const loadTasks = async (forceInitial = false) => {
+  const loadTasks = async (targetPage = page, forceInitial = false) => {
     if (forceInitial || tasks.length === 0) {
       setLoading(true);
     }
     const query = new URLSearchParams();
     if (statusFilter) query.append('status', statusFilter);
+    query.append('page', String(targetPage));
+    query.append('limit', '20');
+
     const res = await fetchApi<Task[]>(`/tasks?${query.toString()}`);
     if (res.success && res.data) {
       setTasks(res.data);
+      if (res.meta) {
+        setPage(res.meta.page || 1);
+        setTotalPages(res.meta.totalPages || 1);
+        setTotalTasks(res.meta.total || 0);
+      }
     }
     setLoading(false);
   };
@@ -94,7 +105,7 @@ export default function TasksPage() {
         assignedToId: '',
         deadline: '',
       });
-      loadTasks(false);
+      loadTasks(1);
     } else {
       setFormError(res.message || 'Xatolik yuz berdi');
     }
@@ -114,7 +125,7 @@ export default function TasksPage() {
     if (res.success) {
       setSelectedTask(null);
       setResultComment('');
-      loadTasks(false);
+      loadTasks(page);
     } else {
       alert(res.message || 'Xatolik yuz berdi');
     }
@@ -131,7 +142,7 @@ export default function TasksPage() {
       body: JSON.stringify({ status }),
     });
     if (res.success) {
-      loadTasks(false);
+      loadTasks(page);
     }
   };
 
@@ -302,6 +313,37 @@ export default function TasksPage() {
                 })}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="p-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+            <span>Jami: {totalTasks} ta topshiriq | Sahifa {page} / {totalPages}</span>
+            <div className="flex gap-1">
+              <button
+                disabled={page <= 1}
+                onClick={() => {
+                  const p = page - 1;
+                  setPage(p);
+                  loadTasks(p);
+                }}
+                className="px-3 py-1 rounded border border-slate-200 dark:border-slate-700 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
+              >
+                Oldingi
+              </button>
+              <button
+                disabled={page >= totalPages}
+                onClick={() => {
+                  const p = page + 1;
+                  setPage(p);
+                  loadTasks(p);
+                }}
+                className="px-3 py-1 rounded border border-slate-200 dark:border-slate-700 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
+              >
+                Keyingi
+              </button>
+            </div>
           </div>
         )}
       </div>

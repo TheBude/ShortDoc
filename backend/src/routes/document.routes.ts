@@ -8,6 +8,7 @@ import { generateDocumentDocx } from '../utils/docxGenerator.js';
 import { realtime } from '../services/realtime.js';
 import { config } from '../config.js';
 import { publicVerifyLimiter } from '../middleware/rateLimit.js';
+import { parseDocumentCategory } from '../utils/categories.js';
 import {
   buildDocumentVisibilityWhere,
   canViewDocument,
@@ -18,9 +19,33 @@ import {
 
 const router = Router();
 
+const listDocumentsQuerySchema = z.object({
+  search: z.string().optional(),
+  documentType: z.enum(['INCOMING', 'OUTGOING', 'INTERNAL']).optional(),
+  status: z.enum([
+    'NEW',
+    'REGISTERED',
+    'IN_REVIEW',
+    'IN_APPROVAL',
+    'IN_EXECUTION',
+    'COMPLETED',
+    'REJECTED',
+    'ARCHIVED',
+  ]).optional(),
+  priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).optional(),
+  category: z.string().optional(),
+  pendingMySignature: z.string().optional(),
+  departmentId: z.string().uuid('Noto‘g‘ri bo‘lim identifikatori').optional(),
+  assigneeId: z.string().uuid('Noto‘g‘ri mas’ul xodim identifikatori').optional(),
+  isArchived: z.string().optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(10),
+});
+
 // Hujjatlar ro'yxati (filtrlash, qidiruv, sahifalash va yagona RBAC ko'rinish filtri)
 router.get('/', authenticate, async (req: AuthRequest, res, next) => {
   try {
+    const query = listDocumentsQuerySchema.parse(req.query);
     const {
       search,
       documentType,
@@ -31,13 +56,11 @@ router.get('/', authenticate, async (req: AuthRequest, res, next) => {
       departmentId,
       assigneeId,
       isArchived,
-      page = '1',
-      limit = '10',
-    } = req.query;
+      page,
+      limit,
+    } = query;
 
-    const pageNum = parseInt(page as string, 10) || 1;
-    const limitNum = parseInt(limit as string, 10) || 10;
-    const skip = (pageNum - 1) * limitNum;
+    const skip = (page - 1) * limit;
 
     const andConditions: any[] = [];
 
@@ -50,18 +73,17 @@ router.get('/', authenticate, async (req: AuthRequest, res, next) => {
     if (search) {
       andConditions.push({
         OR: [
-          { regNumber: { contains: search as string, mode: 'insensitive' } },
-          { title: { contains: search as string, mode: 'insensitive' } },
-          { summary: { contains: search as string, mode: 'insensitive' } },
-          { sender: { contains: search as string, mode: 'insensitive' } },
-          { receiver: { contains: search as string, mode: 'insensitive' } },
-          { category: { contains: search as string, mode: 'insensitive' } },
+          { regNumber: { contains: search, mode: 'insensitive' } },
+          { title: { contains: search, mode: 'insensitive' } },
+          { summary: { contains: search, mode: 'insensitive' } },
+          { sender: { contains: search, mode: 'insensitive' } },
+          { receiver: { contains: search, mode: 'insensitive' } },
         ],
       });
     }
 
     if (documentType) {
-      andConditions.push({ documentType: documentType as any });
+      andConditions.push({ documentType });
     }
 
     if (status) {
@@ -73,48 +95,30 @@ router.get('/', authenticate, async (req: AuthRequest, res, next) => {
           ],
         });
       } else {
-        andConditions.push({ status: status as any });
+        andConditions.push({ status });
       }
     }
 
     if (category) {
-      const catLower = (category as string).toLowerCase();
-      if (catLower.includes('buyru')) {
-        andConditions.push({ category: { contains: 'Buyru', mode: 'insensitive' } });
-      } else if (catLower.includes('murojaat')) {
-        andConditions.push({
-          OR: [
-            { category: { contains: 'Murojaat', mode: 'insensitive' } },
-            { category: { contains: 'Ariza', mode: 'insensitive' } },
-            { category: { contains: 'Shikoyat', mode: 'insensitive' } },
-            { category: { contains: 'Taklif', mode: 'insensitive' } },
-          ],
-        });
-      } else if (catLower.includes('ichki') || catLower.includes('bildirgi') || catLower.includes('xizmat')) {
-        andConditions.push({
-          OR: [
-            { category: { contains: 'Bildirgi', mode: 'insensitive' } },
-            { category: { contains: 'Xizmat xati', mode: 'insensitive' } },
-            { category: { contains: 'Tushuntirish', mode: 'insensitive' } },
-            { category: { contains: 'Tavsiyanoma', mode: 'insensitive' } },
-            { category: { contains: 'Ichki', mode: 'insensitive' } },
-          ],
-        });
+      const catLower = category.toLowerCase();
+      if (catLower.includes('buyru') || catLower.includes('qaror')) {
+        andConditions.push({ category: { in: ['ORDER', 'DECISION'] } });
       } else {
-        andConditions.push({ category: category as string });
+        const parsedCat = parseDocumentCategory(category);
+        andConditions.push({ category: parsedCat });
       }
     }
 
     if (priority) {
-      andConditions.push({ priority: priority as any });
+      andConditions.push({ priority });
     }
 
     if (departmentId) {
-      andConditions.push({ departmentId: departmentId as string });
+      andConditions.push({ departmentId });
     }
 
     if (assigneeId) {
-      andConditions.push({ assigneeId: assigneeId as string });
+      andConditions.push({ assigneeId });
     }
 
     if (isArchived !== undefined) {
@@ -140,7 +144,7 @@ router.get('/', authenticate, async (req: AuthRequest, res, next) => {
       prisma.document.findMany({
         where,
         skip,
-        take: limitNum,
+        take: limit,
         orderBy: { createdAt: 'desc' },
         include: {
           department: { select: { id: true, name: true, code: true } },
@@ -158,10 +162,10 @@ router.get('/', authenticate, async (req: AuthRequest, res, next) => {
     ]);
 
     return sendSuccess(res, documents, 'Hujjatlar ro‘yxati', 200, {
-      page: pageNum,
-      limit: limitNum,
+      page,
+      limit,
       total,
-      totalPages: Math.ceil(total / limitNum),
+      totalPages: Math.ceil(total / limit),
     });
   } catch (error) {
     next(error);
@@ -172,6 +176,10 @@ router.get('/', authenticate, async (req: AuthRequest, res, next) => {
 router.get('/:id', authenticate, async (req: AuthRequest, res, next) => {
   try {
     const { id } = req.params;
+    const uuidCheck = z.string().uuid('Noto‘g‘ri hujjat identifikatori').safeParse(id);
+    if (!uuidCheck.success) {
+      return sendError(res, 'Noto‘g‘ri hujjat identifikatori (UUID)', 400);
+    }
 
     const document = await prisma.document.findUnique({
       where: { id },
@@ -223,6 +231,10 @@ router.get('/:id', authenticate, async (req: AuthRequest, res, next) => {
 router.get('/:id/public-verify', publicVerifyLimiter, async (req, res, next) => {
   try {
     const { id } = req.params;
+    const uuidCheck = z.string().uuid('Noto‘g‘ri hujjat identifikatori').safeParse(id);
+    if (!uuidCheck.success) {
+      return sendError(res, 'Noto‘g‘ri hujjat identifikatori (UUID)', 400);
+    }
 
     const document = await prisma.document.findUnique({
       where: { id },
@@ -272,6 +284,10 @@ router.get('/:id/public-verify', publicVerifyLimiter, async (req, res, next) => 
 router.get('/:id/docx', authenticate, async (req: AuthRequest, res, next) => {
   try {
     const { id } = req.params;
+    const uuidCheck = z.string().uuid('Noto‘g‘ri hujjat identifikatori').safeParse(id);
+    if (!uuidCheck.success) {
+      return sendError(res, 'Noto‘g‘ri hujjat identifikatori (UUID)', 400);
+    }
 
     const document = await prisma.document.findUnique({
       where: { id },
@@ -334,15 +350,16 @@ router.post('/', authenticate, async (req: AuthRequest, res, next) => {
       category: z.string().default('Bildirgi'),
       sender: z.string().optional(),
       receiver: z.string().optional(),
-      departmentId: z.string().optional().nullable(),
-      assigneeId: z.string().optional().nullable(),
+      departmentId: z.string().uuid('Noto‘g‘ri bo‘lim identifikatori').optional().nullable(),
+      assigneeId: z.string().uuid('Noto‘g‘ri mas’ul xodim identifikatori').optional().nullable(),
       priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).default('MEDIUM'),
       deadline: z.string().optional().nullable(),
       summary: z.string().optional(),
-      approverIds: z.array(z.string()).optional(),
+      approverIds: z.array(z.string().uuid('Kelishuvchi ID UUID bo‘lishi shart')).optional(),
     });
 
     const data = schema.parse(req.body);
+    const parsedCategory = parseDocumentCategory(data.category);
 
     // Takrorlanmagan kelishuvchilar ro'yxati
     const uniqueApproverIds = data.approverIds ? [...new Set(data.approverIds)] : [];
@@ -395,7 +412,7 @@ router.post('/', authenticate, async (req: AuthRequest, res, next) => {
           regNumber,
           title: data.title,
           documentType: data.documentType,
-          category: data.category,
+          category: parsedCategory,
           sender: data.sender,
           receiver: data.receiver,
           departmentId: data.departmentId || req.user!.departmentId || null,
@@ -474,6 +491,7 @@ router.post('/', authenticate, async (req: AuthRequest, res, next) => {
       details: `Yangi hujjat yaratildi: ${document.regNumber} - ${document.title}`,
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
+      requestId: (req as any).id,
     });
 
     return sendSuccess(res, document, 'Hujjat muvaffaqiyatli ro‘yxatga olindi', 201);
@@ -486,6 +504,11 @@ router.post('/', authenticate, async (req: AuthRequest, res, next) => {
 router.patch('/:id/status', authenticate, async (req: AuthRequest, res, next) => {
   try {
     const { id } = req.params;
+    const uuidCheck = z.string().uuid('Noto‘g‘ri hujjat identifikatori').safeParse(id);
+    if (!uuidCheck.success) {
+      return sendError(res, 'Noto‘g‘ri hujjat identifikatori (UUID)', 400);
+    }
+
     const schema = z.object({
       status: z.enum([
         'NEW',
@@ -554,6 +577,7 @@ router.patch('/:id/status', authenticate, async (req: AuthRequest, res, next) =>
       details: `${doc.regNumber} holati ${doc.status} dan ${status} ga o‘zgardi`,
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
+      requestId: (req as any).id,
     });
 
     if (status === 'COMPLETED' && doc.creatorId) {
@@ -587,6 +611,11 @@ router.patch('/:id/status', authenticate, async (req: AuthRequest, res, next) =>
 router.post('/:id/approvals', authenticate, async (req: AuthRequest, res, next) => {
   try {
     const { id } = req.params;
+    const uuidCheck = z.string().uuid('Noto‘g‘ri hujjat identifikatori').safeParse(id);
+    if (!uuidCheck.success) {
+      return sendError(res, 'Noto‘g‘ri hujjat identifikatori (UUID)', 400);
+    }
+
     const schema = z.object({
       status: z.enum(['APPROVED', 'REJECTED']),
       comments: z.string().optional(),
@@ -744,6 +773,7 @@ router.post('/:id/approvals', authenticate, async (req: AuthRequest, res, next) 
       details: `Viza berildi: ${status} (${comments || 'Izohsiz'})`,
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
+      requestId: (req as any).id,
     });
 
     return sendSuccess(res, result.updatedApproval, 'Viza qarori muvaffaqiyatli qabul qilindi');
@@ -756,6 +786,11 @@ router.post('/:id/approvals', authenticate, async (req: AuthRequest, res, next) 
 router.post('/:id/comments', authenticate, async (req: AuthRequest, res, next) => {
   try {
     const { id } = req.params;
+    const uuidCheck = z.string().uuid('Noto‘g‘ri hujjat identifikatori').safeParse(id);
+    if (!uuidCheck.success) {
+      return sendError(res, 'Noto‘g‘ri hujjat identifikatori (UUID)', 400);
+    }
+
     const schema = z.object({
       comment: z.string().min(1, 'Izoh matni talab qilinadi'),
     });
@@ -794,6 +829,7 @@ router.post('/:id/comments', authenticate, async (req: AuthRequest, res, next) =
       details: `${doc.regNumber} hujjatiga yangi izoh qo‘shildi`,
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
+      requestId: (req as any).id,
     });
 
     return sendSuccess(res, newComment, 'Izoh muvaffaqiyatli qo‘shildi', 201);

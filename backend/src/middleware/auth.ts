@@ -29,14 +29,28 @@ export const authenticate = async (
     }
     const payload = verifyToken(token);
 
-    // Verify user is still active in DB
+    // Verify user is still active in DB and tokenVersion matches
     const dbUser = await prisma.user.findUnique({
       where: { id: payload.userId },
-      select: { id: true, email: true, role: true, departmentId: true, fullName: true, position: true, isActive: true },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        departmentId: true,
+        fullName: true,
+        position: true,
+        isActive: true,
+        tokenVersion: true,
+      },
     });
 
     if (!dbUser || !dbUser.isActive) {
       return sendError(res, 'Foydalanuvchi hisobi faol emas yoki mavjud emas.', 403);
+    }
+
+    // Parol o'zgartirilgandan so'ng eski tokenlarni bekor qilish
+    if (typeof payload.tokenVersion === 'number' && payload.tokenVersion !== dbUser.tokenVersion) {
+      return sendError(res, 'Sessiya muddati tugagan yoki parol o‘zgartirilgan. Qaytadan kiring.', 401);
     }
 
     req.user = {
@@ -46,6 +60,7 @@ export const authenticate = async (
       departmentId: dbUser.departmentId,
       fullName: dbUser.fullName,
       position: dbUser.position,
+      tokenVersion: dbUser.tokenVersion,
     };
 
     next();
@@ -66,13 +81,14 @@ export const authenticateStream = async (
 ) => {
   try {
     let userId: string | null = null;
+    let tokenPayload: JwtPayload | null = null;
 
     // 1. Check Authorization header
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.split(' ')[1];
-      const payload = verifyToken(token);
-      userId = payload.userId;
+      tokenPayload = verifyToken(token);
+      userId = tokenPayload.userId;
     }
 
     // 2. Check one-time short-lived ticket
@@ -86,11 +102,24 @@ export const authenticateStream = async (
 
     const dbUser = await prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, email: true, role: true, departmentId: true, fullName: true, position: true, isActive: true },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        departmentId: true,
+        fullName: true,
+        position: true,
+        isActive: true,
+        tokenVersion: true,
+      },
     });
 
     if (!dbUser || !dbUser.isActive) {
       return sendError(res, 'Foydalanuvchi hisobi faol emas yoki mavjud emas.', 403);
+    }
+
+    if (tokenPayload && typeof tokenPayload.tokenVersion === 'number' && tokenPayload.tokenVersion !== dbUser.tokenVersion) {
+      return sendError(res, 'Sessiya muddati tugagan yoki parol o‘zgartirilgan. Qaytadan kiring.', 401);
     }
 
     req.user = {
@@ -100,6 +129,7 @@ export const authenticateStream = async (
       departmentId: dbUser.departmentId,
       fullName: dbUser.fullName,
       position: dbUser.position,
+      tokenVersion: dbUser.tokenVersion,
     };
 
     next();

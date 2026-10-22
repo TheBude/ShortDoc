@@ -2,6 +2,8 @@ import { Router, Response } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { fileTypeFromFile } from 'file-type';
+import { z } from 'zod';
 import { prisma } from '../prisma.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
@@ -16,45 +18,38 @@ if (!fs.existsSync(UPLOAD_DIR)) {
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 }
 
-// Xavfsiz saqlash sozlamasi
+// Vaqtinchalik xavfsiz yuklash katalogi
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, UPLOAD_DIR);
   },
   filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
     const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    cb(null, `doc-${uniqueSuffix}${ext}`);
+    cb(null, `tmp-upload-${uniqueSuffix}`);
   },
 });
 
-const allowedMimes = [
-  'application/pdf',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.ms-excel',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'image/jpeg',
-  'image/png',
-];
+const ALLOWED_MIME_MAP: Record<string, string[]> = {
+  'application/pdf': ['pdf'],
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['docx'],
+  'application/msword': ['doc', 'cfb'],
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['xlsx'],
+  'application/vnd.ms-excel': ['xls', 'cfb'],
+  'image/jpeg': ['jpg', 'jpeg'],
+  'image/png': ['png'],
+  'application/zip': ['zip'],
+};
 
 const upload = multer({
   storage,
   limits: { fileSize: config.MAX_FILE_SIZE_MB * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    if (allowedMimes.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error('Faqat PDF, Word, Excel yoki rasm formatidagi fayllar qabul qilinadi.'));
-    }
-  },
 });
 
-// Fayl yuklash (Hujjatga kirish huquqi tekshiruvi bilan)
+// Fayl yuklash (Magic-byte tekshiruvi va hujjatga kirish huquqi bilan)
 router.post('/upload', authenticate, upload.single('file'), async (req: AuthRequest, res: Response, next) => {
+  const file = req.file;
   try {
     const { documentId } = req.body;
-    const file = req.file;
 
     if (!file) {
       return sendError(res, 'Fayl tanlanmagan', 400);
@@ -65,18 +60,53 @@ router.post('/upload', authenticate, upload.single('file'), async (req: AuthRequ
       return sendError(res, 'Hujjat ID ko‘rsatilmagan', 400);
     }
 
+    const uuidCheck = z.string().uuid().safeParse(documentId);
+    if (!uuidCheck.success) {
+      if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+      return sendError(res, 'Noto‘g‘ri hujjat identifikatori (UUID)', 400);
+    }
+
+    // 1. Magic bytes orqali faylning haqiqiy turini aniqlash (MIME tekshiruvi)
+    const detectedType = await fileTypeFromFile(file.path);
+    if (!detectedType || !ALLOWED_MIME_MAP[detectedType.mime]) {
+      if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+      return sendError(
+        res,
+        'Fayl formati noto‘g‘ri yoki ruxsat etilmagan. Faqat PDF, Word, Excel, rasm va ZIP arxivlari qabul qilinadi.',
+        400
+      );
+    }
+
+    // 2. Kengaytmaning haqiqiy fayl turiga mosligini tekshirish
+    const originalExt = path.extname(file.originalname).toLowerCase().replace('.', '');
+    const allowedExts = ALLOWED_MIME_MAP[detectedType.mime];
+    if (originalExt && !allowedExts.includes(originalExt)) {
+      if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+      return sendError(
+        res,
+        `Fayl kengaytmasi (.${originalExt}) haqiqiy fayl turiga (.${detectedType.ext}) mos kelmadi`,
+        400
+      );
+    }
+
+    // 3. Kengaytmani faqat aniqlangan turdan olgan holda yakuniy fayl nomini belgilash
+    const finalFilename = `doc-${Date.now()}-${Math.round(Math.random() * 1e9)}.${detectedType.ext}`;
+    const finalFilePath = path.join(UPLOAD_DIR, finalFilename);
+    fs.renameSync(file.path, finalFilePath);
+
+    // 4. Hujjat mavjudligi va ruxsat tekshiruvi
     const doc = await prisma.document.findUnique({
       where: { id: documentId },
       include: { approvals: true, tasks: true },
     });
 
     if (!doc) {
-      if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+      if (fs.existsSync(finalFilePath)) fs.unlinkSync(finalFilePath);
       return sendError(res, 'Hujjat topilmadi', 404);
     }
 
     if (!canViewDocument(req.user!, doc)) {
-      if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+      if (fs.existsSync(finalFilePath)) fs.unlinkSync(finalFilePath);
       return sendError(res, 'Ushbu hujjatga fayl biriktirish uchun sizda ruxsat yo‘q', 403);
     }
 
@@ -84,10 +114,10 @@ router.post('/upload', authenticate, upload.single('file'), async (req: AuthRequ
       data: {
         documentId,
         originalName: Buffer.from(file.originalname, 'latin1').toString('utf8'),
-        fileName: file.filename,
-        filePath: file.path,
+        fileName: finalFilename,
+        filePath: finalFilePath,
         fileSize: file.size,
-        mimeType: file.mimetype,
+        mimeType: detectedType.mime,
         uploadedById: req.user!.userId,
       },
       include: {
@@ -100,21 +130,32 @@ router.post('/upload', authenticate, upload.single('file'), async (req: AuthRequ
       action: 'UPLOAD_FILE',
       entity: 'DOCUMENT_FILE',
       entityId: docFile.id,
-      details: `Fayl biriktirildi: ${docFile.originalName} (${(docFile.fileSize / 1024).toFixed(1)} KB)`,
+      details: `Fayl biriktirildi: ${docFile.originalName} (${(docFile.fileSize / 1024).toFixed(1)} KB, MIME: ${docFile.mimeType})`,
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
+      requestId: (req as any).id,
     });
 
     return sendSuccess(res, docFile, 'Fayl muvaffaqiyatli yuklandi', 201);
   } catch (error) {
+    if (file && fs.existsSync(file.path)) {
+      try {
+        fs.unlinkSync(file.path);
+      } catch {}
+    }
     next(error);
   }
 });
 
-// Faylni xavfsiz yuklab olish (Ruxsat tekshiruvi bilan)
+// Faylni xavfsiz yuklab olish (Ruxsat tekshiruvi, RFC 5987 va nosniff bilan)
 router.get('/:id/download', authenticate, async (req: AuthRequest, res: Response, next) => {
   try {
     const { id } = req.params;
+
+    const uuidCheck = z.string().uuid().safeParse(id);
+    if (!uuidCheck.success) {
+      return sendError(res, 'Noto‘g‘ri fayl identifikatori', 400);
+    }
 
     const docFile = await prisma.documentFile.findUnique({
       where: { id },
@@ -145,20 +186,36 @@ router.get('/:id/download', authenticate, async (req: AuthRequest, res: Response
       details: `Fayl yuklab olindi: ${docFile.originalName}`,
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
+      requestId: (req as any).id,
     });
 
-    res.setHeader('Content-Type', docFile.mimeType);
-    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(docFile.originalName)}"`);
+    // X-Content-Type-Options: nosniff
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Content-Type', docFile.mimeType || 'application/octet-stream');
+
+    // RFC 5987 Content-Disposition
+    const safeAsciiName = docFile.originalName.replace(/[^\x20-\x7E]/g, '_').replace(/["\\]/g, '_');
+    const rfc5987Encoded = encodeURIComponent(docFile.originalName).replace(/['()]/g, escape).replace(/\*/g, '%2A');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${safeAsciiName}"; filename*=UTF-8''${rfc5987Encoded}`
+    );
+
     return fs.createReadStream(docFile.filePath).pipe(res);
   } catch (error) {
     next(error);
   }
 });
 
-// Faylni o'chirish (Ruxsat va audit log bilan)
+// Faylni o'chirish (Faqat yuklagan, hujjat egasi yoki SUPER_ADMIN; diskdan ham o'chirish va audit log)
 router.delete('/:id', authenticate, async (req: AuthRequest, res: Response, next) => {
   try {
     const { id } = req.params;
+
+    const uuidCheck = z.string().uuid().safeParse(id);
+    if (!uuidCheck.success) {
+      return sendError(res, 'Noto‘g‘ri fayl identifikatori', 400);
+    }
 
     const docFile = await prisma.documentFile.findUnique({
       where: { id },
@@ -178,10 +235,13 @@ router.delete('/:id', authenticate, async (req: AuthRequest, res: Response, next
       return sendError(res, 'Ushbu faylni o‘chirish uchun sizda ruxsat yo‘q', 403);
     }
 
+    // Diskdan o'chirish
     if (fs.existsSync(docFile.filePath)) {
       try {
         fs.unlinkSync(docFile.filePath);
-      } catch {}
+      } catch (err) {
+        console.error(`[File Delete Error] Could not remove file on disk: ${docFile.filePath}`, err);
+      }
     }
 
     await prisma.documentFile.delete({ where: { id } });
@@ -194,6 +254,7 @@ router.delete('/:id', authenticate, async (req: AuthRequest, res: Response, next
       details: `Fayl o‘chirildi: ${docFile.originalName}`,
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
+      requestId: (req as any).id,
     });
 
     return sendSuccess(res, null, 'Fayl muvaffaqiyatli o‘chirildi');

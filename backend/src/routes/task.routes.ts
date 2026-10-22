@@ -9,20 +9,31 @@ import { canCreateTask, canManageTask } from '../services/access.js';
 
 const router = Router();
 
-// Topshiriqlar ro'yxati
+const listTasksQuerySchema = z.object({
+  documentId: z.string().uuid('Noto‘g‘ri hujjat identifikatori').optional(),
+  status: z.enum(['PENDING', 'IN_PROGRESS', 'COMPLETED', 'OVERDUE', 'CANCELLED']).optional(),
+  assignedToId: z.string().uuid('Noto‘g‘ri mas’ul xodim identifikatori').optional(),
+  myTasks: z.string().optional(),
+  all: z.string().optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+});
+
+// Topshiriqlar ro'yxati (filtrlash va sahifalash bilan)
 router.get('/', authenticate, async (req: AuthRequest, res, next) => {
   try {
-    const { documentId, status, assignedToId } = req.query;
+    const query = listTasksQuerySchema.parse(req.query);
+    const { documentId, status, assignedToId, myTasks, all, page, limit } = query;
 
     const where: any = {};
 
     // Oddiy xodim yoki shaxsiy topshiriqlarini so'raganlar faqat o'ziga tegishlisini ko'radi
-    if (req.user!.role === 'STAFF' || req.query.myTasks === 'true') {
+    if (req.user!.role === 'STAFF' || myTasks === 'true') {
       where.OR = [
         { assignedToId: req.user!.userId },
         { createdById: req.user!.userId },
       ];
-    } else if (req.user!.role === 'DEPARTMENT_HEAD' && !req.query.all) {
+    } else if (req.user!.role === 'DEPARTMENT_HEAD' && !all) {
       where.OR = [
         { assignedToId: req.user!.userId },
         { createdById: req.user!.userId },
@@ -30,21 +41,33 @@ router.get('/', authenticate, async (req: AuthRequest, res, next) => {
       ];
     }
 
-    if (documentId) where.documentId = documentId as string;
-    if (status) where.status = status as any;
-    if (assignedToId) where.assignedToId = assignedToId as string;
+    if (documentId) where.documentId = documentId;
+    if (status) where.status = status;
+    if (assignedToId) where.assignedToId = assignedToId;
 
-    const tasks = await prisma.task.findMany({
-      where,
-      include: {
-        document: { select: { id: true, regNumber: true, title: true } },
-        assignedTo: { select: { id: true, fullName: true, position: true } },
-        createdBy: { select: { id: true, fullName: true } },
-      },
-      orderBy: { deadline: 'asc' },
+    const skip = (page - 1) * limit;
+
+    const [total, tasks] = await Promise.all([
+      prisma.task.count({ where }),
+      prisma.task.findMany({
+        where,
+        include: {
+          document: { select: { id: true, regNumber: true, title: true } },
+          assignedTo: { select: { id: true, fullName: true, position: true } },
+          createdBy: { select: { id: true, fullName: true } },
+        },
+        orderBy: { deadline: 'asc' },
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    return sendSuccess(res, tasks, 'Topshiriqlar ro‘yxati', 200, {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
     });
-
-    return sendSuccess(res, tasks, 'Topshiriqlar ro‘yxati');
   } catch (error) {
     next(error);
   }
@@ -54,10 +77,10 @@ router.get('/', authenticate, async (req: AuthRequest, res, next) => {
 router.post('/', authenticate, async (req: AuthRequest, res, next) => {
   try {
     const schema = z.object({
-      documentId: z.string().uuid('Hujjat ID talab qilinadi'),
+      documentId: z.string().uuid('Hujjat ID talab qilinadi (UUID)'),
       title: z.string().min(2, 'Topshiriq sarlavhasi talab qilinadi'),
       description: z.string().optional(),
-      assignedToId: z.string().uuid('Mas’ul xodim tanlanishi shart'),
+      assignedToId: z.string().uuid('Mas’ul xodim tanlanishi shart (UUID)'),
       deadline: z.string().optional().nullable(),
     });
 
@@ -128,6 +151,7 @@ router.post('/', authenticate, async (req: AuthRequest, res, next) => {
       details: `Topshiriq yaratildi: ${task.title} (Ijrochi: ${task.assignedTo.fullName})`,
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
+      requestId: (req as any).id,
     });
 
     return sendSuccess(res, task, 'Topshiriq muvaffaqiyatli yaratildi', 201);
@@ -140,6 +164,11 @@ router.post('/', authenticate, async (req: AuthRequest, res, next) => {
 router.patch('/:id/status', authenticate, async (req: AuthRequest, res, next) => {
   try {
     const { id } = req.params;
+    const uuidCheck = z.string().uuid('Noto‘g‘ri topshiriq identifikatori').safeParse(id);
+    if (!uuidCheck.success) {
+      return sendError(res, 'Noto‘g‘ri topshiriq identifikatori (UUID)', 400);
+    }
+
     const schema = z.object({
       status: z.enum(['PENDING', 'IN_PROGRESS', 'COMPLETED', 'OVERDUE', 'CANCELLED']),
     });
@@ -209,6 +238,7 @@ router.patch('/:id/status', authenticate, async (req: AuthRequest, res, next) =>
       details: `Topshiriq holati ${existingTask.status} dan ${status} ga o‘zgartirildi`,
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
+      requestId: (req as any).id,
     });
 
     return sendSuccess(res, task, 'Topshiriq holati yangilandi');
@@ -221,6 +251,11 @@ router.patch('/:id/status', authenticate, async (req: AuthRequest, res, next) =>
 router.post('/:id/submit-result', authenticate, async (req: AuthRequest, res, next) => {
   try {
     const { id } = req.params;
+    const uuidCheck = z.string().uuid('Noto‘g‘ri topshiriq identifikatori').safeParse(id);
+    if (!uuidCheck.success) {
+      return sendError(res, 'Noto‘g‘ri topshiriq identifikatori (UUID)', 400);
+    }
+
     const schema = z.object({
       resultComment: z.string().min(1, 'Natija izohi talab qilinadi'),
       resultFileUrl: z.string().optional(),
@@ -313,6 +348,7 @@ router.post('/:id/submit-result', authenticate, async (req: AuthRequest, res, ne
       details: `Topshiriq yakunlandi: ${task.title}. Natija izohi: ${resultComment}`,
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
+      requestId: (req as any).id,
     });
 
     return sendSuccess(res, task, 'Topshiriq natijasi qabul qilindi');

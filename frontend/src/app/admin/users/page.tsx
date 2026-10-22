@@ -135,6 +135,9 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalUsers, setTotalUsers] = useState(0);
 
   // Tab: 'all' or 'pending'
   const [activeTab, setActiveTab] = useState<'pending' | 'all'>('pending');
@@ -156,17 +159,22 @@ export default function AdminUsersPage() {
   });
 
   useEffect(() => {
-    loadData();
+    loadData(1);
   }, []);
 
-  const loadData = async () => {
+  const loadData = async (targetPage = page) => {
     setLoading(true);
     const [uRes, dRes] = await Promise.all([
-      fetchApi<User[]>('/users'),
+      fetchApi<User[]>(`/users?page=${targetPage}&limit=20`),
       fetchApi<Department[]>('/departments'),
     ]);
     if (uRes.success && uRes.data) {
       setUsers(uRes.data);
+      if (uRes.meta) {
+        setPage(uRes.meta.page || 1);
+        setTotalPages(uRes.meta.totalPages || 1);
+        setTotalUsers(uRes.meta.total || 0);
+      }
     }
     if (dRes.success && dRes.data) setDepartments(dRes.data);
     setLoading(false);
@@ -219,6 +227,12 @@ export default function AdminUsersPage() {
     e.preventDefault();
     setSubmitting(true);
     setFormError(null);
+
+    if (formData.password.length < 8) {
+      setFormError('Boshlang‘ich parol kamida 8 ta belgidan iborat bo‘lishi shart');
+      setSubmitting(false);
+      return;
+    }
 
     const res = await fetchApi('/users', {
       method: 'POST',
@@ -447,79 +461,112 @@ export default function AdminUsersPage() {
               <p className="text-xs">Foydalanuvchilar yuklanmoqda...</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 uppercase font-semibold">
-                  <tr>
-                    <th className="py-3 px-4">F.I.Sh</th>
-                    <th className="py-3 px-4">Email</th>
-                    <th className="py-3 px-4">Tizimdagi Roli</th>
-                    <th className="py-3 px-4">Bo‘lim / Fakultet</th>
-                    <th className="py-3 px-4">Lavozim</th>
-                    <th className="py-3 px-4">Ariza Holati</th>
-                    <th className="py-3 px-4">Hisob Holati</th>
-                    <th className="py-3 px-4 text-right">Amal</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
-                  {users.map((u) => (
-                    <tr key={u.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors">
-                      <td className="py-3 px-4 font-semibold text-slate-900 dark:text-white whitespace-nowrap">{u.fullName}</td>
-                      <td className="py-3 px-4 whitespace-nowrap text-slate-600 dark:text-slate-400">{u.email}</td>
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        <span className="font-semibold text-[11px] px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700">
-                          {u.role}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 whitespace-nowrap text-slate-700 dark:text-slate-300">{u.department?.name || '—'}</td>
-                      <td className="py-3 px-4 whitespace-nowrap text-slate-600 dark:text-slate-400">{u.position}</td>
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        {u.registrationStatus === 'PENDING' ? (
-                          <span className="px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 text-[10px] font-bold border border-amber-200 dark:border-amber-800">
-                            Kutilmoqda
-                          </span>
-                        ) : u.registrationStatus === 'REJECTED' ? (
-                          <span className="px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/70 text-rose-800 dark:text-rose-300 text-[10px] font-bold border border-rose-200 dark:border-rose-800">
-                            Rad etilgan
-                          </span>
-                        ) : (
-                          <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold border border-emerald-200 dark:border-emerald-800">
-                            Tasdiqlangan
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        {u.isActive ? (
-                          <span className="text-emerald-700 dark:text-emerald-400 font-semibold flex items-center gap-1">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                            Faol
-                          </span>
-                        ) : (
-                          <span className="text-rose-600 dark:text-rose-400 font-semibold flex items-center gap-1">
-                            <XCircle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
-                            Bloklangan
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3 px-4 text-right whitespace-nowrap">
-                        {u.id !== user?.id && (
-                          <button
-                            onClick={() => handleToggleActive(u)}
-                            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer ${
-                              u.isActive
-                                ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800'
-                                : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800'
-                            }`}
-                          >
-                            {u.isActive ? 'Bloklash' : 'Faollashtirish'}
-                          </button>
-                        )}
-                      </td>
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 uppercase font-semibold">
+                    <tr>
+                      <th className="py-3 px-4">F.I.Sh</th>
+                      <th className="py-3 px-4">Email</th>
+                      <th className="py-3 px-4">Tizimdagi Roli</th>
+                      <th className="py-3 px-4">Bo‘lim / Fakultet</th>
+                      <th className="py-3 px-4">Lavozim</th>
+                      <th className="py-3 px-4">Ariza Holati</th>
+                      <th className="py-3 px-4">Hisob Holati</th>
+                      <th className="py-3 px-4 text-right">Amal</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
+                    {users.map((u) => (
+                      <tr key={u.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors">
+                        <td className="py-3 px-4 font-semibold text-slate-900 dark:text-white whitespace-nowrap">{u.fullName}</td>
+                        <td className="py-3 px-4 whitespace-nowrap text-slate-600 dark:text-slate-400">{u.email}</td>
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <span className="font-semibold text-[11px] px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700">
+                            {u.role}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 whitespace-nowrap text-slate-700 dark:text-slate-300">{u.department?.name || '—'}</td>
+                        <td className="py-3 px-4 whitespace-nowrap text-slate-600 dark:text-slate-400">{u.position}</td>
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          {u.registrationStatus === 'PENDING' ? (
+                            <span className="px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 text-[10px] font-bold border border-amber-200 dark:border-amber-800">
+                              Kutilmoqda
+                            </span>
+                          ) : u.registrationStatus === 'REJECTED' ? (
+                            <span className="px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/70 text-rose-800 dark:text-rose-300 text-[10px] font-bold border border-rose-200 dark:border-rose-800">
+                              Rad etilgan
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold border border-emerald-200 dark:border-emerald-800">
+                              Tasdiqlangan
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          {u.isActive ? (
+                            <span className="text-emerald-700 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                              Faol
+                            </span>
+                          ) : (
+                            <span className="text-rose-600 dark:text-rose-400 font-semibold flex items-center gap-1">
+                              <XCircle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+                              Bloklangan
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3 px-4 text-right whitespace-nowrap">
+                          {u.id !== user?.id && (
+                            <button
+                              onClick={() => handleToggleActive(u)}
+                              className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer ${
+                                u.isActive
+                                  ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800'
+                                  : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800'
+                              }`}
+                            >
+                              {u.isActive ? 'Bloklash' : 'Faollashtirish'}
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="p-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                  <span>Jami: {totalUsers} ta foydalanuvchi | Sahifa {page} / {totalPages}</span>
+                  <div className="flex gap-1">
+                    <button
+                      disabled={page <= 1}
+                      onClick={() => {
+                        const p = page - 1;
+                        setPage(p);
+                        loadData(p);
+                      }}
+                      className="px-3 py-1 rounded border border-slate-200 dark:border-slate-700 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
+                    >
+                      Oldingi
+                    </button>
+                    <button
+                      disabled={page >= totalPages}
+                      onClick={() => {
+                        const p = page + 1;
+                        setPage(p);
+                        loadData(p);
+                      }}
+                      className="px-3 py-1 rounded border border-slate-200 dark:border-slate-700 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
+                    >
+                      Keyingi
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
@@ -569,7 +616,8 @@ export default function AdminUsersPage() {
                   <input
                     type="password"
                     required
-                    placeholder="••••••••"
+                    minLength={8}
+                    placeholder="Kamida 8 ta belgi"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 text-xs"

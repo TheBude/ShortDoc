@@ -45,6 +45,29 @@ enum ApprovalStatus {
   REJECTED
 }
 
+enum DepartmentType {
+  RECTORATE
+  FACULTY
+  CHANCELLERY
+  DEPARTMENT
+  DIVISION
+}
+
+enum DocumentCategory {
+  ORDER
+  DECISION
+  DIRECTIVE
+  BILDIRGI
+  OFFICIAL_NOTE
+  APPLICATION
+  APPEAL
+  LETTER
+  CONTRACT
+  REPORT
+  ARCHIVE
+  OTHER
+}
+
 enum TaskStatus {
   PENDING
   IN_PROGRESS
@@ -54,12 +77,12 @@ enum TaskStatus {
 }
 
 model Department {
-  id        String     @id @default(uuid())
+  id        String         @id @default(uuid())
   name      String
-  code      String     @unique
-  type      String     @default("DEPARTMENT") // RECTORATE, FACULTY, CHANCELLERY, DEPARTMENT, DIVISION
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  code      String         @unique
+  type      DepartmentType @default(DEPARTMENT)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
 
   users     User[]
   documents Document[]
@@ -76,6 +99,7 @@ model User {
   position     String
   phone        String?
   isActive     Boolean     @default(true)
+  tokenVersion Int         @default(1)
   departmentId String?
   department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
   createdAt    DateTime    @default(now())
@@ -96,12 +120,12 @@ model User {
 }
 
 model Document {
-  id             String         @id @default(uuid())
-  regNumber      String         @unique
+  id             String           @id @default(uuid())
+  regNumber      String           @unique
   title          String
-  documentType   DocumentType   @default(INTERNAL)
-  category       String         @default("Bildirgi") // Xizmat xati, Bildirgi, Buyruq loyihasi, Qaror, Ariza
-  registeredDate DateTime       @default(now())
+  documentType   DocumentType     @default(INTERNAL)
+  category       DocumentCategory @default(BILDIRGI)
+  registeredDate DateTime         @default(now())
   sender         String?
   receiver       String?
   departmentId   String?

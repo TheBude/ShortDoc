@@ -20,13 +20,13 @@ router.post('/stream-ticket', authenticate, (req: AuthRequest, res) => {
 
 const loginSchema = z.object({
   email: z.string().email('Noto‘g‘ri email formati'),
-  password: z.string().min(6, 'Parol kamida 6 belgidan iborat bo‘lishi kerak'),
+  password: z.string().min(1, 'Parol kiritilishi shart'),
 });
 
 const registerSchema = z.object({
   fullName: z.string().min(2, 'F.I.Sh kamida 2 ta belgidan iborat bo‘lishi kerak'),
   email: z.string().email('Noto‘g‘ri email formati'),
-  password: z.string().min(6, 'Parol kamida 6 belgidan iborat bo‘lishi kerak'),
+  password: z.string().min(8, 'Parol kamida 8 ta belgidan iborat bo‘lishi shart'),
   departmentId: z.string().optional().nullable(),
   customDepartment: z.string().optional().nullable(),
   position: z.string().min(2, 'Lavozim kiritilishi shart'),
@@ -210,15 +210,44 @@ router.post('/login', loginLimiter, async (req, res, next) => {
     });
 
     if (!user) {
+      await logActivity({
+        userId: null,
+        action: 'LOGIN_FAILED',
+        entity: 'AUTH',
+        details: `Muvaffaqiyatsiz kirish urinishi: '${normalizedEmail}' tizimda topilmadi`,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+        requestId: (req as any).id,
+      });
       return sendError(res, 'Email yoki parol noto‘g‘ri', 401);
     }
 
     if (!user.isActive) {
+      await logActivity({
+        userId: user.id,
+        action: 'LOGIN_FAILED',
+        entity: 'AUTH',
+        entityId: user.id,
+        details: `Faol bo‘lmagan hisob orqali kirishga urinish: ${normalizedEmail}`,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+        requestId: (req as any).id,
+      });
       return sendError(res, 'Sizning hisobingiz tasdiqlanmagan. Iltimos, administrator tasdiqlashini kuting.', 403);
     }
 
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) {
+      await logActivity({
+        userId: user.id,
+        action: 'LOGIN_FAILED',
+        entity: 'AUTH',
+        entityId: user.id,
+        details: `Muvaffaqiyatsiz kirish urinishi: noto‘g‘ri parol (${normalizedEmail})`,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+        requestId: (req as any).id,
+      });
       return sendError(res, 'Email yoki parol noto‘g‘ri', 401);
     }
 
@@ -227,6 +256,7 @@ router.post('/login', loginLimiter, async (req, res, next) => {
       email: user.email,
       role: user.role,
       departmentId: user.departmentId,
+      tokenVersion: user.tokenVersion || 1,
     });
 
     await logActivity({
@@ -281,7 +311,7 @@ router.post('/change-password', authenticate, async (req: AuthRequest, res, next
   try {
     const schema = z.object({
       oldPassword: z.string().min(1, 'Eski parol talab qilinadi'),
-      newPassword: z.string().min(6, 'Yangi parol kamida 6 belgidan iborat bo‘lishi kerak'),
+      newPassword: z.string().min(8, 'Yangi parol kamida 8 ta belgidan iborat bo‘lishi shart'),
     });
 
     const { oldPassword, newPassword } = schema.parse(req.body);
@@ -302,7 +332,10 @@ router.post('/change-password', authenticate, async (req: AuthRequest, res, next
     const newHash = await bcrypt.hash(newPassword, 10);
     await prisma.user.update({
       where: { id: user.id },
-      data: { passwordHash: newHash },
+      data: {
+        passwordHash: newHash,
+        tokenVersion: { increment: 1 },
+      },
     });
 
     await logActivity({
@@ -310,9 +343,10 @@ router.post('/change-password', authenticate, async (req: AuthRequest, res, next
       action: 'CHANGE_PASSWORD',
       entity: 'USER',
       entityId: user.id,
-      details: `${user.fullName} parolini yangiladi`,
+      details: `${user.fullName} parolini yangiladi (barcha eski sessiyalar bekor qilindi)`,
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
+      requestId: (req as any).id,
     });
 
     return sendSuccess(res, null, 'Parol muvaffaqiyatli yangilandi');

@@ -5,6 +5,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import swaggerUi from 'swagger-ui-express';
+import crypto from 'crypto';
 
 import { swaggerDocument } from './swagger.js';
 import { errorHandler } from './middleware/errorHandler.js';
@@ -26,6 +27,15 @@ const PORT = config.PORT;
 
 // Reverse proxy (Nginx, Render, Docker) ortida IP larni to'g'ri olish uchun
 app.set('trust proxy', 1);
+
+// Har bir so'rovga noyob RequestId berish va X-Request-Id sarlavhasini o'rnatish
+app.use((req, res, next) => {
+  const incomingId = req.headers['x-request-id'];
+  const reqId = typeof incomingId === 'string' && incomingId.trim() ? incomingId.trim() : crypto.randomUUID();
+  (req as any).id = reqId;
+  res.setHeader('X-Request-Id', reqId);
+  next();
+});
 
 // Global xavfsizlik: Helmet orqali qat'iy Content Security Policy (CSP)
 app.use(
