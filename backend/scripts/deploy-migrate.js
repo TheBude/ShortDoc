@@ -11,7 +11,7 @@ async function deploy() {
   console.log('[Migrate] Production ma\'lumotlar bazasi holati to‘liq tekshirilmoqda...');
 
   try {
-    // 1. document_counters jadvali va indeksini alohida-alohida xavfsiz yaratish
+    // 1. document_counters jadvali va indeksini yaratish
     await prisma.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS "document_counters" (
           "id" TEXT NOT NULL,
@@ -27,12 +27,58 @@ async function deploy() {
       CREATE UNIQUE INDEX IF NOT EXISTS "document_counters_year_type_key" ON "document_counters"("year", "type");
     `);
 
-    // 2. users jadvaliga tokenVersion ustunini xavfsiz qo'shish
+    // 2. users jadvaliga tokenVersion ustunini qo'shish
     await prisma.$executeRawUnsafe(`
       ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "tokenVersion" INTEGER NOT NULL DEFAULT 1;
     `);
 
-    // 3. DepartmentType enumini xavfsiz yaratish
+    // 3. DocumentCategory enumini yaratish
+    await prisma.$executeRawUnsafe(`
+      DO $$ BEGIN
+        CREATE TYPE "DocumentCategory" AS ENUM ('ORDER', 'DECISION', 'DIRECTIVE', 'BILDIRGI', 'OFFICIAL_NOTE', 'APPLICATION', 'APPEAL', 'LETTER', 'CONTRACT', 'REPORT', 'ARCHIVE', 'OTHER');
+      EXCEPTION
+        WHEN duplicate_object THEN null;
+      END $$;
+    `);
+
+    // 4. documents.category ustunining turini tekshirish va uni DocumentCategory enumiga o'tkazish
+    const catCol = await prisma.$queryRawUnsafe(`
+      SELECT udt_name FROM information_schema.columns 
+      WHERE table_schema = 'public' AND table_name = 'documents' AND column_name = 'category';
+    `);
+
+    if (catCol.length > 0 && catCol[0].udt_name !== 'DocumentCategory') {
+      console.log(`[Migrate] documents.category (${catCol[0].udt_name}) ustunini DocumentCategory enumiga o‘tkazish boshlandi...`);
+      // a) Eski default qiymatni o'chirish (aks holda type cast qilib bo'lmaydi)
+      await prisma.$executeRawUnsafe(`ALTER TABLE "documents" ALTER COLUMN "category" DROP DEFAULT;`);
+      
+      // b) Ustun turini o'zgartirish
+      await prisma.$executeRawUnsafe(`
+        ALTER TABLE "documents" ALTER COLUMN "category" TYPE "DocumentCategory" USING (
+          CASE
+            WHEN "category"::text ILIKE '%buyru%' OR "category"::text = 'ORDER' THEN 'ORDER'::"DocumentCategory"
+            WHEN "category"::text ILIKE '%qaror%' OR "category"::text = 'DECISION' THEN 'DECISION'::"DocumentCategory"
+            WHEN "category"::text ILIKE '%farmoyish%' OR "category"::text = 'DIRECTIVE' THEN 'DIRECTIVE'::"DocumentCategory"
+            WHEN "category"::text ILIKE '%bildirgi%' OR "category"::text = 'BILDIRGI' THEN 'BILDIRGI'::"DocumentCategory"
+            WHEN "category"::text ILIKE '%xizmat%' OR "category"::text = 'OFFICIAL_NOTE' THEN 'OFFICIAL_NOTE'::"DocumentCategory"
+            WHEN "category"::text ILIKE '%ariza%' OR "category"::text = 'APPLICATION' THEN 'APPLICATION'::"DocumentCategory"
+            WHEN "category"::text ILIKE '%murojaat%' OR "category"::text = 'APPEAL' THEN 'APPEAL'::"DocumentCategory"
+            WHEN "category"::text ILIKE '%xat%' OR "category"::text = 'LETTER' THEN 'LETTER'::"DocumentCategory"
+            WHEN "category"::text ILIKE '%shartnoma%' OR "category"::text = 'CONTRACT' THEN 'CONTRACT'::"DocumentCategory"
+            WHEN "category"::text ILIKE '%hisobot%' OR "category"::text = 'REPORT' THEN 'REPORT'::"DocumentCategory"
+            WHEN "category"::text ILIKE '%arxiv%' OR "category"::text = 'ARCHIVE' THEN 'ARCHIVE'::"DocumentCategory"
+            ELSE 'BILDIRGI'::"DocumentCategory"
+          END
+        );
+      `);
+
+      // c) Yangi default qiymatni o'rnatish
+      await prisma.$executeRawUnsafe(`ALTER TABLE "documents" ALTER COLUMN "category" SET DEFAULT 'BILDIRGI'::"DocumentCategory";`);
+      await prisma.$executeRawUnsafe(`ALTER TABLE "documents" ALTER COLUMN "category" SET NOT NULL;`);
+      console.log(`[Migrate OK] documents.category muvaffaqiyatli DocumentCategory ga o‘tkazildi!`);
+    }
+
+    // 5. DepartmentType enumini yaratish
     await prisma.$executeRawUnsafe(`
       DO $$ BEGIN
         CREATE TYPE "DepartmentType" AS ENUM ('RECTORATE', 'FACULTY', 'CHANCELLERY', 'DEPARTMENT', 'DIVISION');
@@ -41,10 +87,19 @@ async function deploy() {
       END $$;
     `);
 
-    // 4. departments.type ustunini DepartmentType ga moslash
-    await prisma.$executeRawUnsafe(`
-      DO $$ BEGIN
-        ALTER TABLE "departments" ALTER COLUMN "type" DROP DEFAULT;
+    // 6. departments.type ustunining turini tekshirish va uni DepartmentType enumiga o'tkazish
+    const typeCol = await prisma.$queryRawUnsafe(`
+      SELECT udt_name FROM information_schema.columns 
+      WHERE table_schema = 'public' AND table_name = 'departments' AND column_name = 'type';
+    `);
+
+    if (typeCol.length > 0 && typeCol[0].udt_name !== 'DepartmentType') {
+      console.log(`[Migrate] departments.type (${typeCol[0].udt_name}) ustunini DepartmentType enumiga o‘tkazish boshlandi...`);
+      // a) Eski default qiymatni o'chirish
+      await prisma.$executeRawUnsafe(`ALTER TABLE "departments" ALTER COLUMN "type" DROP DEFAULT;`);
+
+      // b) Ustun turini o'zgartirish
+      await prisma.$executeRawUnsafe(`
         ALTER TABLE "departments" ALTER COLUMN "type" TYPE "DepartmentType" USING (
           CASE "type"::text
             WHEN 'RECTORATE' THEN 'RECTORATE'::"DepartmentType"
@@ -54,49 +109,42 @@ async function deploy() {
             ELSE 'DEPARTMENT'::"DepartmentType"
           END
         );
-        ALTER TABLE "departments" ALTER COLUMN "type" SET DEFAULT 'DEPARTMENT'::"DepartmentType";
-      EXCEPTION
-        WHEN OTHERS THEN null;
-      END $$;
+      `);
+
+      // c) Yangi default qiymatni o'rnatish
+      await prisma.$executeRawUnsafe(`ALTER TABLE "departments" ALTER COLUMN "type" SET DEFAULT 'DEPARTMENT'::"DepartmentType";`);
+      console.log(`[Migrate OK] departments.type muvaffaqiyatli DepartmentType ga o‘tkazildi!`);
+    }
+
+    // 7. PostgreSQL da text <-> DocumentCategory solishtirishida xatolik chiqmasligi uchun Implicit Cast yaratish
+    await prisma.$executeRawUnsafe(`
+      CREATE OR REPLACE FUNCTION text_to_doc_cat(text) RETURNS "DocumentCategory" AS $$
+        SELECT CASE
+          WHEN $1 ILIKE '%buyru%' OR $1 = 'ORDER' THEN 'ORDER'::"DocumentCategory"
+          WHEN $1 ILIKE '%qaror%' OR $1 = 'DECISION' THEN 'DECISION'::"DocumentCategory"
+          WHEN $1 ILIKE '%farmoyish%' OR $1 = 'DIRECTIVE' THEN 'DIRECTIVE'::"DocumentCategory"
+          WHEN $1 ILIKE '%bildirgi%' OR $1 = 'BILDIRGI' THEN 'BILDIRGI'::"DocumentCategory"
+          WHEN $1 ILIKE '%xizmat%' OR $1 = 'OFFICIAL_NOTE' THEN 'OFFICIAL_NOTE'::"DocumentCategory"
+          WHEN $1 ILIKE '%ariza%' OR $1 = 'APPLICATION' THEN 'APPLICATION'::"DocumentCategory"
+          WHEN $1 ILIKE '%murojaat%' OR $1 = 'APPEAL' THEN 'APPEAL'::"DocumentCategory"
+          WHEN $1 ILIKE '%xat%' OR $1 = 'LETTER' THEN 'LETTER'::"DocumentCategory"
+          WHEN $1 ILIKE '%shartnoma%' OR $1 = 'CONTRACT' THEN 'CONTRACT'::"DocumentCategory"
+          WHEN $1 ILIKE '%hisobot%' OR $1 = 'REPORT' THEN 'REPORT'::"DocumentCategory"
+          WHEN $1 ILIKE '%arxiv%' OR $1 = 'ARCHIVE' THEN 'ARCHIVE'::"DocumentCategory"
+          ELSE 'OTHER'::"DocumentCategory"
+        END;
+      $$ LANGUAGE SQL IMMUTABLE;
     `);
 
-    // 5. DocumentCategory enumini xavfsiz yaratish
     await prisma.$executeRawUnsafe(`
       DO $$ BEGIN
-        CREATE TYPE "DocumentCategory" AS ENUM ('ORDER', 'DECISION', 'DIRECTIVE', 'BILDIRGI', 'OFFICIAL_NOTE', 'APPLICATION', 'APPEAL', 'LETTER', 'CONTRACT', 'REPORT', 'ARCHIVE', 'OTHER');
+        CREATE CAST (text AS "DocumentCategory") WITH FUNCTION text_to_doc_cat(text) AS IMPLICIT;
       EXCEPTION
         WHEN duplicate_object THEN null;
       END $$;
     `);
 
-    // 6. documents.category ustunini DocumentCategory ga moslash
-    await prisma.$executeRawUnsafe(`
-      DO $$ BEGIN
-        ALTER TABLE "documents" ALTER COLUMN "category" TYPE "DocumentCategory" USING (
-          CASE
-            WHEN "category"::text ILIKE '%buyru%' THEN 'ORDER'::"DocumentCategory"
-            WHEN "category"::text ILIKE '%qaror%' THEN 'DECISION'::"DocumentCategory"
-            WHEN "category"::text ILIKE '%farmoyish%' THEN 'DIRECTIVE'::"DocumentCategory"
-            WHEN "category"::text ILIKE '%bildirgi%' THEN 'BILDIRGI'::"DocumentCategory"
-            WHEN "category"::text ILIKE '%xizmat%' THEN 'OFFICIAL_NOTE'::"DocumentCategory"
-            WHEN "category"::text ILIKE '%ariza%' THEN 'APPLICATION'::"DocumentCategory"
-            WHEN "category"::text ILIKE '%murojaat%' THEN 'APPEAL'::"DocumentCategory"
-            WHEN "category"::text ILIKE '%xat%' THEN 'LETTER'::"DocumentCategory"
-            WHEN "category"::text ILIKE '%shartnoma%' THEN 'CONTRACT'::"DocumentCategory"
-            WHEN "category"::text ILIKE '%hisobot%' THEN 'REPORT'::"DocumentCategory"
-            WHEN "category"::text ILIKE '%arxiv%' THEN 'ARCHIVE'::"DocumentCategory"
-            WHEN "category" IS NULL THEN 'BILDIRGI'::"DocumentCategory"
-            ELSE 'OTHER'::"DocumentCategory"
-          END
-        );
-        ALTER TABLE "documents" ALTER COLUMN "category" SET NOT NULL;
-        ALTER TABLE "documents" ALTER COLUMN "category" SET DEFAULT 'BILDIRGI'::"DocumentCategory";
-      EXCEPTION
-        WHEN OTHERS THEN null;
-      END $$;
-    `);
-
-    // 7. _prisma_migrations jadvalini tekshirish
+    // 8. _prisma_migrations jadvalini tekshirish
     const migrationsTableRes = await prisma.$queryRawUnsafe(`
       SELECT EXISTS (
         SELECT FROM information_schema.tables 
@@ -129,7 +177,7 @@ async function deploy() {
       }
     }
 
-    // 8. Bosh SuperAdmin mavjudligini kafolatlash
+    // 9. Bosh SuperAdmin mavjudligini kafolatlash
     const adminEmail = 'admin@shortdoc.uz';
     const adminUser = await prisma.user.findUnique({
       where: { email: adminEmail },
@@ -153,8 +201,6 @@ async function deploy() {
       });
       console.log(`[Migrate OK] Bosh SuperAdmin yaratildi: ${adminEmail} (parol: ${defaultAdminPassword})`);
     } else {
-      // Agar admin mavjud bo'lsa, uning faol va SUPER_ADMIN ekanligini ta'minlash
-      // Va agar SEED_ADMIN_PASSWORD uzatilgan bo'lsa parolini ham yangilash
       const updateData = {
         role: 'SUPER_ADMIN',
         isActive: true,
@@ -170,12 +216,12 @@ async function deploy() {
     }
 
   } catch (err) {
-    console.warn('[Migrate] Oldindan tekshirish ogohlantirish:', err.message);
+    console.error('❌ [Migrate XATOLIK]:', err.message);
   } finally {
     await prisma.$disconnect();
   }
 
-  // 9. Qolgan migratsiyalarni tatbiq etish
+  // 10. Qolgan migratsiyalarni tatbiq etish
   console.log('[Migrate] prisma migrate deploy ishga tushirilmoqda...');
   try {
     execSync(`npx prisma migrate deploy ${schemaArg}`, { stdio: 'inherit' });
