@@ -82,6 +82,39 @@ export default function DocumentDetailPage({
   const [statusReason, setStatusReason] = useState<string>('');
   const [changingStatus, setChangingStatus] = useState(false);
 
+  // Complete action state
+  const [completeModalOpen, setCompleteModalOpen] = useState(false);
+  const [completeComment, setCompleteComment] = useState('');
+  const [completing, setCompleting] = useState(false);
+
+  const isLeadership = user?.role === 'LEADERSHIP' || user?.role === 'SUPER_ADMIN';
+  const isChancellery = user?.role === 'CHANCELLERY';
+  const isDeptHead = user?.role === 'DEPARTMENT_HEAD';
+  const isCreatorOrAssignee = user?.id === document?.creatorId || user?.id === document?.assigneeId;
+  const canCompleteDocument = isLeadership || isChancellery || isDeptHead || isCreatorOrAssignee;
+
+  const handleMarkAsCompleted = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setCompleting(true);
+    const res = await fetchApi(`/documents/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        status: 'COMPLETED',
+        reason: completeComment.trim() || 'Hujjat ijrosi to‘liq ta’minlandi va bajarildi deb belgilandi.',
+      }),
+    });
+    setCompleting(false);
+
+    if (res.success) {
+      setCompleteModalOpen(false);
+      setCompleteComment('');
+      refreshCounts();
+      loadDocument(false);
+    } else {
+      alert(res.message || 'Xatolik yuz berdi');
+    }
+  };
+
   useEffect(() => {
     loadDocument();
   }, [id]);
@@ -223,14 +256,27 @@ export default function DocumentDetailPage({
           <span>Hujjatlar ro‘yxatiga qaytish</span>
         </Link>
 
-        <button
-          type="button"
-          onClick={() => downloadDocumentDocx(document.id, document.regNumber, document.category)}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 font-semibold text-xs shadow-sm transition-all cursor-pointer self-start sm:self-auto"
-        >
-          <Download className="w-4 h-4" />
-          <span>Word (.docx) shaklida yuklab olish</span>
-        </button>
+        <div className="flex items-center gap-2.5 self-start sm:self-auto flex-wrap">
+          {canCompleteDocument && document.status !== 'COMPLETED' && document.status !== 'REJECTED' && (
+            <button
+              type="button"
+              onClick={() => setCompleteModalOpen(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-sm transition-all cursor-pointer"
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              <span>Bajarildi deb belgilash</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => downloadDocumentDocx(document.id, document.regNumber, document.category)}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 font-semibold text-xs shadow-sm transition-all cursor-pointer"
+          >
+            <Download className="w-4 h-4" />
+            <span>Word (.docx) shaklida yuklab olish</span>
+          </button>
+        </div>
       </div>
 
       {/* Imzo (Approval) Voting Action Box - Prominently at TOP for instant review */}
@@ -309,8 +355,25 @@ export default function DocumentDetailPage({
 
         {/* Visual Pipeline Bar */}
         <div className="py-5 border-b border-slate-100 dark:border-slate-800">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-3">
-            Hujjat harakati bosqichlari
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              Hujjat harakati bosqichlari
+            </div>
+            {document.status === 'COMPLETED' ? (
+              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 px-2.5 py-0.5 rounded-full">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Ijro to‘liq yakunlandi</span>
+              </span>
+            ) : canCompleteDocument && (
+              <button
+                type="button"
+                onClick={() => setCompleteModalOpen(true)}
+                className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Bajarildi deb belgilash →</span>
+              </button>
+            )}
           </div>
           <div className="flex items-center overflow-x-auto pb-1 no-scrollbar gap-1">
             {/* Step 1: Created */}
@@ -600,6 +663,63 @@ export default function DocumentDetailPage({
           )}
         </div>
       </div>
+
+      {/* Complete Document Confirmation Modal */}
+      {completeModalOpen && (
+        <div className="fixed inset-0 z-[99999] bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-md w-full p-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
+                <CheckCircle2 className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                  Ijroni yakunlash (Bajarildi)
+                </h3>
+                <p className="text-xs text-slate-500">Hujjat yuzasidan barcha vazifalar bajarildimi?</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-slate-300">
+              Ushbu amal orqali <strong>{document.regNumber}</strong> raqamli hujjat rasmiy ravishda
+              <strong> "Bajarildi"</strong> holatiga o‘tkaziladi va harakat zanjirida yakuniy galichka (✓) qo‘yiladi.
+            </p>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Ijro xulosasi yoki natijasi (ixtiyoriy):
+              </label>
+              <textarea
+                rows={3}
+                value={completeComment}
+                onChange={(e) => setCompleteComment(e.target.value)}
+                placeholder="Masalan: Xat yuzasidan barcha tegishli choralar ko‘rildi va ijrosi to‘liq ta’minlandi."
+                className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                disabled={completing}
+                onClick={() => setCompleteModalOpen(false)}
+                className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 font-semibold text-xs transition-colors cursor-pointer"
+              >
+                Bekor qilish
+              </button>
+              <button
+                type="button"
+                disabled={completing}
+                onClick={() => handleMarkAsCompleted()}
+                className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-sm transition-colors cursor-pointer flex items-center gap-1.5"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>{completing ? 'Yakunlanmoqda...' : 'Tasdiqlash (Bajarildi)'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

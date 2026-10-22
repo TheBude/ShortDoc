@@ -491,6 +491,27 @@ router.patch('/:id/status', authenticate, async (req: AuthRequest, res, next) =>
       userAgent: req.headers['user-agent'],
     });
 
+    if (status === 'COMPLETED' && doc.creatorId) {
+      if (doc.creatorId !== req.user!.userId) {
+        await prisma.notification.create({
+          data: {
+            userId: doc.creatorId,
+            title: 'Hujjat bajarildi',
+            message: `${req.user!.fullName || 'Mas’ul'} sizning "${doc.title}" (${doc.regNumber}) hujjatingizni "Bajarildi" deb belgiladi.`,
+            link: `/documents/${id}`,
+          },
+        });
+
+        realtime.sendToUser(doc.creatorId, 'NOTIFICATION', {
+          title: 'Hujjat bajarildi',
+          message: `${req.user!.fullName || 'Mas’ul'} sizning "${doc.title}" (${doc.regNumber}) hujjatingizni "Bajarildi" deb belgiladi.`,
+          link: `/documents/${id}`,
+        });
+        realtime.sendToUser(doc.creatorId, 'COUNTS_UPDATE', {});
+      }
+      realtime.sendToUser(req.user!.userId, 'COUNTS_UPDATE', {});
+    }
+
     return sendSuccess(res, updatedDoc, 'Hujjat holati muvaffaqiyatli yangilandi');
   } catch (error) {
     next(error);
@@ -539,12 +560,30 @@ router.post('/:id/approvals', authenticate, async (req: AuthRequest, res, next) 
     if (pendingCount === 0 && status === 'APPROVED') {
       await prisma.document.update({
         where: { id },
-        data: { status: 'IN_EXECUTION' },
+        data: { status: 'COMPLETED' },
+      });
+      await prisma.documentStatusHistory.create({
+        data: {
+          documentId: id,
+          changedById: req.user!.userId,
+          oldStatus: 'IN_APPROVAL',
+          newStatus: 'COMPLETED',
+          reason: 'Barcha kelishuvchilar tomonidan tasdiqlandi va ijrosi yakunlandi',
+        },
       });
     } else if (status === 'REJECTED') {
       await prisma.document.update({
         where: { id },
         data: { status: 'REJECTED' },
+      });
+      await prisma.documentStatusHistory.create({
+        data: {
+          documentId: id,
+          changedById: req.user!.userId,
+          oldStatus: 'IN_APPROVAL',
+          newStatus: 'REJECTED',
+          reason: comments ? `E’tiroz bilan rad etildi: ${comments}` : 'E’tiroz bilan rad etildi',
+        },
       });
     }
 
