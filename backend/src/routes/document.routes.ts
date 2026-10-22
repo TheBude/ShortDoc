@@ -5,6 +5,7 @@ import { sendSuccess, sendError } from '../utils/response.js';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
 import { logActivity } from '../middleware/audit.js';
 import { generateDocumentDocx } from '../utils/docxGenerator.js';
+import { realtime } from '../services/realtime.js';
 
 const router = Router();
 
@@ -383,11 +384,39 @@ router.post('/', authenticate, async (req: AuthRequest, res, next) => {
               status: 'PENDING',
             },
           });
+
+          await tx.notification.create({
+            data: {
+              userId: data.approverIds[i],
+              title: 'Imzolash uchun yangi hujjat',
+              message: `${req.user!.fullName || 'Xodim'} sizga imzolash uchun hujjat yubordi: "${doc.title}" (${doc.regNumber})`,
+              link: `/documents/${doc.id}`,
+            },
+          });
         }
       }
 
       return doc;
     });
+
+    // Real-time bildirishnoma va hisoblagichlarni zudlik bilan approverlarga jo'natish
+    if (data.approverIds && data.approverIds.length > 0) {
+      for (const approverId of data.approverIds) {
+        realtime.sendToUser(approverId, 'APPROVAL_NEEDED', {
+          documentId: document.id,
+          regNumber: document.regNumber,
+          title: document.title,
+          creatorName: req.user!.fullName || 'Xodim',
+          countDelta: 1,
+        });
+        realtime.sendToUser(approverId, 'NOTIFICATION', {
+          title: 'Imzolash uchun yangi hujjat',
+          message: `${req.user!.fullName || 'Xodim'} sizga imzolash uchun hujjat yubordi: "${document.title}" (${document.regNumber})`,
+          link: `/documents/${document.id}`,
+        });
+        realtime.sendToUser(approverId, 'COUNTS_UPDATE', {});
+      }
+    }
 
     await logActivity({
       userId: req.user!.userId,
@@ -517,6 +546,43 @@ router.post('/:id/approvals', authenticate, async (req: AuthRequest, res, next) 
         where: { id },
         data: { status: 'REJECTED' },
       });
+    }
+
+    const doc = await prisma.document.findUnique({
+      where: { id },
+      select: { id: true, title: true, regNumber: true, creatorId: true },
+    });
+
+    // 1. Imzo qo'ygan foydalanuvchining hisoblagichini (badge) shu soniyaning o'zida 1 taga kamaytirish
+    realtime.sendToUser(req.user!.userId, 'APPROVAL_SUBMITTED', {
+      documentId: id,
+      countDelta: -1,
+    });
+    realtime.sendToUser(req.user!.userId, 'COUNTS_UPDATE', {});
+
+    // 2. Hujjat muallifiga zudlik bilan bildirishnoma yetkazish
+    if (doc && doc.creatorId !== req.user!.userId) {
+      const isApproved = status === 'APPROVED';
+      const notificationTitle = isApproved ? 'Hujjat imzolandi' : 'Hujjat qaytarildi';
+      const notificationMessage = isApproved
+        ? `${req.user!.fullName || 'Mas’ul'} sizning "${doc.title}" (${doc.regNumber}) hujjatingizni imzoladi.`
+        : `${req.user!.fullName || 'Mas’ul'} sizning "${doc.title}" (${doc.regNumber}) hujjatingizga e’tiroz bildirdi: ${comments || 'Izohsiz'}`;
+
+      await prisma.notification.create({
+        data: {
+          userId: doc.creatorId,
+          title: notificationTitle,
+          message: notificationMessage,
+          link: `/documents/${id}`,
+        },
+      });
+
+      realtime.sendToUser(doc.creatorId, 'NOTIFICATION', {
+        title: notificationTitle,
+        message: notificationMessage,
+        link: `/documents/${id}`,
+      });
+      realtime.sendToUser(doc.creatorId, 'COUNTS_UPDATE', {});
     }
 
     await logActivity({

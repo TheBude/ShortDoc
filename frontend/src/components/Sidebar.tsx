@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useSidebar } from '@/context/SidebarContext';
+import { useRealtime } from '@/context/RealtimeContext';
 import { fetchApi } from '@/lib/api';
 import {
   LayoutDashboard,
@@ -42,28 +43,9 @@ function SidebarContent() {
   const isDepartmentHead = user?.role === 'DEPARTMENT_HEAD';
   const isStaff = user?.role === 'STAFF';
 
-  const [counts, setCounts] = useState<{
-    inApproval?: number;
-    pendingSignatures?: number;
-    pendingTasks?: number;
-    registered?: number;
-    overdue?: number;
-  }>({});
+  const { counts } = useRealtime();
 
   const currentSearch = searchParams.toString() ? `?${searchParams.toString()}` : '';
-
-  useEffect(() => {
-    loadCounts();
-  }, [pathname, currentSearch]);
-
-  const loadCounts = async () => {
-    try {
-      const res = await fetchApi('/reports/dashboard');
-      if (res.success && res.data?.counts) {
-        setCounts(res.data.counts);
-      }
-    } catch {}
-  };
 
   const isItemActive = (href: string) => {
     if (href === '/') {

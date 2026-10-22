@@ -139,3 +139,22 @@ export interface Document {
     approvals: number;
   };
 }
+
+export interface AppNotification {
+  id: string;
+  userId: string;
+  title: string;
+  message: string;
+  link?: string | null;
+  isRead: boolean;
+  createdAt: string;
+}
+
+export interface RealtimeCounts {
+  inApproval?: number;
+  pendingSignatures?: number;
+  pendingTasks?: number;
+  registered?: number;
+  overdue?: number;
+  total?: number;
+}

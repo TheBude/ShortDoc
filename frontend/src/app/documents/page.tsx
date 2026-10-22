@@ -4,6 +4,7 @@ import React, { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { useRealtime } from '@/context/RealtimeContext';
 import { fetchApi } from '@/lib/api';
 import { Document, User, Department } from '@/types';
 import {
@@ -26,6 +27,7 @@ function DocumentsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth();
+  const { refreshCounts } = useRealtime();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -193,6 +195,7 @@ function DocumentsContent() {
 
     if (res.success && res.data) {
       setCreatedDocSuccess(res.data);
+      refreshCounts();
       loadDocuments();
     } else {
       setFormError(res.message || 'Xatolik yuz berdi');

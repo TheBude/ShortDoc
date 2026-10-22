@@ -4,6 +4,7 @@ import React, { useEffect, useState, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { useRealtime } from '@/context/RealtimeContext';
 import { fetchApi } from '@/lib/api';
 import { Document, DocumentApproval, DocumentFile, Task } from '@/types';
 import {
@@ -34,6 +35,7 @@ export default function DocumentDetailPage({
   const { id } = use(params);
   const router = useRouter();
   const { user } = useAuth();
+  const { decrementPendingSignatures, refreshCounts } = useRealtime();
 
   const [document, setDocument] = useState<Document | null>(null);
   const [loading, setLoading] = useState(true);
@@ -98,6 +100,9 @@ export default function DocumentDetailPage({
 
   const handleApprovalAction = async (status: 'APPROVED' | 'REJECTED') => {
     setApproving(true);
+    // Real-time badge'ni shu zahoti 1 taga kamaytirish (Zero-latency instant UI update)
+    decrementPendingSignatures();
+
     const res = await fetchApi(`/documents/${id}/approvals`, {
       method: 'POST',
       body: JSON.stringify({
@@ -109,8 +114,10 @@ export default function DocumentDetailPage({
 
     if (res.success) {
       setApprovalComment('');
+      refreshCounts();
       loadDocument(false);
     } else {
+      refreshCounts();
       alert(res.message || 'Xatolik yuz berdi');
     }
   };

@@ -1,10 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useSidebar } from '@/context/SidebarContext';
-import { LogOut, User as UserIcon, Building, Sun, Moon } from 'lucide-react';
+import { useRealtime } from '@/context/RealtimeContext';
+import { LogOut, User as UserIcon, Building, Sun, Moon, Bell, CheckCheck, ExternalLink } from 'lucide-react';
 
 function formatShortName(name: string = ''): string {
   if (!name) return '';
@@ -23,6 +25,20 @@ export const Header = () => {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { isMobileOpen, toggleMobile } = useSidebar();
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useRealtime();
+
+  const [bellOpen, setBellOpen] = useState(false);
+  const bellRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (bellRef.current && !bellRef.current.contains(event.target as Node)) {
+        setBellOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const getRoleBadge = (role?: string) => {
     switch (role) {
@@ -78,6 +94,92 @@ export const Header = () => {
         {/* Role badge */}
         <div className="hidden sm:block">
           {getRoleBadge(user?.role)}
+        </div>
+
+        {/* Real-time Notifications Bell */}
+        <div className="relative" ref={bellRef}>
+          <button
+            type="button"
+            onClick={() => setBellOpen(!bellOpen)}
+            title="Bildirishnomalar"
+            aria-label="Bildirishnomalar"
+            className="relative p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer"
+          >
+            <Bell className="w-4 h-4" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-rose-600 text-white text-[10px] font-bold rounded-full h-4 min-w-[16px] px-1 flex items-center justify-center animate-pulse">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </button>
+
+          {bellOpen && (
+            <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl z-50 overflow-hidden text-xs">
+              <div className="flex items-center justify-between p-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+                <div className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-white">
+                  <span>Bildirishnomalar</span>
+                  {unreadCount > 0 && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-rose-100 text-rose-700 font-bold">
+                      {unreadCount} yangi
+                    </span>
+                  )}
+                </div>
+                {unreadCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={markAllAsRead}
+                    className="inline-flex items-center gap-1 text-[11px] text-primary-600 dark:text-primary-400 hover:underline font-semibold cursor-pointer"
+                  >
+                    <CheckCheck className="w-3.5 h-3.5" />
+                    <span>Hammasini o‘qilgan qilish</span>
+                  </button>
+                )}
+              </div>
+
+              <div className="max-h-80 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+                {notifications.length === 0 ? (
+                  <div className="py-8 text-center text-slate-400 text-xs">
+                    Yangi bildirishnomalar mavjud emas
+                  </div>
+                ) : (
+                  notifications.map((n) => (
+                    <div
+                      key={n.id}
+                      onClick={() => markAsRead(n.id)}
+                      className={`p-3.5 transition-colors cursor-pointer ${
+                        !n.isRead
+                          ? 'bg-primary-50/40 dark:bg-primary-950/20 hover:bg-primary-50/70'
+                          : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
+                          {!n.isRead && <span className="w-2 h-2 rounded-full bg-primary-600 shrink-0" />}
+                          <span>{n.title}</span>
+                        </div>
+                        <span className="text-[10px] text-slate-400 shrink-0">
+                          {new Date(n.createdAt).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <p className="text-slate-600 dark:text-slate-300 text-[11px] mt-1 leading-snug">
+                        {n.message}
+                      </p>
+                      {n.link && (
+                        <Link
+                          href={n.link}
+                          onClick={() => setBellOpen(false)}
+                          className="inline-flex items-center gap-1 text-[11px] font-bold text-primary-600 dark:text-primary-400 mt-2 hover:underline"
+                        >
+                          <span>Ko‘rish</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </Link>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Theme Toggle Button */}

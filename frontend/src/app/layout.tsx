@@ -3,6 +3,7 @@ import './globals.css';
 import { AuthProvider } from '@/context/AuthContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { SidebarProvider } from '@/context/SidebarContext';
+import { RealtimeProvider } from '@/context/RealtimeContext';
 import { AppLayout } from '@/components/AppLayout';
 
 export const metadata: Metadata = {
@@ -23,9 +24,11 @@ export default function RootLayout({
       <body className="antialiased text-slate-800 dark:text-slate-100 bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
         <ThemeProvider>
           <AuthProvider>
-            <SidebarProvider>
-              <AppLayout>{children}</AppLayout>
-            </SidebarProvider>
+            <RealtimeProvider>
+              <SidebarProvider>
+                <AppLayout>{children}</AppLayout>
+              </SidebarProvider>
+            </RealtimeProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

@@ -4,6 +4,7 @@ import { prisma } from '../prisma.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
 import { logActivity } from '../middleware/audit.js';
+import { realtime } from '../services/realtime.js';
 
 const router = Router();
 
@@ -87,6 +88,13 @@ router.post('/', authenticate, async (req: AuthRequest, res, next) => {
       },
     });
 
+    realtime.sendToUser(data.assignedToId, 'NOTIFICATION', {
+      title: 'Yangi topshiriq biriktirildi',
+      message: `${task.document.regNumber} hujjati bo‘yicha topshiriq: "${task.title}"`,
+      link: `/tasks`,
+    });
+    realtime.sendToUser(data.assignedToId, 'COUNTS_UPDATE', {});
+
     await logActivity({
       userId: req.user!.userId,
       action: 'CREATE_TASK',
@@ -150,6 +158,24 @@ router.post('/:id/submit-result', authenticate, async (req: AuthRequest, res, ne
         document: { select: { id: true, regNumber: true } },
       },
     });
+
+    if (task.createdById && task.createdById !== req.user!.userId) {
+      await prisma.notification.create({
+        data: {
+          userId: task.createdById,
+          title: 'Topshiriq bajarildi',
+          message: `"${task.title}" topshirig‘i bajarildi. Izoh: ${resultComment}`,
+          link: `/tasks`,
+        },
+      });
+      realtime.sendToUser(task.createdById, 'NOTIFICATION', {
+        title: 'Topshiriq bajarildi',
+        message: `"${task.title}" topshirig‘i bajarildi. Izoh: ${resultComment}`,
+        link: `/tasks`,
+      });
+      realtime.sendToUser(task.createdById, 'COUNTS_UPDATE', {});
+    }
+    realtime.sendToUser(req.user!.userId, 'COUNTS_UPDATE', {});
 
     await logActivity({
       userId: req.user!.userId,

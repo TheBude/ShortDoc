@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useRealtime } from '@/context/RealtimeContext';
 import { fetchApi } from '@/lib/api';
 import { WelcomeLanding } from '@/components/WelcomeLanding';
 import {
@@ -22,6 +23,7 @@ import Link from 'next/link';
 
 export default function HomePage() {
   const { user, isLoading: authLoading } = useAuth();
+  const { decrementPendingSignatures, refreshCounts } = useRealtime();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [signingDocId, setSigningDocId] = useState<string | null>(null);
@@ -48,6 +50,9 @@ export default function HomePage() {
 
   const handleInstantSign = async (documentId: string, status: 'APPROVED' | 'REJECTED') => {
     setActionLoading(true);
+    // Real-time badge'ni darhol 1 taga kamaytirish
+    decrementPendingSignatures();
+
     const res = await fetchApi(`/documents/${documentId}/approvals`, {
       method: 'POST',
       body: JSON.stringify({
@@ -60,8 +65,10 @@ export default function HomePage() {
     if (res.success) {
       setSignModalDoc(null);
       setSignComment('');
+      refreshCounts();
       loadDashboard();
     } else {
+      refreshCounts();
       alert(res.message || 'Xatolik yuz berdi');
     }
   };
