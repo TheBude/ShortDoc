@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { prisma } from '../prisma.js';
 import { sendSuccess } from '../utils/response.js';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
+import { generateReportsExcel } from '../utils/excelGenerator.js';
 
 const router = Router();
 
@@ -198,7 +199,85 @@ router.get('/dashboard', authenticate, async (req: AuthRequest, res: Response, n
   }
 });
 
-// CSV / Excel formatida hisobot eksport qilish
+// Professional Native Microsoft Excel (.xlsx) formatida hisobot eksport qilish
+router.get(['/export-excel', '/export-xlsx'], authenticate, async (req: AuthRequest, res: Response, next) => {
+  try {
+    const where: any = {};
+    if (req.user!.role === 'STAFF') {
+      where.OR = [
+        { creatorId: req.user!.userId },
+        { assigneeId: req.user!.userId },
+      ];
+    } else if (req.user!.role === 'DEPARTMENT_HEAD' && req.user!.departmentId) {
+      where.departmentId = req.user!.departmentId;
+    }
+
+    const [documents, departments] = await Promise.all([
+      prisma.document.findMany({
+        where,
+        include: {
+          department: true,
+          creator: true,
+          assignee: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.department.findMany({
+        select: {
+          name: true,
+          code: true,
+          _count: { select: { documents: true, users: true } },
+        },
+        orderBy: { name: 'asc' },
+      }),
+    ]);
+
+    const formattedDocs = documents.map((d) => ({
+      regNumber: d.regNumber,
+      title: d.title.replace(/[‘’`ʼʻ]/g, "'"),
+      documentType: d.documentType,
+      category: (d.category || 'Xizmat hujjati').replace(/[‘’`ʼʻ]/g, "'"),
+      status: d.status,
+      priority: d.priority,
+      departmentName: (d.department?.name || 'Noma’lum').replace(/[‘’`ʼʻ]/g, "'"),
+      responsiblePerson: (d.assignee?.fullName || d.creator?.fullName || '—').replace(/[‘’`ʼʻ]/g, "'"),
+      createdAt: d.createdAt,
+      deadline: d.deadline,
+    }));
+
+    const formattedDeps = departments.map((dp) => ({
+      name: dp.name.replace(/[‘’`ʼʻ]/g, "'"),
+      code: dp.code,
+      usersCount: dp._count.users,
+      documentsCount: dp._count.documents,
+    }));
+
+    const excelBuffer = await generateReportsExcel(
+      formattedDocs,
+      formattedDeps,
+      (req.user?.fullName || 'Foydalanuvchi').replace(/[‘’`ʼʻ]/g, "'")
+    );
+
+    const safeDate = new Date().toISOString().split('T')[0];
+    const filename = `SamDU_ShortDoc_Hisobot_${safeDate}.xlsx`;
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${encodeURIComponent(filename)}"; filename*=UTF-8''${encodeURIComponent(filename)}`
+    );
+    res.setHeader('Content-Length', excelBuffer.length);
+
+    return res.end(excelBuffer);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// CSV formatida hisobot eksport qilish (Tozalangan apostroflar va universal UTF-8 BOM bilan)
 router.get('/export-csv', authenticate, async (req: AuthRequest, res: Response, next) => {
   try {
     const where: any = {};
@@ -232,7 +311,7 @@ router.get('/export-csv', authenticate, async (req: AuthRequest, res: Response, 
 
     const formatStatus = (st: string) => {
       switch (st) {
-        case 'REGISTERED': return 'Ro‘yxatga olingan';
+        case 'REGISTERED': return "Ro'yxatga olingan";
         case 'IN_APPROVAL': return 'Imzolanmoqda';
         case 'IN_EXECUTION': return 'Ijroda';
         case 'COMPLETED': return 'Bajarildi';
@@ -246,34 +325,36 @@ router.get('/export-csv', authenticate, async (req: AuthRequest, res: Response, 
       switch (p) {
         case 'URGENT': return 'Shoshilinch';
         case 'HIGH': return 'Yuqori';
-        case 'MEDIUM': return 'O‘rta';
+        case 'MEDIUM': return "O'rta";
         case 'LOW': return 'Past';
         default: return p;
       }
     };
 
+    const clean = (str: string = '') => str.replace(/[‘’`ʼʻ]/g, "'");
+
     const headers = [
-      'Ro‘yxat raqami',
+      "Ro'yxat raqami",
       'Hujjat nomi',
       'Turi',
       'Kategoriya',
       'Holati',
       'Muhimlik darajasi',
-      'Bo‘lim / Fakultet',
-      'Mas’ul shaxs / Muallif',
+      "Bo'lim / Fakultet",
+      "Mas'ul shaxs / Muallif",
       'Yaratilgan sana',
       'Ijro muddati',
     ];
 
     const rows = documents.map((d) => [
-      `"${d.regNumber}"`,
-      `"${d.title.replace(/"/g, '""')}"`,
+      `"${clean(d.regNumber)}"`,
+      `"${clean(d.title).replace(/"/g, '""')}"`,
       `"${formatType(d.documentType)}"`,
-      `"${d.category || 'Hujjat'}"`,
+      `"${clean(d.category || 'Hujjat')}"`,
       `"${formatStatus(d.status)}"`,
       `"${formatPriority(d.priority)}"`,
-      `"${d.department?.name || 'Noma’lum'}"`,
-      `"${d.assignee?.fullName || d.creator?.fullName || ''}"`,
+      `"${clean(d.department?.name || 'Noma’lum')}"`,
+      `"${clean(d.assignee?.fullName || d.creator?.fullName || '')}"`,
       d.createdAt ? new Date(d.createdAt).toLocaleDateString('uz-UZ') : '',
       d.deadline ? new Date(d.deadline).toLocaleDateString('uz-UZ') : 'Belgilanmagan',
     ]);
@@ -282,7 +363,7 @@ router.get('/export-csv', authenticate, async (req: AuthRequest, res: Response, 
 
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', 'attachment; filename="SamDU_ShortDoc_Hisobot.csv"');
-    return res.send('\uFEFF' + csvContent); // UTF-8 BOM + sep=, for Excel compatibility
+    return res.send('\uFEFF' + csvContent);
   } catch (error) {
     next(error);
   }

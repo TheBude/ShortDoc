@@ -20,12 +20,12 @@ export default function ReportsPage() {
     setLoading(false);
   };
 
-  const handleExportCsv = async () => {
+  const handleExportExcel = async () => {
     try {
       setExporting(true);
       const baseUrl = getApiBaseUrl();
       const token = typeof window !== 'undefined' ? localStorage.getItem('shortdoc_token') : null;
-      const url = `${baseUrl}/reports/export-csv`;
+      const url = `${baseUrl}/reports/export-excel`;
 
       const headers: Record<string, string> = {};
       if (token) {
@@ -35,7 +35,7 @@ export default function ReportsPage() {
       const response = await fetch(url, { headers });
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
-        throw new Error(err.message || 'Hisobotni yuklab olishda xatolik yuz berdi');
+        throw new Error(err.message || 'Excel hisobotini yuklab olishda xatolik yuz berdi');
       }
 
       const blob = await response.blob();
@@ -43,14 +43,14 @@ export default function ReportsPage() {
       const link = document.createElement('a');
       link.href = blobUrl;
       const today = new Date().toISOString().split('T')[0];
-      link.download = `SamDU_ShortDoc_Hisobot_${today}.csv`;
+      link.download = `SamDU_ShortDoc_Hisobot_${today}.xlsx`;
       document.body.appendChild(link);
       link.click();
       link.remove();
       window.URL.revokeObjectURL(blobUrl);
     } catch (error: any) {
       console.error('Export error:', error);
-      alert(error.message || 'Hisobot faylini yuklab olishda xatolik yuz berdi');
+      alert(error.message || 'Excel faylini yuklab olishda xatolik yuz berdi');
     } finally {
       setExporting(false);
     }
@@ -65,13 +65,13 @@ export default function ReportsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Hisobotlar va Tahliliy Monitoring</h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Universitet hujjat aylanishi statistikasi va CSV formatiga eksport</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Universitet hujjat aylanishi statistikasi va Excel formatiga eksport</p>
         </div>
 
         <button
           type="button"
           disabled={exporting}
-          onClick={handleExportCsv}
+          onClick={handleExportExcel}
           className="inline-flex items-center gap-2 bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 text-sm font-semibold px-4 py-2.5 rounded-lg shadow-sm transition-colors cursor-pointer disabled:opacity-50"
         >
           {exporting ? (
@@ -79,7 +79,7 @@ export default function ReportsPage() {
           ) : (
             <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
           )}
-          <span>{exporting ? 'Fayl tayyorlanmoqda...' : 'Excel / CSV formatida yuklab olish'}</span>
+          <span>{exporting ? 'Excel tayyorlanmoqda...' : 'Excel (.xlsx) formatida yuklab olish'}</span>
         </button>
       </div>
 
