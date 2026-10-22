@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useRealtime } from '@/context/RealtimeContext';
-import { fetchApi } from '@/lib/api';
+import { fetchApi, getApiBaseUrl } from '@/lib/api';
 import { Document, DocumentApproval, DocumentFile, Task } from '@/types';
 import {
   ArrowLeft,
@@ -41,6 +41,37 @@ export default function DocumentDetailPage({
   const [loading, setLoading] = useState(true);
   const [commentText, setCommentText] = useState('');
   const [submittingComment, setSubmittingComment] = useState(false);
+  const [downloadingFileId, setDownloadingFileId] = useState<string | null>(null);
+
+  const handleDownloadFile = async (fileId: string, originalName: string) => {
+    try {
+      setDownloadingFileId(fileId);
+      const baseUrl = getApiBaseUrl();
+      const token = typeof window !== 'undefined' ? localStorage.getItem('shortdoc_token') : null;
+      const headers: Record<string, string> = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch(`${baseUrl}/document-files/${fileId}/download`, { headers });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Faylni yuklab olishda xatolik yuz berdi');
+      }
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = window.document.createElement('a');
+      a.href = url;
+      a.download = originalName;
+      window.document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      alert(err.message || 'Faylni yuklab olishda xatolik yuz berdi');
+    } finally {
+      setDownloadingFileId(null);
+    }
+  };
 
   const getStatusLabel = (status: string) => {
     switch (status) {
@@ -578,14 +609,15 @@ export default function DocumentDetailPage({
                   </div>
                 </div>
 
-                <a
-                  href={`/api/document-files/${file.id}/download`}
-                  download
-                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium transition-colors"
+                <button
+                  type="button"
+                  onClick={() => handleDownloadFile(file.id, file.originalName)}
+                  disabled={downloadingFileId === file.id}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium transition-colors cursor-pointer disabled:opacity-50"
                 >
                   <Download className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
-                  <span>Yuklab olish</span>
-                </a>
+                  <span>{downloadingFileId === file.id ? 'Yuklanmoqda...' : 'Yuklab olish'}</span>
+                </button>
               </div>
             ))}
           </div>

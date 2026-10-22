@@ -67,9 +67,10 @@ router.post('/', authenticate, authorize(['SUPER_ADMIN']), async (req: AuthReque
     });
 
     const data = schema.parse(req.body);
+    const normalizedEmail = data.email.trim().toLowerCase();
 
     const existing = await prisma.user.findUnique({
-      where: { email: data.email },
+      where: { email: normalizedEmail },
     });
 
     if (existing) {
@@ -80,7 +81,7 @@ router.post('/', authenticate, authorize(['SUPER_ADMIN']), async (req: AuthReque
 
     const user = await prisma.user.create({
       data: {
-        email: data.email,
+        email: normalizedEmail,
         passwordHash,
         fullName: data.fullName,
         role: data.role,

@@ -45,12 +45,14 @@ Loyiha ildizidagi `scripts/` papkasida tayyor skriptlar mavjud:
 ---
 
 ## 🔐 Boshlang‘ich Foydalanuvchilar (Seed Data)
-| Rol | Email | Parol | Lavozim |
-|---|---|---|---|
-| **Super Admin** | `admin@shortdoc.uz` | `Admin123!` | Bosh tizim administratori |
-| **SamDU Rektori** | `rektor@shortdoc.uz` | `Rektor123!` | Universitet Rektori |
-| **Devonxona** | `devonxona@shortdoc.uz` | `Devon123!` | Devonxona mudiri |
-| **IT Fakulteti Dekani** | `dekan@shortdoc.uz` | `Dekan123!` | IT Fakulteti Dekani |
-| **Matematika Dekani** | `matematika_dekan@shortdoc.uz` | `Dekan123!` | Matematika fakulteti dekani |
-| **Xodim / O‘qituvchi** | `xodim@shortdoc.uz` | `Xodim123!` | Dasturiy injiniring kafedrasi dotsenti |
-| **Murojaatlar mutaxassisi** | `talaba_murojaat@shortdoc.uz` | `Xodim123!` | Fuqarolar murojaatlari bo‘limi inspektori |
+Boshlang‘ich foydalanuvchilar faqat CLI orqali (`npm run seed`) xavfsiz generatsiya qilinadi. Parollar `SEED_*_PASSWORD` muhit o‘zgaruvchilaridan olinadi yoki tasodifiy generatsiya qilinib, konsolga bir marta chiqariladi.
+
+| Rol | Email | Lavozim |
+|---|---|---|
+| **Super Admin** | `admin@shortdoc.uz` | Bosh tizim administratori |
+| **SamDU Rektori** | `rektor@shortdoc.uz` | Universitet Rektori |
+| **Devonxona** | `devonxona@shortdoc.uz` | Devonxona mudiri |
+| **IT Fakulteti Dekani** | `dekan@shortdoc.uz` | IT Fakulteti Dekani |
+| **Matematika Dekani** | `matematika_dekan@shortdoc.uz` | Matematika fakulteti dekani |
+| **Xodim / O‘qituvchi** | `xodim@shortdoc.uz` | Dasturiy injiniring kafedrasi dotsenti |
+| **Murojaatlar mutaxassisi** | `talaba_murojaat@shortdoc.uz` | Fuqarolar murojaatlari bo‘limi inspektori |

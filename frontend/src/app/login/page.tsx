@@ -124,11 +124,11 @@ export default function LoginPage() {
     const timer = setTimeout(async () => {
       setEmailCheckLoading(true);
       try {
-        const res = await fetchApi<{ available: boolean; exists: boolean }>(
+        const res = await fetchApi<{ available: boolean }>(
           `/auth/check-email?email=${encodeURIComponent(regEmail.trim())}`
         );
         if (res.success && res.data) {
-          setEmailTaken(res.data.exists);
+          setEmailTaken(!res.data.available);
           setEmailChecked(true);
         }
       } catch {

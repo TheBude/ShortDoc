@@ -1,12 +1,14 @@
+import './config.js';
+import { config } from './config.js';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
-import dotenv from 'dotenv';
 import swaggerUi from 'swagger-ui-express';
 
 import { swaggerDocument } from './swagger.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { globalLimiter } from './middleware/rateLimit.js';
 
 import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/user.routes.js';
@@ -17,23 +19,71 @@ import fileRoutes from './routes/file.routes.js';
 import reportRoutes from './routes/report.routes.js';
 import auditRoutes from './routes/audit.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
-import { prisma } from './prisma.js';
-import { runSeed } from './seed.js';
-
-dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = config.PORT;
 
-// Xavfsizlik va yordamchi middlewarelar
-app.use(helmet({ contentSecurityPolicy: false }));
-app.use(cors({ origin: true, credentials: true }));
+// Reverse proxy (Nginx, Render, Docker) ortida IP larni to'g'ri olish uchun
+app.set('trust proxy', 1);
+
+// Global xavfsizlik: Helmet orqali qat'iy Content Security Policy (CSP)
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'"],
+        imgSrc: ["'self'", 'data:', 'blob:'],
+        connectSrc: ["'self'"],
+        objectSrc: ["'none'"],
+        frameAncestors: ["'none'"],
+      },
+    },
+    crossOriginEmbedderPolicy: false,
+  })
+);
+
+// CORS sozlamasi: CORS_ORIGIN whitelist bo'yicha ruxsat berish
+const allowedOrigins = config.CORS_ORIGIN.split(',').map((o) => o.trim());
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Server-to-server so'rovlar yoki mobile ilovalar uchun origin undefined bo'lishi mumkin
+      if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS xatoligi: '${origin}' manzili uchun kirish taqiqlangan`));
+      }
+    },
+    credentials: true,
+  })
+);
+
 app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Swagger / OpenAPI hujjatlari
-app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+// Global so'rovlar tezligini cheklovchi (Rate Limiting)
+app.use('/api', globalLimiter);
+
+// Swagger / OpenAPI hujjatlari (Swagger UI ishlashi uchun zarur inline resurslar istisnosi bilan)
+app.use(
+  '/api/docs',
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", 'data:', 'https:'],
+      },
+    },
+  }),
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerDocument)
+);
 
 // Tizim holati tekshiruvi (Healthcheck)
 app.get(['/health', '/api/health'], (req, res) => {
@@ -45,9 +95,9 @@ app.get(['/health', '/api/health'], (req, res) => {
   });
 });
 
-// Asosiy sahifa (Bude Delivery kabi frontend ilovaga avtomatik yo‘naltiradi)
+// Asosiy sahifa: frontend ilovaga avtomatik yo‘naltiradi
 app.get('/', (req, res) => {
-  const frontendUrl = process.env.APP_URL || process.env.CORS_ORIGIN;
+  const frontendUrl = config.APP_URL || config.CORS_ORIGIN;
   if (frontendUrl && frontendUrl !== '*' && !frontendUrl.includes('localhost')) {
     return res.redirect(frontendUrl);
   }
@@ -70,49 +120,16 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/audit-logs', auditRoutes);
 app.use('/api/notifications', notificationRoutes);
 
-// Boshlang'ich ma'lumotlarni browser orqali ham seed qilish imkoniyati (Render Free tier uchun)
-app.get('/api/seed', async (req, res) => {
-  try {
-    console.log('[Seed] HTTP orqali boshlang‘ich ma’lumotlarni kiritish so‘rovi qabul qilindi.');
-    await runSeed();
-    res.json({
-      success: true,
-      message: 'SamDU boshlang‘ich ma’lumotlari (seed) muvaffaqiyatli bazaga yozildi.',
-      users: [
-        { role: 'SUPER_ADMIN', email: 'admin@shortdoc.uz', pass: 'Admin123!' },
-        { role: 'LEADERSHIP', email: 'rektor@shortdoc.uz', pass: 'Rektor123!' },
-        { role: 'CHANCELLERY', email: 'devonxona@shortdoc.uz', pass: 'Devon123!' },
-        { role: 'DEPARTMENT_HEAD', email: 'dekan@shortdoc.uz', pass: 'Dekan123!' },
-        { role: 'STAFF', email: 'xodim@shortdoc.uz', pass: 'Xodim123!' }
-      ]
-    });
-  } catch (err: any) {
-    console.error('[Seed Error]:', err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-// Xatoliklarni boshqarish
+// Xatoliklarni markazlashgan boshqarish
 app.use(errorHandler);
 
-const server = app.listen(PORT, async () => {
+const server = app.listen(PORT, () => {
   console.log(`=========================================`);
   console.log(`[ShortDoc API] Server muvaffaqiyatli ishga tushdi.`);
+  console.log(`[ShortDoc API] Muhit: ${config.NODE_ENV}`);
   console.log(`[ShortDoc API] URL: http://localhost:${PORT}`);
   console.log(`[ShortDoc API] Swagger Docs: http://localhost:${PORT}/api/docs`);
   console.log(`=========================================`);
-
-  // Baza bo'sh bo'lsa avtomatik seed qilish
-  try {
-    const userCount = await prisma.user.count();
-    if (userCount === 0) {
-      console.log('[ShortDoc DB] Baza bo‘sh ekanligi aniqlandi. Boshlang‘ich foydalanuvchilar yuklanmoqda...');
-      await runSeed();
-      console.log('[ShortDoc DB] Boshlang‘ich ma’lumotlar yuklandi.');
-    }
-  } catch (err) {
-    console.warn('[ShortDoc DB Warning] Auto-seed tekshiruvida ogohlantirish:', err);
-  }
 });
 
 // Graceful shutdown

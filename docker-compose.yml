@@ -7,7 +7,7 @@ services:
     restart: always
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_password_2026}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD kerak}
       POSTGRES_DB: ${POSTGRES_DB:-shortdoc_db}
     ports:
       - "5432:5432"
@@ -28,9 +28,9 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5000
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres_password_2026}@postgres:5432/${POSTGRES_DB:-shortdoc_db}?schema=public
-      JWT_SECRET: ${JWT_SECRET:-shortdoc_super_secure_jwt_secret_university_2026_xyz}
-      JWT_EXPIRES_IN: 7d
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD kerak}@postgres:5432/${POSTGRES_DB:-shortdoc_db}?schema=public
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET kerak}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
       APP_URL: ${APP_URL:-http://localhost:3000}
       UPLOAD_DIR: ./uploads

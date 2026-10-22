@@ -7,8 +7,16 @@ import { sendSuccess, sendError } from '../utils/response.js';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
 import { logActivity } from '../middleware/audit.js';
 import { realtime } from '../services/realtime.js';
+import { createStreamTicket } from '../services/ticket.service.js';
+import { loginLimiter, registerLimiter, checkEmailLimiter } from '../middleware/rateLimit.js';
 
 const router = Router();
+
+// Stream ticket endpoint: authenticated client requests a one-time, 30s ticket for SSE
+router.post('/stream-ticket', authenticate, (req: AuthRequest, res) => {
+  const ticket = createStreamTicket(req.user!.userId);
+  return sendSuccess(res, { ticket }, 'SSE oqim chiptasi muvaffaqiyatli berildi');
+});
 
 const loginSchema = z.object({
   email: z.string().email('Noto‘g‘ri email formati'),
@@ -26,21 +34,22 @@ const registerSchema = z.object({
   phone: z.string().optional(),
 });
 
-// Email bandligini tekshirish (Real-time validator)
-router.get('/check-email', async (req, res, next) => {
+// Email bandligini tekshirish (Real-time validator, minimal javob va rate-limit bilan)
+router.get('/check-email', checkEmailLimiter, async (req, res, next) => {
   try {
-    const email = req.query.email as string;
-    if (!email) {
+    const rawEmail = req.query.email as string;
+    if (!rawEmail) {
       return sendError(res, 'Email ko‘rsatilmadi', 400);
     }
 
+    const email = rawEmail.trim().toLowerCase();
     const user = await prisma.user.findUnique({
-      where: { email: email.trim().toLowerCase() },
+      where: { email },
+      select: { id: true },
     });
 
     return sendSuccess(res, {
       available: !user,
-      exists: !!user,
     });
   } catch (error) {
     next(error);
@@ -48,12 +57,13 @@ router.get('/check-email', async (req, res, next) => {
 });
 
 // Yangi foydalanuvchi ariza / ro'yxatdan o'tishi
-router.post('/register', async (req, res, next) => {
+router.post('/register', registerLimiter, async (req, res, next) => {
   try {
     const data = registerSchema.parse(req.body);
+    const normalizedEmail = data.email.trim().toLowerCase();
 
     const existing = await prisma.user.findUnique({
-      where: { email: data.email.trim().toLowerCase() },
+      where: { email: normalizedEmail },
     });
 
     if (existing) {
@@ -84,6 +94,8 @@ router.post('/register', async (req, res, next) => {
 
         if (depByName) {
           finalDepartmentId = depByName.id;
+        } else if (!data.customDepartment) {
+          return sendError(res, 'Tanlangan bo‘lim tizimda topilmadi', 400);
         }
       }
     }
@@ -187,12 +199,13 @@ router.post('/register', async (req, res, next) => {
   }
 });
 
-router.post('/login', async (req, res, next) => {
+router.post('/login', loginLimiter, async (req, res, next) => {
   try {
     const { email, password } = loginSchema.parse(req.body);
+    const normalizedEmail = email.trim().toLowerCase();
 
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
       include: { department: true },
     });
 
@@ -201,7 +214,7 @@ router.post('/login', async (req, res, next) => {
     }
 
     if (!user.isActive) {
-      return sendError(res, 'Sizning arizangiz hali SuperAdmin tomonidan tasdiqlanmagan. Iltimos, arizangiz tasdiqlanishini kuting yoki administratorga murojaat qiling.', 403);
+      return sendError(res, 'Sizning hisobingiz tasdiqlanmagan. Iltimos, administrator tasdiqlashini kuting.', 403);
     }
 
     const isMatch = await bcrypt.compare(password, user.passwordHash);

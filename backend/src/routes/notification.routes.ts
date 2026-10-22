@@ -1,13 +1,13 @@
 import { Router } from 'express';
 import { prisma } from '../prisma.js';
 import { sendSuccess } from '../utils/response.js';
-import { authenticate, AuthRequest } from '../middleware/auth.js';
+import { authenticate, authenticateStream, AuthRequest } from '../middleware/auth.js';
 import { realtime } from '../services/realtime.js';
 
 const router = Router();
 
-// Real-time Server-Sent Events (SSE) oqimi
-router.get('/stream', authenticate, (req: AuthRequest, res) => {
+// Real-time Server-Sent Events (SSE) oqimi (One-time Ticket yoki Bearer token orqali)
+router.get('/stream', authenticateStream, (req: AuthRequest, res) => {
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
     'Cache-Control': 'no-cache, no-transform',

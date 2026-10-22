@@ -153,12 +153,27 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
 
     let eventSource: EventSource | null = null;
     let reconnectTimeout: NodeJS.Timeout | null = null;
+    let isDisposed = false;
 
-    const connectSSE = () => {
-      const baseUrl = getApiBaseUrl();
-      const sseUrl = `${baseUrl}/notifications/stream?token=${encodeURIComponent(token)}`;
-
+    const connectSSE = async () => {
+      if (isDisposed) return;
       try {
+        const ticketRes = await fetchApi<{ ticket: string }>('/auth/stream-ticket', { method: 'POST' });
+        if (isDisposed) return;
+
+        if (!ticketRes.success || !ticketRes.data?.ticket) {
+          if (!reconnectTimeout && !isDisposed) {
+            reconnectTimeout = setTimeout(() => {
+              reconnectTimeout = null;
+              connectSSE();
+            }, 6000);
+          }
+          return;
+        }
+
+        const baseUrl = getApiBaseUrl();
+        const sseUrl = `${baseUrl}/notifications/stream?ticket=${encodeURIComponent(ticketRes.data.ticket)}`;
+
         eventSource = new EventSource(sseUrl);
 
         // APPROVAL_NEEDED: A new document needs this user's signature
@@ -227,8 +242,8 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
             eventSource.close();
             eventSource = null;
           }
-          // Reconnect with backoff
-          if (!reconnectTimeout) {
+          // Reconnect with backoff and fresh ticket
+          if (!reconnectTimeout && !isDisposed) {
             reconnectTimeout = setTimeout(() => {
               reconnectTimeout = null;
               connectSSE();
@@ -243,6 +258,7 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
     connectSSE();
 
     return () => {
+      isDisposed = true;
       if (eventSource) eventSource.close();
       if (reconnectTimeout) clearTimeout(reconnectTimeout);
     };

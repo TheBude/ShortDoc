@@ -6,6 +6,7 @@ import { authenticate, AuthRequest } from '../middleware/auth.js';
 import { logActivity } from '../middleware/audit.js';
 import { generateDocumentDocx } from '../utils/docxGenerator.js';
 import { realtime } from '../services/realtime.js';
+import { config } from '../config.js';
 
 const router = Router();
 
@@ -279,7 +280,7 @@ router.get('/:id/docx', authenticate, async (req: AuthRequest, res, next) => {
     }
 
     const origin = req.headers.origin as string | undefined;
-    let verifyBaseUrl = process.env.APP_URL;
+    let verifyBaseUrl = config.APP_URL;
     if (!verifyBaseUrl) {
       if (origin && !origin.includes('localhost')) {
         verifyBaseUrl = origin;

@@ -6,10 +6,11 @@ import { prisma } from '../prisma.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
 import { logActivity } from '../middleware/audit.js';
+import { config } from '../config.js';
 
 const router = Router();
 
-const UPLOAD_DIR = path.resolve(process.cwd(), process.env.UPLOAD_DIR || './uploads');
+const UPLOAD_DIR = path.resolve(process.cwd(), config.UPLOAD_DIR);
 if (!fs.existsSync(UPLOAD_DIR)) {
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 }
@@ -38,7 +39,7 @@ const allowedMimes = [
 
 const upload = multer({
   storage,
-  limits: { fileSize: (parseInt(process.env.MAX_FILE_SIZE_MB || '25', 10)) * 1024 * 1024 },
+  limits: { fileSize: config.MAX_FILE_SIZE_MB * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (allowedMimes.includes(file.mimetype)) {
       cb(null, true);

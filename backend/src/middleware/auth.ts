@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { verifyToken, JwtPayload } from '../utils/jwt.js';
 import { sendError } from '../utils/response.js';
 import { prisma } from '../prisma.js';
+import { consumeStreamTicket } from '../services/ticket.service.js';
 
 export interface AuthRequest extends Request {
   user?: JwtPayload & {
@@ -21,8 +22,6 @@ export const authenticate = async (
 
     if (authHeader && authHeader.startsWith('Bearer ')) {
       token = authHeader.split(' ')[1];
-    } else if (req.query?.token && typeof req.query.token === 'string') {
-      token = req.query.token;
     }
 
     if (!token) {
@@ -52,6 +51,60 @@ export const authenticate = async (
     next();
   } catch (error) {
     return sendError(res, 'Yaroqsiz yoki muddati o‘tgan token.', 401);
+  }
+};
+
+/**
+ * Stream authentication middleware for SSE (/notifications/stream).
+ * Supports standard Bearer token or short-lived, single-use ticket via query param (?ticket=...)
+ * Never accepts permanent JWT token in query parameter!
+ */
+export const authenticateStream = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    let userId: string | null = null;
+
+    // 1. Check Authorization header
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      const payload = verifyToken(token);
+      userId = payload.userId;
+    }
+
+    // 2. Check one-time short-lived ticket
+    if (!userId && req.query?.ticket && typeof req.query.ticket === 'string') {
+      userId = consumeStreamTicket(req.query.ticket);
+    }
+
+    if (!userId) {
+      return sendError(res, 'SSE ulanishi uchun ruxsat berilmadi. Yaroqli ticket yoki token taqdim etilmadi.', 401);
+    }
+
+    const dbUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true, role: true, departmentId: true, fullName: true, position: true, isActive: true },
+    });
+
+    if (!dbUser || !dbUser.isActive) {
+      return sendError(res, 'Foydalanuvchi hisobi faol emas yoki mavjud emas.', 403);
+    }
+
+    req.user = {
+      userId: dbUser.id,
+      email: dbUser.email,
+      role: dbUser.role,
+      departmentId: dbUser.departmentId,
+      fullName: dbUser.fullName,
+      position: dbUser.position,
+    };
+
+    next();
+  } catch (error) {
+    return sendError(res, 'Yaroqsiz yoki muddati o‘tgan ulanish.', 401);
   }
 };
 

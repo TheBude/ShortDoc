@@ -1,7 +1,22 @@
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { prisma } from './prisma.js';
+import { config } from './config.js';
+
+function getOrGeneratePassword(envVar?: string): string {
+  if (envVar && envVar.trim().length >= 6) {
+    return envVar.trim();
+  }
+  // Tasodifiy xavfsiz parol generatsiya qilish
+  return crypto.randomBytes(9).toString('base64').replace(/[^a-zA-Z0-9]/g, 'A') + '!1a';
+}
 
 export async function runSeed() {
+  if (config.isProduction && config.SEED_ALLOW !== 'true') {
+    console.error('[XATO] Production muhitida seed faqat SEED_ALLOW=true bo‘lganda bajarilishi mumkin.');
+    process.exit(1);
+  }
+
   console.log('================================================================');
   console.log('[Seed] Sharof Rashidov nomidagi SamDU - Tizim Ma’lumotlarini Yangilash');
   console.log('================================================================');
@@ -33,11 +48,17 @@ export async function runSeed() {
   console.log(`[Seed OK] SamDU bo‘lim va fakultetlari (${depMap.size} ta) yaratildi/yangilandi.`);
 
   // 2. Foydalanuvchilar (Rollari va parollari bilan)
-  const pAdmin = await bcrypt.hash('Admin123!', 10);
-  const pRektor = await bcrypt.hash('Rektor123!', 10);
-  const pDevon = await bcrypt.hash('Devon123!', 10);
-  const pDekan = await bcrypt.hash('Dekan123!', 10);
-  const pXodim = await bcrypt.hash('Xodim123!', 10);
+  const adminPass = getOrGeneratePassword(config.SEED_ADMIN_PASSWORD);
+  const rektorPass = getOrGeneratePassword(config.SEED_REKTOR_PASSWORD);
+  const devonPass = getOrGeneratePassword(config.SEED_DEVON_PASSWORD);
+  const dekanPass = getOrGeneratePassword(config.SEED_DEKAN_PASSWORD);
+  const xodimPass = getOrGeneratePassword(config.SEED_XODIM_PASSWORD);
+
+  const pAdmin = await bcrypt.hash(adminPass, 10);
+  const pRektor = await bcrypt.hash(rektorPass, 10);
+  const pDevon = await bcrypt.hash(devonPass, 10);
+  const pDekan = await bcrypt.hash(dekanPass, 10);
+  const pXodim = await bcrypt.hash(xodimPass, 10);
 
   const usersData = [
     {
@@ -506,84 +527,93 @@ export async function runSeed() {
 
   console.log('[Seed OK] Barcha kategoriyalar bo‘yicha SamDU namunaviy hujjatlari yaratildi.');
 
-  // 4. Imzo zanjirlari (DocumentApprovals) - Har bir foydalanuvchida imzoga kelgan hujjat ko'rinishi uchun!
-  await prisma.documentApproval.deleteMany({});
+  // 4. Imzo zanjirlari (DocumentApprovals) - Idempotent yaratish (deleteMany ishlatilmaydi)
+  const approvalsData = [
+    {
+      documentId: docInt1.id,
+      approverId: dekanId,
+      stepOrder: 1,
+      status: 'APPROVED' as const,
+      comments: 'Laboratoriya xonasi (304-auditoriya) tayyor, e’tiroz yo‘q.',
+      signedAt: new Date(),
+    },
+    {
+      documentId: docInt1.id,
+      approverId: rektorId,
+      stepOrder: 2,
+      status: 'PENDING' as const,
+      comments: null,
+    },
+    // docOut1 (Xalqaro UTM memorandumi: Devonxona -> Rektor)
+    {
+      documentId: docOut1.id,
+      approverId: devonxonaId,
+      stepOrder: 1,
+      status: 'APPROVED' as const,
+      comments: 'Ro‘yxatdan o‘tkazildi, rektoratga ma’qullash uchun yuborildi.',
+      signedAt: new Date(),
+    },
+    {
+      documentId: docOut1.id,
+      approverId: rektorId,
+      stepOrder: 2,
+      status: 'PENDING' as const,
+      comments: null,
+    },
+    // docBuy3 (Startap inkubatsiya markazi buyrug'i: Dekan -> Rektor)
+    {
+      documentId: docBuy3.id,
+      approverId: dekanId,
+      stepOrder: 1,
+      status: 'PENDING' as const,
+      comments: null,
+    },
+    {
+      documentId: docBuy3.id,
+      approverId: rektorId,
+      stepOrder: 2,
+      status: 'PENDING' as const,
+      comments: null,
+    },
+    // docMur2 (Talaba xalqaro anjuman arizasi: Devonxona -> Dekan)
+    {
+      documentId: docMur2.id,
+      approverId: devonxonaId,
+      stepOrder: 1,
+      status: 'APPROVED' as const,
+      comments: 'Qabul qilindi va mutaxassis xulosasi uchun yo‘naltirildi.',
+      signedAt: new Date(),
+    },
+    {
+      documentId: docMur2.id,
+      approverId: dekanId,
+      stepOrder: 2,
+      status: 'PENDING' as const,
+      comments: null,
+    },
+    // docInt4 (Oddiy xodim uchun imzoga kelgan hujjat)
+    {
+      documentId: docInt4.id,
+      approverId: xodimId,
+      stepOrder: 1,
+      status: 'PENDING' as const,
+      comments: null,
+    },
+  ];
 
-  await prisma.documentApproval.createMany({
-    data: [
-      {
-        documentId: docInt1.id,
-        approverId: dekanId,
-        stepOrder: 1,
-        status: 'APPROVED',
-        comments: 'Laboratoriya xonasi (304-auditoriya) tayyor, e’tiroz yo‘q.',
-        signedAt: new Date(),
+  for (const app of approvalsData) {
+    const existing = await prisma.documentApproval.findFirst({
+      where: {
+        documentId: app.documentId,
+        approverId: app.approverId,
+        stepOrder: app.stepOrder,
       },
-      {
-        documentId: docInt1.id,
-        approverId: rektorId,
-        stepOrder: 2,
-        status: 'PENDING',
-        comments: null,
-      },
-      // docOut1 (Xalqaro UTM memorandumi: Devonxona -> Rektor)
-      {
-        documentId: docOut1.id,
-        approverId: devonxonaId,
-        stepOrder: 1,
-        status: 'APPROVED',
-        comments: 'Ro‘yxatdan o‘tkazildi, rektoratga ma’qullash uchun yuborildi.',
-        signedAt: new Date(),
-      },
-      {
-        documentId: docOut1.id,
-        approverId: rektorId,
-        stepOrder: 2,
-        status: 'PENDING',
-        comments: null,
-      },
-      // docBuy3 (Startap inkubatsiya markazi buyrug'i: Dekan -> Rektor)
-      {
-        documentId: docBuy3.id,
-        approverId: dekanId,
-        stepOrder: 1,
-        status: 'PENDING',
-        comments: null,
-      },
-      {
-        documentId: docBuy3.id,
-        approverId: rektorId,
-        stepOrder: 2,
-        status: 'PENDING',
-        comments: null,
-      },
-      // docMur2 (Talaba xalqaro anjuman arizasi: Devonxona -> Dekan)
-      {
-        documentId: docMur2.id,
-        approverId: devonxonaId,
-        stepOrder: 1,
-        status: 'APPROVED',
-        comments: 'Qabul qilindi va mutaxassis xulosasi uchun yo‘naltirildi.',
-        signedAt: new Date(),
-      },
-      {
-        documentId: docMur2.id,
-        approverId: dekanId,
-        stepOrder: 2,
-        status: 'PENDING',
-        comments: null,
-      },
-      // docInt4 (Oddiy xodim uchun imzoga kelgan hujjat)
-      {
-        documentId: docInt4.id,
-        approverId: xodimId,
-        stepOrder: 1,
-        status: 'PENDING',
-        comments: null,
-      },
-    ],
-  });
-  console.log('[Seed OK] Imzo zanjirlari (Dekan, Devonxona, Rektor, Xodim uchun rasmiy navbatdagi imzolar) yaratildi.');
+    });
+    if (!existing) {
+      await prisma.documentApproval.create({ data: app });
+    }
+  }
+  console.log('[Seed OK] Imzo zanjirlari muvaffaqiyatli tekshirildi/yaratildi.');
 
   // 5. Ijro Topshiriqlari (Tasks)
   await prisma.task.upsert({
@@ -678,48 +708,54 @@ export async function runSeed() {
 
   console.log('[Seed OK] Ijro topshiriqlari (Jarayonda, Muddati o‘tgan va Yangi) yaratildi.');
 
-  // 6. Audit Loglar
-  await prisma.auditLog.createMany({
-    data: [
-      {
-        userId: adminId,
-        action: 'SYSTEM_INITIALIZATION',
-        entity: 'SYSTEM',
-        details: 'SamDU elektron hujjatlar aylanishi va ijro nazorati tizimi ishga tushirildi',
-      },
-      {
-        userId: rektorId,
-        action: 'SIGN_DOCUMENT',
-        entity: 'DOCUMENT',
-        entityId: docBuy1.id,
-        details: 'Rektor tomonidan 2026/BUY-0001 sonli stipendiya buyrug‘i imzolandi',
-      },
-      {
-        userId: dekanId,
-        action: 'APPROVE_DOCUMENT',
-        entity: 'DOCUMENT',
-        entityId: docInt1.id,
-        details: 'IT fakulteti dekani AI laboratoriyasi bo‘yicha bildirgini ma’qulladi va imzoladi',
-      },
-      {
-        userId: devonxonaId,
-        action: 'REGISTER_INCOMING',
-        entity: 'DOCUMENT',
-        entityId: docInc1.id,
-        details: 'Vazirlikdan kelgan 2026/KIR-0001 sonli rasmiy xat ro‘yxatga olindi',
-      },
-    ],
+  // 6. Audit Loglar (Faqat bo'sh bo'lsa yoziladi)
+  const existingAudit = await prisma.auditLog.findFirst({
+    where: { action: 'SYSTEM_INITIALIZATION' },
   });
-  console.log('[Seed OK] Dastlabki tizim audit loglari yozildi.');
+
+  if (!existingAudit) {
+    await prisma.auditLog.createMany({
+      data: [
+        {
+          userId: adminId,
+          action: 'SYSTEM_INITIALIZATION',
+          entity: 'SYSTEM',
+          details: 'SamDU elektron hujjatlar aylanishi va ijro nazorati tizimi ishga tushirildi',
+        },
+        {
+          userId: rektorId,
+          action: 'SIGN_DOCUMENT',
+          entity: 'DOCUMENT',
+          entityId: docBuy1.id,
+          details: 'Rektor tomonidan 2026/BUY-0001 sonli stipendiya buyrug‘i imzolandi',
+        },
+        {
+          userId: dekanId,
+          action: 'APPROVE_DOCUMENT',
+          entity: 'DOCUMENT',
+          entityId: docInt1.id,
+          details: 'IT fakulteti dekani AI laboratoriyasi bo‘yicha bildirgini ma’qulladi va imzoladi',
+        },
+        {
+          userId: devonxonaId,
+          action: 'REGISTER_INCOMING',
+          entity: 'DOCUMENT',
+          entityId: docInc1.id,
+          details: 'Vazirlikdan kelgan 2026/KIR-0001 sonli rasmiy xat ro‘yxatga olindi',
+        },
+      ],
+    });
+    console.log('[Seed OK] Dastlabki tizim audit loglari yozildi.');
+  }
 
   console.log('================================================================');
   console.log('[Seed Tugallandi] SamDU ShortDoc ma’lumotlar bazasi tayyor.');
-  console.log('Foydalanuvchilar:');
-  console.log(' 1. Super Admin: admin@shortdoc.uz / Admin123!');
-  console.log(' 2. Rektor:      rektor@shortdoc.uz / Rektor123!');
-  console.log(' 3. Devonxona:   devonxona@shortdoc.uz / Devon123!');
-  console.log(' 4. Dekan (IT):  dekan@shortdoc.uz / Dekan123!');
-  console.log(' 5. Xodim:       xodim@shortdoc.uz / Xodim123!');
+  console.log('Foydalanuvchi hisoblari (parollar faqat ushbu konsolga bir marta chiqariladi):');
+  console.log(` 1. Super Admin: admin@shortdoc.uz / ${adminPass}`);
+  console.log(` 2. Rektor:      rektor@shortdoc.uz / ${rektorPass}`);
+  console.log(` 3. Devonxona:   devonxona@shortdoc.uz / ${devonPass}`);
+  console.log(` 4. Dekan (IT):  dekan@shortdoc.uz / ${dekanPass}`);
+  console.log(` 5. Xodim:       xodim@shortdoc.uz / ${xodimPass}`);
   console.log('================================================================');
 }
 

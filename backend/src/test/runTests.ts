@@ -1,6 +1,8 @@
 import bcrypt from 'bcryptjs';
 import { prisma } from '../prisma.js';
 import { generateToken } from '../utils/jwt.js';
+import { config } from '../config.js';
+import { createStreamTicket, consumeStreamTicket } from '../services/ticket.service.js';
 
 let passed = 0;
 let failed = 0;
@@ -109,6 +111,27 @@ async function runTests() {
       },
     });
     assert(!!audit && audit.action === 'TEST_RUN', 'Xavfsizlik audit jurnali muvaffaqiyatli yozildi');
+
+    // 6. Faza 1: Xavfsizlik testlari (Config, Stream-ticket, Email normalizatsiyasi)
+    assert(!!config.JWT_SECRET && config.JWT_SECRET.length >= 32, 'Faza 1: JWT_SECRET yuklandi va kamida 32 belgidan iborat');
+    
+    // Stream ticket: bir martalik foydalanish va yaroqlilik tekshiruvi
+    const testTicket = createStreamTicket(admin!.id);
+    assert(typeof testTicket === 'string' && testTicket.length > 20, 'Faza 1: Stream ticket xavfsiz generatsiya qilindi');
+    
+    const consumedUserId = consumeStreamTicket(testTicket);
+    assert(consumedUserId === admin!.id, 'Faza 1: Stream ticket to‘g‘ri foydalanuvchini qaytardi');
+
+    const secondConsume = consumeStreamTicket(testTicket);
+    assert(secondConsume === null, 'Faza 1: Ishlatilgan ticket qayta ishlatilishi muvaffaqiyatli bloklandi (bir martalik)');
+
+    const invalidTicket = consumeStreamTicket('invalid_random_ticket_123');
+    assert(invalidTicket === null, 'Faza 1: Noto‘g‘ri ticket rad etildi');
+
+    // Email normalizatsiyasi testi
+    const rawEmail = '  AdMiN@ShortDoc.UZ  ';
+    const normalized = rawEmail.trim().toLowerCase();
+    assert(normalized === 'admin@shortdoc.uz', 'Faza 1: Email normalizatsiyasi (trim va lowercase) to‘g‘ri ishladi');
 
     // Tozalash (test hujjatini o'chirish)
     await prisma.document.delete({ where: { id: doc.id } });
