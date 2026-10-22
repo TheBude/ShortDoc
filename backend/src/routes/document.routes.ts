@@ -378,7 +378,7 @@ router.post('/', authenticate, async (req: AuthRequest, res, next) => {
 
     // Atomik tranzaksiya: hisoblagichni oshirish va hujjatni yaratish (Race conditiondan himoyalangan)
     const document = await prisma.$transaction(async (tx) => {
-      const counter = await tx.documentCounter.upsert({
+      let counter = await tx.documentCounter.upsert({
         where: {
           year_type: {
             year,
@@ -395,8 +395,27 @@ router.post('/', authenticate, async (req: AuthRequest, res, next) => {
         },
       });
 
-      const nextNumber = counter.lastNumber.toString().padStart(4, '0');
-      const regNumber = `${year}/${typePrefix}-${nextNumber}`;
+      let nextNumber = counter.lastNumber.toString().padStart(4, '0');
+      let regNumber = `${year}/${typePrefix}-${nextNumber}`;
+
+      // Boshlang'ich yoki seed ma'lumotlari bilan to'qnashuvni oldini olish
+      let existing = await tx.document.findUnique({ where: { regNumber } });
+      if (existing) {
+        const latestDoc = await tx.document.findFirst({
+          where: { regNumber: { startsWith: `${year}/${typePrefix}-` } },
+          orderBy: { regNumber: 'desc' },
+        });
+        const match = latestDoc?.regNumber.match(/-(\d+)$/);
+        const maxNum = match ? parseInt(match[1], 10) : counter.lastNumber;
+        const safeNum = Math.max(maxNum + 1, counter.lastNumber + 1);
+
+        counter = await tx.documentCounter.update({
+          where: { id: counter.id },
+          data: { lastNumber: safeNum },
+        });
+        nextNumber = counter.lastNumber.toString().padStart(4, '0');
+        regNumber = `${year}/${typePrefix}-${nextNumber}`;
+      }
 
       const doc = await tx.document.create({
         data: {

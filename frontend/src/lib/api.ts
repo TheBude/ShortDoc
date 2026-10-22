@@ -90,8 +90,9 @@ export async function fetchApi<T = any>(
 
     return data;
   } catch (error: any) {
-    // If direct port 5000 connection fails (e.g. strict firewall), fallback to local /api proxy
-    if (typeof window !== 'undefined' && !url.startsWith('/api')) {
+    // Xavfsizlik: Tarmoq xatosida /api proxy orqali qayta yuborish FAQAT GET so'rovlari uchun ruxsat etiladi
+    // POST, PATCH, DELETE so'rovlarini qayta yuborish ikki marta bajarilish (duplicate mutation) xavfini keltirib chiqaradi
+    if (method === 'GET' && typeof window !== 'undefined' && !url.startsWith('/api')) {
       try {
         const fallbackRes = await fetch(`/api${cleanEndpoint}`, {
           ...options,

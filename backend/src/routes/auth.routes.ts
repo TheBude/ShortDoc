@@ -19,13 +19,13 @@ router.post('/stream-ticket', authenticate, (req: AuthRequest, res) => {
 });
 
 const loginSchema = z.object({
-  email: z.string().email('Noto‘g‘ri email formati'),
+  email: z.string().trim().email('Noto‘g‘ri email formati'),
   password: z.string().min(1, 'Parol kiritilishi shart'),
 });
 
 const registerSchema = z.object({
   fullName: z.string().min(2, 'F.I.Sh kamida 2 ta belgidan iborat bo‘lishi kerak'),
-  email: z.string().email('Noto‘g‘ri email formati'),
+  email: z.string().trim().email('Noto‘g‘ri email formati'),
   password: z.string().min(8, 'Parol kamida 8 ta belgidan iborat bo‘lishi shart'),
   departmentId: z.string().optional().nullable(),
   customDepartment: z.string().optional().nullable(),
