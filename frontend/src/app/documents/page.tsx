@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { downloadDocumentDocx } from '@/lib/downloadDocx';
 import { CreateDocumentModal } from '@/components/documents/CreateDocumentModal';
+import { getCategoryMeta, ALL_CATEGORIES_LIST } from '@/lib/categories';
 
 function DocumentsContent() {
   const router = useRouter();
@@ -242,6 +243,15 @@ function DocumentsContent() {
     }
   };
 
+  const getCategoryBadge = (cat?: string | null) => {
+    const meta = getCategoryMeta(cat);
+    return (
+      <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold border ${meta.badgeClass}`}>
+        {meta.label}
+      </span>
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* Top Header */}
@@ -326,7 +336,7 @@ function DocumentsContent() {
         </div>
 
         {/* Search and Dropdowns */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           <div className="relative">
             <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
@@ -352,6 +362,19 @@ function DocumentsContent() {
           </select>
 
           <select
+            value={category}
+            onChange={(e) => { setCategory(e.target.value); setPage(1); }}
+            className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          >
+            <option value="">Barcha turlar</option>
+            {ALL_CATEGORIES_LIST.map((c) => (
+              <option key={c.key} value={c.key}>
+                {c.label}
+              </option>
+            ))}
+          </select>
+
+          <select
             value={priority}
             onChange={(e) => { setPriority(e.target.value); setPage(1); }}
             className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -364,7 +387,7 @@ function DocumentsContent() {
           </select>
 
           <button
-            onClick={() => { setSearch(''); setDocType(''); setStatus(''); setPriority(''); setPage(1); }}
+            onClick={() => { setSearch(''); setDocType(''); setStatus(''); setPriority(''); setCategory(''); setPage(1); }}
             className="px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 font-medium cursor-pointer"
           >
             Filtrni tozalash
@@ -413,7 +436,7 @@ function DocumentsContent() {
                         {doc.summary && <div className="text-[11px] text-slate-400 dark:text-slate-500 truncate">{doc.summary}</div>}
                       </td>
                       <td className="py-3 px-4 whitespace-nowrap">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">{doc.category}</span>
+                        {getCategoryBadge(doc.category)}
                       </td>
                       <td className="py-3 px-4 whitespace-nowrap">
                         <div className="font-medium text-slate-800 dark:text-slate-200">{doc.department?.name || '—'}</div>
@@ -466,10 +489,8 @@ function DocumentsContent() {
                     <span className="font-mono text-xs font-bold text-slate-900 dark:text-slate-100">
                       {doc.regNumber}
                     </span>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[11px] px-2 py-0.5 rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">
-                        {doc.category}
-                      </span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {getCategoryBadge(doc.category)}
                       {getStatusBadge(doc.status)}
                     </div>
                   </div>

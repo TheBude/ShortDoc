@@ -320,6 +320,26 @@ router.get('/export-csv', authenticate, async (req: AuthRequest, res: Response, 
       }
     };
 
+    const formatCategory = (cat?: string | null) => {
+      if (!cat) return 'Hujjat';
+      const upper = cat.toUpperCase().trim();
+      switch (upper) {
+        case 'ORDER': return 'Buyruq';
+        case 'DECISION': return 'Qaror';
+        case 'DIRECTIVE': return 'Farmoyish';
+        case 'BILDIRGI': return 'Bildirgi';
+        case 'OFFICIAL_NOTE': return 'Xizmat xati';
+        case 'APPLICATION': return 'Ariza';
+        case 'APPEAL': return 'Murojaat';
+        case 'LETTER': return 'Xat';
+        case 'CONTRACT': return 'Shartnoma';
+        case 'REPORT': return 'Hisobot';
+        case 'ARCHIVE': return 'Arxiv';
+        case 'OTHER': return 'Boshqa';
+        default: return cat;
+      }
+    };
+
     const clean = (str: string = '') => str.replace(/[‘’`ʼʻ]/g, "'");
 
     const headers = [
@@ -339,7 +359,7 @@ router.get('/export-csv', authenticate, async (req: AuthRequest, res: Response, 
       `"${clean(d.regNumber)}"`,
       `"${clean(d.title).replace(/"/g, '""')}"`,
       `"${formatType(d.documentType)}"`,
-      `"${clean(d.category || 'Hujjat')}"`,
+      `"${clean(formatCategory(d.category))}"`,
       `"${formatStatus(d.status)}"`,
       `"${formatPriority(d.priority)}"`,
       `"${clean(d.department?.name || 'Noma’lum')}"`,

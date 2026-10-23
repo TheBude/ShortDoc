@@ -95,15 +95,29 @@ export async function generateDocumentDocx(
 
   // Title formatting (Center)
   let titleText = 'Bildirildi.';
-  const cat = (docData.category || '').toLowerCase();
-  if (cat.includes('ariza')) {
+  const cat = (docData.category || '').toUpperCase();
+  if (cat.includes('ARIZA') || cat.includes('APPLICATION')) {
     titleText = 'Ariza.';
-  } else if (cat.includes('xizmat') || cat.includes('xat')) {
+  } else if (cat.includes('XIZMAT') || cat.includes('OFFICIAL_NOTE')) {
     titleText = 'Xizmat xati.';
-  } else if (cat.includes('buyru')) {
+  } else if (cat.includes('BUYRU') || cat.includes('ORDER')) {
     titleText = 'Buyruq.';
-  } else if (cat.includes('qaror')) {
+  } else if (cat.includes('QAROR') || cat.includes('DECISION')) {
     titleText = 'Qaror.';
+  } else if (cat.includes('FARMOYISH') || cat.includes('DIRECTIVE')) {
+    titleText = 'Farmoyish.';
+  } else if (cat.includes('MUROJAAT') || cat.includes('APPEAL')) {
+    titleText = 'Murojaat.';
+  } else if (cat.includes('HISOBOT') || cat.includes('REPORT')) {
+    titleText = 'Hisobot.';
+  } else if (cat.includes('SHARTNOMA') || cat.includes('CONTRACT')) {
+    titleText = 'Shartnoma.';
+  } else if (cat.includes('ARXIV') || cat.includes('ARCHIVE')) {
+    titleText = 'Arxiv hujjati.';
+  } else if (cat.includes('XAT') || cat.includes('LETTER')) {
+    titleText = 'Rasmiy xat.';
+  } else if (cat.includes('BILDIR')) {
+    titleText = 'Bildirildi.';
   } else if (docData.category) {
     titleText = docData.category.endsWith('.') ? docData.category : `${docData.category}.`;
   }

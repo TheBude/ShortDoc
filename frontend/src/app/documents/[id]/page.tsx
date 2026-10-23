@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { downloadDocumentDocx } from '@/lib/downloadDocx';
 import { DocumentCommentsSection } from '@/components/documents/DocumentCommentsSection';
+import { getCategoryMeta } from '@/lib/categories';
 
 export default function DocumentDetailPage({
   params,
@@ -362,8 +363,8 @@ export default function DocumentDetailPage({
               <span className="font-mono text-sm font-bold bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 px-3 py-1 rounded">
                 {document.regNumber}
               </span>
-              <span className="text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-2.5 py-1 rounded">
-                {document.category}
+              <span className={`text-xs font-semibold px-2.5 py-1 rounded border ${getCategoryMeta(document.category).badgeClass}`}>
+                {getCategoryMeta(document.category).label}
               </span>
               <span className={`text-xs font-semibold px-2.5 py-1 rounded border ${getStatusStyle(document.status)}`}>
                 {getStatusLabel(document.status)}

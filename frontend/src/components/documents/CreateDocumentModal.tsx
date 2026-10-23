@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Document, User } from '@/types';
 import { downloadDocumentDocx } from '@/lib/downloadDocx';
+import { getCategoryLabel } from '@/lib/categories';
 import {
   CheckCircle2,
   Download,
@@ -66,7 +67,7 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
                   {createdDocSuccess.regNumber}
                 </span>
                 <span className="text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2.5 py-0.5 rounded">
-                  {createdDocSuccess.category}
+                  {getCategoryLabel(createdDocSuccess.category)}
                 </span>
               </div>
               <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 mt-2 max-w-md mx-auto">
@@ -134,16 +135,19 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
             )}
 
             <form onSubmit={handleCreateDocument} className="space-y-3.5 text-xs">
-              {/* Step 1: Big category selector buttons */}
+              {/* Step 1: Category selector buttons and dropdown */}
               <div>
                 <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                   1. Hujjat turini tanlang
                 </label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 gap-2 mb-2">
                   {[
                     { cat: 'Bildirgi', to: 'Universitet rektoriga', type: 'INTERNAL' },
                     { cat: 'Xizmat xati', to: 'O‘quv boshqarmasiga', type: 'INTERNAL' },
                     { cat: 'Ariza', to: 'Fakultet dekanatiga', type: 'INTERNAL' },
+                    { cat: 'Buyruq', to: 'Universitet bo‘yicha', type: 'INTERNAL' },
+                    { cat: 'Qaror', to: 'Kengash a’zolariga', type: 'INTERNAL' },
+                    { cat: 'Murojaat', to: 'Rahbariyatga', type: 'INTERNAL' },
                   ].map((item) => (
                     <button
                       type="button"
@@ -159,6 +163,36 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
                     </button>
                   ))}
                 </div>
+                <select
+                  value={formData.category}
+                  onChange={(e) => {
+                    const sel = e.target.value;
+                    let to = formData.receiver || 'Universitet rektoriga';
+                    let type = formData.documentType || 'INTERNAL';
+                    if (sel === 'Rasmiy xat' || sel === 'Xat') { to = 'Tashkilot rahbariga'; type = 'OUTGOING'; }
+                    else if (sel === 'Ariza') { to = 'Fakultet dekanatiga'; }
+                    else if (sel === 'Xizmat xati') { to = 'O‘quv boshqarmasiga'; }
+                    else if (sel === 'Buyruq') { to = 'Universitet bo‘yicha'; }
+                    else if (sel === 'Qaror') { to = 'Kengash a’zolariga'; }
+                    else if (sel === 'Hisobot') { to = 'Kafedra mudiriga'; }
+                    else if (sel === 'Murojaat') { to = 'Rahbariyatga'; }
+                    setFormData({ ...formData, category: sel, receiver: to, documentType: type });
+                  }}
+                  className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs"
+                >
+                  <option value="Bildirgi">Bildirgi</option>
+                  <option value="Xizmat xati">Xizmat xati</option>
+                  <option value="Ariza">Ariza</option>
+                  <option value="Buyruq">Buyruq</option>
+                  <option value="Qaror">Qaror</option>
+                  <option value="Farmoyish">Farmoyish</option>
+                  <option value="Murojaat">Murojaat</option>
+                  <option value="Rasmiy xat">Rasmiy xat</option>
+                  <option value="Shartnoma">Shartnoma</option>
+                  <option value="Hisobot">Hisobot</option>
+                  <option value="Arxiv hujjati">Arxiv hujjati</option>
+                  <option value="Boshqa">Boshqa</option>
+                </select>
               </div>
 
               {/* Step 2: Title */}

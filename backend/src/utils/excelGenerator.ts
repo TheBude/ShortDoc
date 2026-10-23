@@ -63,6 +63,38 @@ export async function generateReportsExcel(
     }
   };
 
+  const formatCategory = (cat: string) => {
+    if (!cat) return 'Xizmat hujjati';
+    const upper = cat.toUpperCase().trim();
+    switch (upper) {
+      case 'ORDER': return 'Buyruq';
+      case 'DECISION': return 'Qaror';
+      case 'DIRECTIVE': return 'Farmoyish';
+      case 'BILDIRGI': return 'Bildirgi';
+      case 'OFFICIAL_NOTE': return 'Xizmat xati';
+      case 'APPLICATION': return 'Ariza';
+      case 'APPEAL': return 'Murojaat';
+      case 'LETTER': return 'Xat';
+      case 'CONTRACT': return 'Shartnoma';
+      case 'REPORT': return 'Hisobot';
+      case 'ARCHIVE': return 'Arxiv';
+      case 'OTHER': return 'Boshqa';
+      default:
+        if (upper.includes('BUYRU')) return 'Buyruq';
+        if (upper.includes('QAROR')) return 'Qaror';
+        if (upper.includes('FARMOYISH')) return 'Farmoyish';
+        if (upper.includes('BILDIR')) return 'Bildirgi';
+        if (upper.includes('XIZMAT')) return 'Xizmat xati';
+        if (upper.includes('ARIZA')) return 'Ariza';
+        if (upper.includes('MUROJAAT')) return 'Murojaat';
+        if (upper.includes('HISOBOT')) return 'Hisobot';
+        if (upper.includes('SHARTNOMA')) return 'Shartnoma';
+        if (upper.includes('ARXIV')) return 'Arxiv';
+        if (upper.includes('XAT')) return 'Xat';
+        return cat;
+    }
+  };
+
   // ----------------------------------------------------------------------
   // SHEET 1: Hujjatlar Reyestri
   // ----------------------------------------------------------------------
@@ -160,7 +192,7 @@ export async function generateReportsExcel(
       doc.regNumber,
       doc.title,
       formatType(doc.documentType),
-      doc.category || 'Xizmat hujjati',
+      formatCategory(doc.category),
       formatStatus(doc.status),
       formatPriority(doc.priority),
       doc.departmentName || 'Noma’lum',

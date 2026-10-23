@@ -20,6 +20,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import Link from 'next/link';
+import { getCategoryLabel } from '@/lib/categories';
 
 export default function HomePage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -231,7 +232,7 @@ export default function HomePage() {
                       {doc.regNumber}
                     </span>
                     <span className="text-xs font-medium text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">
-                      {doc.category || 'Bildirgi'}
+                      {getCategoryLabel(doc.category)}
                     </span>
                     {doc.priority === 'URGENT' && (
                       <span className="text-[11px] font-bold text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-2 py-0.5 rounded border border-rose-200 dark:border-rose-800">
@@ -427,7 +428,7 @@ export default function HomePage() {
               <span className="font-mono text-xs font-bold bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200">
                 {signModalDoc.regNumber}
               </span>
-              <span className="text-xs text-slate-500">{signModalDoc.category}</span>
+              <span className="text-xs text-slate-500">{getCategoryLabel(signModalDoc.category)}</span>
             </div>
 
             <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2">
