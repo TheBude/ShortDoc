@@ -68,6 +68,26 @@ function formatDate(date: Date): string {
   return `${day}.${month}.${year}`;
 }
 
+/**
+ * Muhr uchun bo'lim nomini ikki qatorga muvozanatli bo'lish (so'z chegarasida).
+ * Qisqa nom bitta qatorda qoladi; ikkinchi qator bo'sh bo'lishi mumkin.
+ */
+function splitStampName(name: string): [string, string] {
+  const words = name.trim().split(/\s+/);
+  if (name.length <= 28 || words.length < 2) return [name, ''];
+
+  let best = 1;
+  let bestDiff = Infinity;
+  for (let i = 1; i < words.length; i++) {
+    const diff = Math.abs(words.slice(0, i).join(' ').length - words.slice(i).join(' ').length);
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      best = i;
+    }
+  }
+  return [words.slice(0, best).join(' '), words.slice(best).join(' ')];
+}
+
 export async function generateDocumentDocx(
   docData: DocumentDataForDocx,
   verifyBaseUrl: string = config.APP_URL
@@ -75,7 +95,15 @@ export async function generateDocumentDocx(
   const INK_COLOR = '002060'; // Royal Navy Blue ink color matching photo
 
   const noBorder = { style: BorderStyle.NONE, size: 0, color: 'auto' };
+  // Katak chegaralari
   const noBorders = { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder };
+  // Jadval chegaralari: ichki (katak orasidagi) chiziqlar ham o'chirilishi shart,
+  // aks holda Word ularni standart bo'yicha ko'rsatib qo'yadi
+  const noTableBorders = {
+    ...noBorders,
+    insideHorizontal: noBorder,
+    insideVertical: noBorder,
+  };
 
   // Receiver formatting (Shapka - top right)
   const defaultReceiver =
@@ -134,9 +162,7 @@ export async function generateDocumentDocx(
 
   // Department name for stamp
   const stampDepName = docData.department?.name?.toUpperCase() || 'RAQAMLI TA\'LIM TEXNOLOGIYALARI MARKAZI';
-  const stampLines = stampDepName.split(/\s+(?=TEXNOLOGIYALARI|MARKAZI|BO'LIMI|FAKULTETI)/i);
-  const stampLine1 = stampLines[0] || 'RAQAMLI TA\'LIM';
-  const stampLine2 = stampLines.slice(1).join(' ') || 'TEXNOLOGIYALARI MARKAZI';
+  const [stampLine1, stampLine2] = splitStampName(stampDepName);
 
   // Generate QR Code buffer pointing to verification page
   const verifyUrl = `${verifyBaseUrl.replace(/\/+$/, '')}/verify/${docData.id}`;
@@ -168,7 +194,7 @@ export async function generateDocumentDocx(
           // 1. Shapka (Header Table: 38% empty on left, 62% on right)
           new Table({
             width: { size: 100, type: WidthType.PERCENTAGE },
-            borders: noBorders,
+            borders: noTableBorders,
             rows: [
               new TableRow({
                 children: [
@@ -251,7 +277,7 @@ export async function generateDocumentDocx(
           // 4. Date, Realistic Signature and Full Name row (exactly matching photo)
           new Table({
             width: { size: 100, type: WidthType.PERCENTAGE },
-            borders: noBorders,
+            borders: noTableBorders,
             rows: [
               new TableRow({
                 children: [
@@ -309,7 +335,7 @@ export async function generateDocumentDocx(
           // 5. Bottom Row: Stamp on Left + Authenticity QR-Code on Right
           new Table({
             width: { size: 100, type: WidthType.PERCENTAGE },
-            borders: noBorders,
+            borders: noTableBorders,
             rows: [
               new TableRow({
                 children: [
