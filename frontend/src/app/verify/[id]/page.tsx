@@ -18,7 +18,7 @@ import {
   QrCode,
   Lock,
 } from 'lucide-react';
-import { downloadDocumentDocx } from '@/lib/downloadDocx';
+import { downloadDocumentDocx, isDocxAvailable, DOCX_LOCKED_HINT } from '@/lib/downloadDocx';
 import { getApiBaseUrl } from '@/lib/api';
 import { getCategoryLabel } from '@/lib/categories';
 
@@ -338,7 +338,9 @@ export default function DocumentVerificationPage() {
           <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
             <button
               onClick={() => downloadDocumentDocx(docId, docData.regNumber, docData.category, true)}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-600/30 transition-all cursor-pointer"
+              disabled={!isDocxAvailable(docData.approvals)}
+              title={isDocxAvailable(docData.approvals) ? undefined : DOCX_LOCKED_HINT}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-600/30 transition-all cursor-pointer"
             >
               <Download className="w-4 h-4" />
               <span>Asl Word (.docx) hujjatini yuklab olish</span>

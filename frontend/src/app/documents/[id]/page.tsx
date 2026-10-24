@@ -25,7 +25,7 @@ import {
   ShieldCheck,
   Send,
 } from 'lucide-react';
-import { downloadDocumentDocx } from '@/lib/downloadDocx';
+import { downloadDocumentDocx, isDocxAvailable, DOCX_LOCKED_HINT } from '@/lib/downloadDocx';
 import { DocumentCommentsSection } from '@/components/documents/DocumentCommentsSection';
 import { getCategoryMeta } from '@/lib/categories';
 
@@ -304,7 +304,9 @@ export default function DocumentDetailPage({
           <button
             type="button"
             onClick={() => downloadDocumentDocx(document.id, document.regNumber, document.category)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 font-semibold text-xs shadow-sm transition-all cursor-pointer"
+            disabled={!isDocxAvailable(document.approvals)}
+            title={isDocxAvailable(document.approvals) ? undefined : DOCX_LOCKED_HINT}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 font-semibold text-xs shadow-sm transition-all cursor-pointer"
           >
             <Download className="w-4 h-4" />
             <span>Word (.docx) shaklida yuklab olish</span>

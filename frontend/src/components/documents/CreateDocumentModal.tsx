@@ -209,6 +209,7 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
             </div>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 pt-2">
+              {formData.approverIds.length === 0 ? (
               <button
                 type="button"
                 onClick={() =>
@@ -223,6 +224,11 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
                 <Download className="w-4 h-4" />
                 <span>Word (.docx) yuklab olish</span>
               </button>
+              ) : (
+                <p className="text-[11px] text-slate-500 max-w-xs">
+                  Word fayl barcha kelishuvchilar ketma-ket imzolagandan so‘ng yuklab olinadi.
+                </p>
+              )}
 
               <Link
                 href={`/documents/${createdDocSuccess.id}`}

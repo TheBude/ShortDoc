@@ -1,5 +1,14 @@
 import { getApiBaseUrl } from './api';
 
+export const DOCX_LOCKED_HINT = 'Barcha kelishuvchilar imzolagandan so‘ng yuklab olish mumkin bo‘ladi';
+
+/**
+ * Viza zanjiri bo'lsa, Word faqat barcha kelishuvchilar tasdiqlagandan keyin yuklab olinadi
+ */
+export function isDocxAvailable(approvals?: Array<{ status: string }> | null): boolean {
+  return !approvals || approvals.length === 0 || approvals.every((a) => a.status === 'APPROVED');
+}
+
 /**
  * Download a document in official Word (.docx) format
  */

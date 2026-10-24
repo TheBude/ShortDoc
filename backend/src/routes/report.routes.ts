@@ -2,7 +2,7 @@ import { Router, Response } from 'express';
 import { prisma } from '../prisma.js';
 import { sendSuccess } from '../utils/response.js';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
-import { buildDocumentVisibilityWhere } from '../services/access.js';
+import { buildDocumentVisibilityWhere, getApproverDocumentIds } from '../services/access.js';
 import { generateReportsExcel } from '../utils/excelGenerator.js';
 
 const router = Router();
@@ -44,7 +44,7 @@ const csvCell = (value: string = '') => {
 async function buildCounts(user: ReportUser) {
   const isLeadershipOrAdmin = ['SUPER_ADMIN', 'LEADERSHIP', 'CHANCELLERY'].includes(user.role);
 
-  const whereDoc: any = buildDocumentVisibilityWhere(user);
+  const whereDoc: any = await buildDocumentVisibilityWhere(user);
   const whereTask: any = isLeadershipOrAdmin
     ? {}
     : { OR: [{ assignedToId: user.userId }, { createdById: user.userId }] };
@@ -70,13 +70,8 @@ async function buildCounts(user: ReportUser) {
         : { OR: [{ status: 'ARCHIVED' }, { isArchived: true }] },
     }),
     // Faqat imzolash bosqichidagi hujjatlar: rad etilgan hujjatda qolgan vizalar "kutilayotgan" hisoblanmaydi
-    prisma.documentApproval.count({
-      where: {
-        approverId: user.userId,
-        status: 'PENDING',
-        document: { status: 'IN_APPROVAL' },
-      },
-    }),
+    // Ketma-ket imzo: faqat navbati kelgan hujjatlar hisoblanadi
+    getApproverDocumentIds(user.userId).then((ids) => ids.myTurn.length),
     prisma.task.count({ where: { ...whereTask, status: { in: OPEN_TASK_STATUSES } } }),
     prisma.task.count({
       where: { ...whereTask, status: { in: OPEN_TASK_STATUSES }, deadline: { lt: now } },
@@ -129,6 +124,8 @@ router.get('/dashboard', authenticate, async (req: AuthRequest, res: Response, n
   try {
     const isLeadershipOrAdmin = ['SUPER_ADMIN', 'LEADERSHIP', 'CHANCELLERY'].includes(req.user!.role);
 
+    const { myTurn: myTurnIds } = await getApproverDocumentIds(req.user!.userId);
+
     const [counts, recentActivities, departmentsStat, pendingDocs, myTasks, mySubmitted] = await Promise.all([
       buildCounts(req.user!),
       prisma.auditLog.findMany({
@@ -152,12 +149,7 @@ router.get('/dashboard', authenticate, async (req: AuthRequest, res: Response, n
       prisma.document.findMany({
         where: {
           status: 'IN_APPROVAL',
-          approvals: {
-            some: {
-              approverId: req.user!.userId,
-              status: 'PENDING',
-            },
-          },
+          id: { in: myTurnIds },
         },
         take: 5,
         orderBy: { createdAt: 'desc' },
@@ -219,7 +211,7 @@ router.get('/dashboard', authenticate, async (req: AuthRequest, res: Response, n
 // Professional Native Microsoft Excel (.xlsx) formatida hisobot eksport qilish
 router.get(['/export-excel', '/export-xlsx'], authenticate, async (req: AuthRequest, res: Response, next) => {
   try {
-    const where = buildDocumentVisibilityWhere(req.user!);
+    const where = await buildDocumentVisibilityWhere(req.user!);
 
     const [documents, departments] = await Promise.all([
       prisma.document.findMany({
@@ -288,7 +280,7 @@ router.get('/export-csv', authenticate, async (req: AuthRequest, res: Response, 
   try {
     // Hujjatlar ro'yxati va Excel eksporti bilan bir xil ko'rinish qoidasi
     const documents = await prisma.document.findMany({
-      where: buildDocumentVisibilityWhere(req.user!),
+      where: await buildDocumentVisibilityWhere(req.user!),
       select: exportDocumentSelect,
       orderBy: { createdAt: 'desc' },
       take: EXPORT_MAX_ROWS,

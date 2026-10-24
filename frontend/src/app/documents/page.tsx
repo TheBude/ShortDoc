@@ -21,7 +21,7 @@ import {
   FileCheck,
   Download,
 } from 'lucide-react';
-import { downloadDocumentDocx } from '@/lib/downloadDocx';
+import { downloadDocumentDocx, isDocxAvailable, DOCX_LOCKED_HINT } from '@/lib/downloadDocx';
 import { CreateDocumentModal } from '@/components/documents/CreateDocumentModal';
 import { getCategoryMeta, ALL_CATEGORIES_LIST } from '@/lib/categories';
 
@@ -462,8 +462,9 @@ function DocumentsContent() {
                           <button
                             type="button"
                             onClick={() => downloadDocumentDocx(doc.id, doc.regNumber, doc.category)}
-                            title="Word (.docx) yuklab olish"
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 font-medium transition-colors cursor-pointer border border-blue-200 dark:border-blue-800"
+                            disabled={!isDocxAvailable(doc.approvals)}
+                            title={isDocxAvailable(doc.approvals) ? 'Word (.docx) yuklab olish' : DOCX_LOCKED_HINT}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md disabled:opacity-40 disabled:cursor-not-allowed bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 font-medium transition-colors cursor-pointer border border-blue-200 dark:border-blue-800"
                           >
                             <Download className="w-3.5 h-3.5" />
                             <span>.docx</span>
@@ -522,7 +523,9 @@ function DocumentsContent() {
                     <button
                       type="button"
                       onClick={() => downloadDocumentDocx(doc.id, doc.regNumber, doc.category)}
-                      className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800 flex items-center gap-1"
+                      disabled={!isDocxAvailable(doc.approvals)}
+                      title={isDocxAvailable(doc.approvals) ? undefined : DOCX_LOCKED_HINT}
+                      className="px-3 py-1.5 text-xs font-semibold disabled:opacity-40 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800 flex items-center gap-1"
                     >
                       <Download className="w-3.5 h-3.5" />
                       <span>.docx</span>

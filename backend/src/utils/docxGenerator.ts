@@ -176,6 +176,36 @@ export async function generateDocumentDocx(
     },
   });
 
+  // Imzolagan kelishuvchilar ro'yxati: "Lavozim F.I.Sh. imzoladi (sana)"
+  const signedApprovals = (docData.approvals || []).filter((a) => a.status === 'APPROVED');
+  const approvalParagraphs: Paragraph[] =
+    signedApprovals.length === 0
+      ? []
+      : [
+          new Paragraph({
+            spacing: { before: 400, after: 120 },
+            children: [
+              new TextRun({ text: 'Kelishildi:', font: 'Times New Roman', size: 26, bold: true, color: INK_COLOR }),
+            ],
+          }),
+          ...signedApprovals.map(
+            (a) =>
+              new Paragraph({
+                spacing: { after: 80 },
+                children: [
+                  new TextRun({
+                    text: `${a.approver.position ? a.approver.position + ' ' : ''}${a.approver.fullName} imzoladi${
+                      a.signedAt ? ` (${formatDate(a.signedAt)})` : ''
+                    }`,
+                    font: 'Times New Roman',
+                    size: 24,
+                    color: INK_COLOR,
+                  }),
+                ],
+              })
+          ),
+        ];
+
   // Build the complete docx document
   const doc = new Document({
     sections: [
@@ -328,6 +358,9 @@ export async function generateDocumentDocx(
               }),
             ],
           }),
+
+          // Kelishuvchilar (imzo qo'ygan shaxslar) ro'yxati
+          ...approvalParagraphs,
 
           // Spacing before stamp
           new Paragraph({ spacing: { before: 680, after: 150 } }),

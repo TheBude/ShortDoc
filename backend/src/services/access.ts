@@ -1,7 +1,15 @@
+import { prisma } from '../prisma.js';
+
 export interface UserAuth {
   userId: string;
   role: string;
   departmentId?: string | null;
+}
+
+export interface ApprovalAccessData {
+  approverId: string;
+  stepOrder?: number;
+  status?: string;
 }
 
 export interface DocumentAccessData {
@@ -13,7 +21,7 @@ export interface DocumentAccessData {
   documentType: string;
   status?: string;
   isArchived?: boolean;
-  approvals?: Array<{ approverId: string }>;
+  approvals?: ApprovalAccessData[];
   tasks?: Array<{ assignedToId: string }>;
 }
 
@@ -66,21 +74,63 @@ export function isValidStatusTransition(from: DocumentStatusType, to: DocumentSt
 }
 
 /**
+ * Ketma-ket imzo qoidasi: kelishuvchi hujjatni faqat o'z navbati kelganda yoki allaqachon qaror qabul qilgan bo'lsa ko'radi.
+ * Oldingi bosqichlardan biri hali tasdiqlanmagan (kutilmoqda yoki rad etilgan) bo'lsa, hujjat unga ko'rinmaydi.
+ */
+export function hasApproverAccess(userId: string, approvals?: ApprovalAccessData[]): boolean {
+  if (!approvals) return false;
+  return approvals.some((a) => {
+    if (a.approverId !== userId) return false;
+    if (a.status === undefined || a.stepOrder === undefined) return true;
+    if (a.status !== 'PENDING') return true;
+    return !approvals.some((b) => b.stepOrder !== undefined && b.stepOrder < a.stepOrder! && b.status !== 'APPROVED');
+  });
+}
+
+/**
+ * Foydalanuvchining kelishuvchi sifatida ko'ra oladigan hujjatlari (navbati kelgan yoki qaror qabul qilgan)
+ * hamda aynan hozir imzosi kutilayotgan hujjatlari. Bitta so'rovda olinadi.
+ */
+export async function getApproverDocumentIds(userId: string): Promise<{ visible: string[]; myTurn: string[] }> {
+  const rows = await prisma.$queryRaw<{ documentId: string; status: string; docStatus: string }[]>`
+    SELECT a."documentId" AS "documentId", a."status"::text AS "status", d."status"::text AS "docStatus"
+    FROM document_approvals a
+    JOIN documents d ON d."id" = a."documentId"
+    WHERE a."approverId" = ${userId}
+      AND (
+        a."status"::text <> 'PENDING'
+        OR NOT EXISTS (
+          SELECT 1 FROM document_approvals b
+          WHERE b."documentId" = a."documentId"
+            AND b."stepOrder" < a."stepOrder"
+            AND b."status"::text <> 'APPROVED'
+        )
+      )
+  `;
+  return {
+    visible: [...new Set(rows.map((r) => r.documentId))],
+    myTurn: [...new Set(rows.filter((r) => r.status === 'PENDING' && r.docStatus === 'IN_APPROVAL').map((r) => r.documentId))],
+  };
+}
+
+/**
  * Prisma uchun yagona hujjat ko'rinish filtri (RBAC/IDOR himoyasi)
  * GET /documents, dashboard hisoblagichlari, excel eksport hammasi ushbu qoidaga bo'ysunadi.
  * Eslatma: isArchived: true hujjatlar xodimlar uchun ochiq qolmaydi, faqat tegishli qoida asosida ko'rinadi.
  */
-export function buildDocumentVisibilityWhere(user: UserAuth) {
+export async function buildDocumentVisibilityWhere(user: UserAuth) {
   // SUPER_ADMIN, LEADERSHIP, CHANCELLERY barcha hujjatlarni ko'radi
   if (['SUPER_ADMIN', 'LEADERSHIP', 'CHANCELLERY'].includes(user.role)) {
     return {};
   }
 
-  // Umumiy qoida: faqat o'ziga bog'liq hujjatlar: o'zi yaratgan, biriktirilgan, vizachi bo'lgan yoki topshiriq berilgan
+  const { visible } = await getApproverDocumentIds(user.userId);
+
+  // Umumiy qoida: faqat o'ziga bog'liq hujjatlar: o'zi yaratgan, biriktirilgan, navbati kelgan vizachi yoki topshiriq berilgan
   const conditions: any[] = [
     { creatorId: user.userId },
     { assigneeId: user.userId },
-    { approvals: { some: { approverId: user.userId } } },
+    { id: { in: visible } },
     { tasks: { some: { assignedToId: user.userId } } },
   ];
 
@@ -103,8 +153,8 @@ export function canViewDocument(user: UserAuth, doc: DocumentAccessData): boolea
   if (doc.creatorId === user.userId) return true;
   if (doc.assigneeId === user.userId) return true;
 
-  // Viza beruvchi
-  if (doc.approvals?.some((a) => a.approverId === user.userId)) {
+  // Viza beruvchi (faqat navbati kelgan yoki qaror qabul qilgan)
+  if (hasApproverAccess(user.userId, doc.approvals)) {
     return true;
   }
 
@@ -201,7 +251,7 @@ export function canUploadFile(user: UserAuth, doc: DocumentAccessData): boolean 
   if (user.role === 'DEPARTMENT_HEAD' && user.departmentId && doc.departmentId === user.departmentId) return true;
 
   return !!(
-    doc.approvals?.some((a) => a.approverId === user.userId) ||
+    hasApproverAccess(user.userId, doc.approvals) ||
     doc.tasks?.some((t) => t.assignedToId === user.userId)
   );
 }
@@ -230,4 +280,11 @@ const RESTRICTED_CREATOR_ROLES = ['SUPER_ADMIN', 'LEADERSHIP', 'CHANCELLERY'];
 export function canCreateRestrictedDocument(role: string, category: string, documentType: string): boolean {
   const restricted = RESTRICTED_CATEGORIES.includes(category) || documentType === 'INCOMING';
   return !restricted || RESTRICTED_CREATOR_ROLES.includes(role);
+}
+
+/**
+ * Hujjat Word (.docx) formatida yuklab olinishi mumkinmi: viza zanjiri bor bo'lsa, barcha kelishuvchilar tasdiqlagan bo'lishi shart.
+ */
+export function isDocumentFullySigned(approvals?: Array<{ status: string }> | null): boolean {
+  return !approvals || approvals.length === 0 || approvals.every((a) => a.status === 'APPROVED');
 }

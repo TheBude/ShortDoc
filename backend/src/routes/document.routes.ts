@@ -14,6 +14,8 @@ import {
   buildDocumentVisibilityWhere,
   canViewDocument,
   canCreateRestrictedDocument,
+  getApproverDocumentIds,
+  isDocumentFullySigned,
   canChangeStatus,
   isValidStatusTransition,
   DocumentStatusType,
@@ -89,7 +91,7 @@ router.get('/', authenticate, async (req: AuthRequest, res, next) => {
     const andConditions: any[] = [];
 
     // Markaziy ruxsat moduli orqali foydalanuvchiga ko'rinadigan hujjatlar filtri
-    const visibilityWhere = buildDocumentVisibilityWhere(req.user!);
+    const visibilityWhere = await buildDocumentVisibilityWhere(req.user!);
     if (visibilityWhere.OR) {
       andConditions.push(visibilityWhere);
     }
@@ -150,15 +152,9 @@ router.get('/', authenticate, async (req: AuthRequest, res, next) => {
     }
 
     if (pendingMySignature === 'true') {
-      andConditions.push({
-        status: 'IN_APPROVAL',
-        approvals: {
-          some: {
-            approverId: req.user!.userId,
-            status: 'PENDING',
-          },
-        },
-      });
+      // Ketma-ket imzo: faqat navbati aynan shu foydalanuvchiga yetgan hujjatlar
+      const { myTurn } = await getApproverDocumentIds(req.user!.userId);
+      andConditions.push({ id: { in: myTurn } });
     }
 
     const where: any = andConditions.length > 0 ? { AND: andConditions } : {};
@@ -331,6 +327,10 @@ router.get('/:id/public-docx', publicVerifyLimiter, async (req, res, next) => {
       return sendError(res, 'Hujjat topilmadi yoki mavjud emas', 404);
     }
 
+    if (!isDocumentFullySigned(document.approvals)) {
+      return sendError(res, 'Hujjat hali to‘liq imzolanmagan', 403);
+    }
+
     return await sendDocumentDocx(res, document);
   } catch (error) {
     next(error);
@@ -365,6 +365,10 @@ router.get('/:id/docx', authenticate, async (req: AuthRequest, res, next) => {
 
     if (!canViewDocument(req.user!, document)) {
       return sendError(res, 'Hujjat topilmadi', 404);
+    }
+
+    if (!isDocumentFullySigned(document.approvals)) {
+      return sendError(res, 'Word hujjatni yuklab olish uchun barcha kelishuvchilar imzolashi kerak', 403);
     }
 
     return await sendDocumentDocx(res, document);
@@ -520,13 +524,14 @@ router.post('/', authenticate, async (req: AuthRequest, res, next) => {
           })),
         });
 
-        await tx.notification.createMany({
-          data: uniqueApproverIds.map((approverId) => ({
-            userId: approverId,
+        // Ketma-ket imzo: faqat birinchi kelishuvchiga xabar boradi, qolganlarga navbati kelganda yuboriladi
+        await tx.notification.create({
+          data: {
+            userId: uniqueApproverIds[0],
             title: 'Imzolash uchun yangi hujjat',
             message: `${req.user!.fullName || 'Xodim'} sizga imzolash uchun hujjat yubordi: "${doc.title}" (${doc.regNumber})`,
             link: `/documents/${doc.id}`,
-          })),
+          },
         });
       }
 
@@ -555,7 +560,7 @@ router.post('/', authenticate, async (req: AuthRequest, res, next) => {
 
     // Real-time bildirishnoma va hisoblagichlarni approverlarga jo'natish
     if (uniqueApproverIds.length > 0) {
-      for (const approverId of uniqueApproverIds) {
+      for (const approverId of uniqueApproverIds.slice(0, 1)) {
         realtime.sendToUser(approverId, 'APPROVAL_NEEDED', {
           documentId: document.id,
           regNumber: document.regNumber,
@@ -873,6 +878,14 @@ router.post('/:id/approvals', authenticate, async (req: AuthRequest, res, next) 
     // Keyingi navbatdagi kelishuvchiga bildirishnoma jo'natish
     if (status === 'APPROVED' && result.remainingPending.length > 0) {
       const nextInQueue = result.remainingPending[0];
+      await prisma.notification.create({
+        data: {
+          userId: nextInQueue.approverId,
+          title: 'Imzolash navbatingiz keldi',
+          message: `"${doc.title}" (${doc.regNumber}) hujjati bo‘yicha navbatdagi imzolash sizga yetib keldi.`,
+          link: `/documents/${doc.id}`,
+        },
+      });
       realtime.sendToUser(nextInQueue.approverId, 'APPROVAL_NEEDED', {
         documentId: doc.id,
         regNumber: doc.regNumber,

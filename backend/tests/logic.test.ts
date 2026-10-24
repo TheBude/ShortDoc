@@ -327,4 +327,58 @@ describe('Mantiqiy tuzatishlar: viza poygasi, holat o‘tishlari, topshiriqlar, 
     expect(ok.status).toBe(200);
     expect(await prisma.user.findUnique({ where: { id: temp.id } })).toBeNull();
   });
+
+  it('17. Ketma-ket imzo: keyingi kelishuvchi navbati kelguncha ko‘rmaydi va xabar olmaydi; DOCX faqat to‘liq imzodan keyin', async () => {
+    const doc = await createDoc('staff1', { title: 'Ketma-ket imzo', approverIds: [testUsers.head.id, testUsers.staff2.id] });
+    const notifCount = (key: keyof typeof testUsers) =>
+      prisma.notification.count({ where: { userId: testUsers[key].id, link: `/documents/${doc.id}` } });
+
+    // 1-bosqich: faqat birinchi kelishuvchiga xabar boradi, ikkinchiga ko'rinmaydi
+    expect(await notifCount('head')).toBe(1);
+    expect(await notifCount('staff2')).toBe(0);
+    const hidden = await request(app).get(`/api/documents/${doc.id}`).set(auth('staff2'));
+    expect(hidden.status).toBe(404);
+    const hiddenList = await request(app).get('/api/documents?limit=100').set(auth('staff2'));
+    expect(hiddenList.body.data.map((d: any) => d.id)).not.toContain(doc.id);
+    const pendingBefore = await request(app).get('/api/reports/counts').set(auth('staff2'));
+    const before = pendingBefore.body.data.counts.pendingSignatures;
+
+    // DOCX hali yuklab olinmaydi
+    const early = await request(app).get(`/api/documents/${doc.id}/docx`).set(auth('staff1'));
+    expect(early.status).toBe(403);
+    const earlyPublic = await request(app).get(`/api/documents/${doc.id}/public-docx`);
+    expect(earlyPublic.status).toBe(403);
+
+    // 1-kelishuvchi imzolaydi: 2-kelishuvchiga navbat keladi
+    const first = await request(app).post(`/api/documents/${doc.id}/approvals`).set(auth('head')).send({ status: 'APPROVED' });
+    expect(first.status).toBe(200);
+    expect(await notifCount('staff2')).toBe(1);
+    const visible = await request(app).get(`/api/documents/${doc.id}`).set(auth('staff2'));
+    expect(visible.status).toBe(200);
+    const pendingAfter = await request(app).get('/api/reports/counts').set(auth('staff2'));
+    expect(pendingAfter.body.data.counts.pendingSignatures).toBe(before + 1);
+
+    const mid = await request(app).get(`/api/documents/${doc.id}/docx`).set(auth('staff1'));
+    expect(mid.status).toBe(403);
+
+    // 2-kelishuvchi imzolagach DOCX yuklab olinadi va imzolaganlar ro'yxati bor
+    const second = await request(app).post(`/api/documents/${doc.id}/approvals`).set(auth('staff2')).send({ status: 'APPROVED' });
+    expect(second.status).toBe(200);
+    const done = await request(app)
+      .get(`/api/documents/${doc.id}/docx`)
+      .set(auth('staff1'))
+      .buffer(true)
+      .parse((res, cb) => {
+        const chunks: Buffer[] = [];
+        res.on('data', (c: Buffer) => chunks.push(c));
+        res.on('end', () => cb(null, Buffer.concat(chunks)));
+      });
+    expect(done.status).toBe(200);
+    const JSZip = (await import('jszip')).default;
+    const zip = await JSZip.loadAsync(done.body as Buffer);
+    const xml = await zip.file('word/document.xml')!.async('string');
+    expect(xml).toContain('Kelishildi');
+    expect(xml).toContain(`${testUsers.head.fullName} imzoladi`);
+    expect(xml).toContain(`${testUsers.staff2.fullName} imzoladi`);
+  });
 });
