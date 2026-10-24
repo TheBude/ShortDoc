@@ -1,0 +1,245 @@
+import { describe, it, expect, beforeAll } from 'vitest';
+import { app, request, setupTestUsers, testUsers, prisma } from './helpers.js';
+
+const auth = (key: keyof typeof testUsers) => ({ Authorization: `Bearer ${testUsers[key].token}` });
+
+const createDoc = async (key: keyof typeof testUsers, body: Record<string, unknown>) => {
+  const res = await request(app)
+    .post('/api/documents')
+    .set(auth(key))
+    .send({ documentType: 'INTERNAL', category: 'BILDIRGI', ...body });
+  expect(res.status).toBe(201);
+  return res.body.data;
+};
+
+describe('Mantiqiy tuzatishlar: viza poygasi, holat o‘tishlari, topshiriqlar, hisoblagichlar', () => {
+  beforeAll(async () => {
+    await setupTestUsers();
+  });
+
+  it('1. Poyga: bir vaqtda yuborilgan ikkita imzo so‘rovidan faqat bittasi qabul qilinadi', async () => {
+    const doc = await createDoc('staff1', { title: 'Poyga sinovi hujjati', approverIds: [testUsers.head.id] });
+
+    const [a, b] = await Promise.all([
+      request(app).post(`/api/documents/${doc.id}/approvals`).set(auth('head')).send({ status: 'APPROVED' }),
+      request(app).post(`/api/documents/${doc.id}/approvals`).set(auth('head')).send({ status: 'APPROVED' }),
+    ]);
+
+    expect([a.status, b.status].filter((s) => s === 200)).toHaveLength(1);
+    expect([a.status, b.status].filter((s) => s !== 200)[0]).toBeGreaterThanOrEqual(400);
+
+    const approvals = await prisma.documentApproval.findMany({ where: { documentId: doc.id } });
+    expect(approvals.filter((x) => x.status === 'APPROVED')).toHaveLength(1);
+  });
+
+  it('2. Viza zanjirini chetlab o‘tib bo‘lmaydi: yaratuvchi IN_APPROVAL hujjatni ijroga o‘tkaza olmaydi (409), SuperAdmin oladi', async () => {
+    const doc = await createDoc('staff1', {
+      title: 'Imzosiz ijroga o‘tkazish sinovi',
+      approverIds: [testUsers.head.id, testUsers.rector.id],
+    });
+
+    const byCreator = await request(app)
+      .patch(`/api/documents/${doc.id}/status`)
+      .set(auth('staff1'))
+      .send({ status: 'IN_EXECUTION' });
+    expect(byCreator.status).toBe(409);
+
+    const byAdmin = await request(app)
+      .patch(`/api/documents/${doc.id}/status`)
+      .set(auth('admin'))
+      .send({ status: 'IN_EXECUTION', reason: 'Favqulodda ijro' });
+    expect(byAdmin.status).toBe(200);
+    expect(byAdmin.body.data.status).toBe('IN_EXECUTION');
+  });
+
+  it('3. Kelishuvchisiz hujjatni IN_APPROVAL ga o‘tkazib bo‘lmaydi (409)', async () => {
+    const doc = await createDoc('staff1', { title: 'Kelishuvchisiz hujjat' });
+
+    const res = await request(app)
+      .patch(`/api/documents/${doc.id}/status`)
+      .set(auth('staff1'))
+      .send({ status: 'IN_APPROVAL' });
+    expect(res.status).toBe(409);
+  });
+
+  it('4. Bir xil holatga o‘tkazish tarixga ortiqcha yozuv qo‘shmaydi', async () => {
+    const doc = await createDoc('staff1', { title: 'Bir xil holat sinovi' });
+    const before = await prisma.documentStatusHistory.count({ where: { documentId: doc.id } });
+
+    const res = await request(app)
+      .patch(`/api/documents/${doc.id}/status`)
+      .set(auth('staff1'))
+      .send({ status: 'REGISTERED' });
+    expect(res.status).toBe(200);
+
+    const after = await prisma.documentStatusHistory.count({ where: { documentId: doc.id } });
+    expect(after).toBe(before);
+  });
+
+  it('5. Bekor qilingan topshiriq hujjat yakunlanishiga to‘sqinlik qilmaydi', async () => {
+    const doc = await createDoc('staff1', { title: 'Topshiriqli hujjat' });
+
+    await request(app).patch(`/api/documents/${doc.id}/status`).set(auth('admin')).send({ status: 'IN_EXECUTION' });
+
+    const t1 = await request(app)
+      .post('/api/tasks')
+      .set(auth('admin'))
+      .send({ documentId: doc.id, title: 'Asosiy topshiriq', assignedToId: testUsers.staff1.id });
+    const t2 = await request(app)
+      .post('/api/tasks')
+      .set(auth('admin'))
+      .send({ documentId: doc.id, title: 'Bekor qilinadigan topshiriq', assignedToId: testUsers.staff2.id });
+    expect(t1.status).toBe(201);
+    expect(t2.status).toBe(201);
+
+    const cancel = await request(app)
+      .patch(`/api/tasks/${t2.body.data.id}/status`)
+      .set(auth('admin'))
+      .send({ status: 'CANCELLED' });
+    expect(cancel.status).toBe(200);
+
+    const submit = await request(app)
+      .post(`/api/tasks/${t1.body.data.id}/submit-result`)
+      .set(auth('staff1'))
+      .send({ resultComment: 'Bajarildi' });
+    expect(submit.status).toBe(200);
+
+    const updated = await prisma.document.findUnique({ where: { id: doc.id }, select: { status: true } });
+    expect(updated!.status).toBe('COMPLETED');
+
+    // Bekor qilingan topshiriq bo'yicha natija topshirib bo'lmaydi
+    const late = await request(app)
+      .post(`/api/tasks/${t2.body.data.id}/submit-result`)
+      .set(auth('staff2'))
+      .send({ resultComment: 'Kech' });
+    expect(late.status).toBe(409);
+  });
+
+  it('6. Rad etilgan hujjatdagi qolgan vizalar "kutilayotgan imzo" hisoblanmaydi', async () => {
+    const doc = await createDoc('staff1', {
+      title: 'Rad etiladigan hujjat',
+      approverIds: [testUsers.head.id, testUsers.rector.id],
+    });
+
+    const reject = await request(app)
+      .post(`/api/documents/${doc.id}/approvals`)
+      .set(auth('head'))
+      .send({ status: 'REJECTED', comments: 'Rad' });
+    expect(reject.status).toBe(200);
+
+    const expected = await prisma.documentApproval.count({
+      where: { approverId: testUsers.rector.id, status: 'PENDING', document: { status: 'IN_APPROVAL' } },
+    });
+
+    const counts = await request(app).get('/api/reports/counts').set(auth('rector'));
+    expect(counts.status).toBe(200);
+    expect(counts.body.data.counts.pendingSignatures).toBe(expected);
+
+    const dashboard = await request(app).get('/api/reports/dashboard').set(auth('rector'));
+    expect(dashboard.status).toBe(200);
+    expect(dashboard.body.data.counts.pendingSignatures).toBe(expected);
+    const listed = dashboard.body.data.actionItems.pendingSignatures.map((d: any) => d.id);
+    expect(listed).not.toContain(doc.id);
+  });
+
+  it('7. Kiruvchi hujjatni ko‘ra olgan begona xodim unga fayl biriktira olmaydi (403)', async () => {
+    const doc = await createDoc('staff1', { title: 'Kiruvchi xat', documentType: 'INCOMING' });
+    const pdf = Buffer.from('%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF');
+
+    const view = await request(app).get(`/api/documents/${doc.id}`).set(auth('staff2'));
+    expect(view.status).toBe(200);
+
+    const res = await request(app)
+      .post('/api/document-files/upload')
+      .set(auth('staff2'))
+      .field('documentId', doc.id)
+      .attach('file', pdf, 'x.pdf');
+    expect(res.status).toBe(403);
+
+    const own = await request(app)
+      .post('/api/document-files/upload')
+      .set(auth('staff1'))
+      .field('documentId', doc.id)
+      .attach('file', pdf, 'x.pdf');
+    expect(own.status).toBe(201);
+  });
+
+  it('8. Login: faol bo‘lmagan hisob noto‘g‘ri parol bilan 401 qaytaradi (hisob holati oshkor bo‘lmaydi)', async () => {
+    const wrong = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'test_inactive@shortdoc.uz', password: 'NotThePassword1!' });
+    expect(wrong.status).toBe(401);
+
+    const unknown = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'no_such_user@shortdoc.uz', password: 'NotThePassword1!' });
+    expect(unknown.status).toBe(401);
+    expect(unknown.body.message).toBe(wrong.body.message);
+  });
+
+  it('9. Noto‘g‘ri sana formati 500 emas, 422 validatsiya xatosini qaytaradi', async () => {
+    const res = await request(app)
+      .post('/api/documents')
+      .set(auth('staff1'))
+      .send({ title: 'Noto‘g‘ri muddat', deadline: 'bu-sana-emas' });
+    expect(res.status).toBe(422);
+  });
+
+  it('10. Mavjud bo‘lmagan bo‘lim yoki mas’ul xodim aniq 400 xatosini beradi', async () => {
+    const missingId = '00000000-0000-4000-8000-000000000000';
+
+    const dep = await request(app)
+      .post('/api/documents')
+      .set(auth('staff1'))
+      .send({ title: 'Bo‘limi yo‘q hujjat', departmentId: missingId });
+    expect(dep.status).toBe(400);
+
+    const assignee = await request(app)
+      .post('/api/documents')
+      .set(auth('staff1'))
+      .send({ title: 'Mas’uli yo‘q hujjat', assigneeId: missingId });
+    expect(assignee.status).toBe(400);
+  });
+
+  it('11. SuperAdmin o‘z rolini pasaytira olmaydi va o‘zini nofaol qila olmaydi (400)', async () => {
+    const demote = await request(app)
+      .put(`/api/users/${testUsers.admin.id}`)
+      .set(auth('admin'))
+      .send({ role: 'STAFF' });
+    expect(demote.status).toBe(400);
+
+    const reject = await request(app).post(`/api/users/${testUsers.admin.id}/reject`).set(auth('admin'));
+    expect(reject.status).toBe(400);
+  });
+
+  it('12. Oddiy xodimlar tasdiqlanmagan foydalanuvchilarni ro‘yxatda ko‘rmaydi', async () => {
+    const res = await request(app).get('/api/users?limit=100').set(auth('staff1'));
+    expect(res.status).toBe(200);
+    const ids = (res.body.data as any[]).map((u) => u.id);
+    expect(ids).not.toContain(testUsers.inactiveStaff.id);
+
+    const adminView = await request(app).get('/api/users?limit=100').set(auth('admin'));
+    expect((adminView.body.data as any[]).map((u) => u.id)).toContain(testUsers.inactiveStaff.id);
+  });
+
+  it('13. CSV eksportida formula in‘ektsiyasi (=, +, -, @) zararsizlantiriladi', async () => {
+    await createDoc('staff1', { title: '=HYPERLINK("http://evil.example","x")' });
+
+    const res = await request(app).get('/api/reports/export-csv').set(auth('admin'));
+    expect(res.status).toBe(200);
+    expect(res.text).toContain(`"'=HYPERLINK(`);
+    expect(res.text).not.toMatch(/,"=HYPERLINK/);
+  });
+
+  it('14. Noma’lum API manzili JSON 404 qaytaradi; begona Origin CORS orqali rad etiladi', async () => {
+    const notFound = await request(app).get('/api/bunday-manzil-yoq');
+    expect(notFound.status).toBe(404);
+    expect(notFound.body.success).toBe(false);
+
+    const evil = await request(app).get('/health').set('Origin', 'https://evil-localhost.com');
+    expect(evil.status).toBe(403);
+
+    const ok = await request(app).get('/health').set('Origin', 'http://localhost:3000');
+    expect(ok.headers['access-control-allow-origin']).toBe('http://localhost:3000');
+  });
+});
