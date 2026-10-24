@@ -1,5 +1,6 @@
 'use client';
 
+import { groupDepartments } from '@/lib/departments';
 import React from 'react';
 import { Department } from '@/types';
 import { AlertCircle } from 'lucide-react';
@@ -112,10 +113,14 @@ export const UserModal: React.FC<UserModalProps> = ({
                 className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 text-xs"
               >
                 <option value="">Bo‘limni tanlang...</option>
-                {departments.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name} ({d.code})
-                  </option>
+                {groupDepartments(departments).map((g) => (
+                  <optgroup key={g.key} label={g.label}>
+                    {g.items.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.name}
+                      </option>
+                    ))}
+                  </optgroup>
                 ))}
               </select>
             </div>

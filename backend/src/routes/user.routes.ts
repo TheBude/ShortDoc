@@ -53,7 +53,7 @@ router.get('/', authenticate, async (req: AuthRequest, res, next) => {
           phone: true,
           isActive: true,
           departmentId: true,
-          department: { select: { id: true, name: true, code: true } },
+          department: { select: { id: true, name: true, code: true, type: true } },
           createdAt: true,
         },
         orderBy: { createdAt: 'desc' },

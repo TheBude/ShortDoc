@@ -1,5 +1,7 @@
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { DepartmentType } from '@prisma/client';
 import { prisma } from './prisma.js';
 import { config } from './config.js';
@@ -22,20 +24,10 @@ export async function runSeed() {
   console.log('[Seed] Sharof Rashidov nomidagi SamDU - Tizim Ma’lumotlarini Yangilash');
   console.log('================================================================');
 
-  // 1. Bo'limlar va Fakultetlar (SamDU tuzilmasi)
-  const departmentsData: Array<{ code: string; name: string; type: DepartmentType }> = [
-    { code: 'RECTOR', name: 'Rektorat va Rahbariyat', type: 'RECTORATE' },
-    { code: 'CHANC', name: 'Devonxona va murojaatlar bilan ishlash bo‘limi', type: 'CHANCELLERY' },
-    { code: 'DIGITAL', name: 'Raqamli ta’lim texnologiyalari markazi', type: 'DEPARTMENT' },
-    { code: 'INT-REL', name: 'Xalqaro hamkorlik boshqarmasi', type: 'DEPARTMENT' },
-    { code: 'FINANCE', name: 'Buxgalteriya va moliya-iqtisodiyot bo‘limi', type: 'DEPARTMENT' },
-    { code: 'HR-DEPT', name: 'Inson resurslarini boshqarish bo‘limi', type: 'DEPARTMENT' },
-    { code: 'IT-FAC', name: 'Axborot texnologiyalari fakulteti', type: 'FACULTY' },
-    { code: 'MATH-FAC', name: 'Matematika fakulteti', type: 'FACULTY' },
-    { code: 'PHYS-FAC', name: 'Fizika fakulteti', type: 'FACULTY' },
-    { code: 'HIST-FAC', name: 'Tarix fakulteti', type: 'FACULTY' },
-    { code: 'PHIL-FAC', name: 'Filologiya fakulteti', type: 'FACULTY' },
-  ];
+  // 1. SamDU tuzilmasi (Rahbariyat, Institutlar, Fakultetlar, Kafedralar, Boshqarma va bo'limlar, Markazlar)
+  const departmentsData: Array<{ code: string; name: string; type: DepartmentType }> = JSON.parse(
+    readFileSync(join(process.cwd(), 'prisma', 'org-structure.json'), 'utf8')
+  );
 
   const depMap = new Map<string, string>();
   for (const dep of departmentsData) {
@@ -96,7 +88,7 @@ export async function runSeed() {
       role: 'DEPARTMENT_HEAD' as const,
       position: 'IT Fakulteti Dekani',
       phone: '+998905556677',
-      depCode: 'IT-FAC',
+      depCode: 'MATH-FAC',
     },
     {
       email: 'matematika_dekan@shortdoc.uz',
@@ -114,7 +106,7 @@ export async function runSeed() {
       role: 'STAFF' as const,
       position: 'Dasturiy injiniring kafedrasi dotsenti',
       phone: '+998907778899',
-      depCode: 'IT-FAC',
+      depCode: 'MATH-FAC',
     },
     {
       email: 'talaba_murojaat@shortdoc.uz',

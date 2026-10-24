@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Department, Document, User } from '@/types';
 import { downloadDocumentDocx } from '@/lib/downloadDocx';
 import { getCategoryLabel } from '@/lib/categories';
+import { getDepartmentGroupIndex, getDepartmentGroupLabel, groupDepartments } from '@/lib/departments';
 import {
   CheckCircle2,
   Download,
@@ -14,6 +15,7 @@ import {
   ArrowDown,
   X,
   Search,
+  Paperclip,
 } from 'lucide-react';
 
 interface CreateDocumentModalProps {
@@ -40,6 +42,9 @@ interface CreateDocumentModalProps {
   submitting: boolean;
   usersList: User[];
   departmentsList: Department[];
+  attachedFiles: File[];
+  setAttachedFiles: React.Dispatch<React.SetStateAction<File[]>>;
+  uploadWarnings: string[];
   user: User | null;
 }
 
@@ -58,6 +63,13 @@ const DOC_TYPES: { label: string; defaultReceiver: string; restricted?: boolean 
   { label: 'Arxiv hujjati', defaultReceiver: 'Arxivga' },
   { label: 'Boshqa', defaultReceiver: '' },
 ];
+
+const MAX_FILES = 10;
+const MAX_FILE_MB = 25;
+const ALLOWED_EXTENSIONS = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png', 'zip'];
+
+const formatSize = (bytes: number) =>
+  bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
 
 const PRIVILEGED_ROLES = ['SUPER_ADMIN', 'LEADERSHIP', 'CHANCELLERY'];
 
@@ -83,11 +95,15 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
   submitting,
   usersList,
   departmentsList,
+  attachedFiles,
+  setAttachedFiles,
+  uploadWarnings,
   user,
 }) => {
   // 'custom' | 'u:<userId>' | 'd:<departmentId>'
   const [recipient, setRecipient] = useState('custom');
   const [approverSearch, setApproverSearch] = useState('');
+  const [fileError, setFileError] = useState<string | null>(null);
 
   const canUseRestricted = PRIVILEGED_ROLES.includes(user?.role || '');
   const isIncoming = formData.documentType === 'INCOMING';
@@ -99,16 +115,23 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
   // Imzolovchi bo'la oladiganlar: o'zi va Super Admin chiqarib tashlanadi, bo'lim bo'yicha guruhlanadi
   const approverGroups = useMemo(() => {
     const q = approverSearch.trim().toLowerCase();
-    const groups = new Map<string, User[]>();
+    const groups = new Map<string, { order: number; members: User[] }>();
     activeUsers
       .filter((u) => u.role !== 'SUPER_ADMIN' && !formData.approverIds.includes(u.id))
       .filter((u) => !q || `${u.fullName} ${u.position} ${u.department?.name || ''}`.toLowerCase().includes(q))
       .sort((a, b) => a.fullName.localeCompare(b.fullName))
       .forEach((u) => {
-        const key = u.department?.name || 'Bo‘limsiz';
-        groups.set(key, [...(groups.get(key) || []), u]);
+        const type = u.department?.type;
+        const key = u.department
+          ? `${getDepartmentGroupLabel(type)} / ${u.department.name}`
+          : 'Bo‘limsiz';
+        const entry = groups.get(key) || { order: u.department ? getDepartmentGroupIndex(type) : 99, members: [] };
+        entry.members.push(u);
+        groups.set(key, entry);
       });
-    return [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+    return [...groups.entries()]
+      .sort((a, b) => a[1].order - b[1].order || a[0].localeCompare(b[0]))
+      .map(([label, v]) => [label, v.members] as [string, User[]]);
   }, [activeUsers, approverSearch, formData.approverIds]);
 
   const selectedApprovers = formData.approverIds
@@ -179,7 +202,31 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
     recipient.startsWith('d:') &&
     !activeUsers.some((u) => u.role === 'DEPARTMENT_HEAD' && u.departmentId === recipient.slice(2));
 
+  const addFiles = (list: FileList | null) => {
+    if (!list) return;
+    const errors: string[] = [];
+    const next = [...attachedFiles];
+    for (const file of Array.from(list)) {
+      const ext = file.name.split('.').pop()?.toLowerCase() || '';
+      if (!ALLOWED_EXTENSIONS.includes(ext)) {
+        errors.push(`${file.name}: format ruxsat etilmagan`);
+      } else if (file.size > MAX_FILE_MB * 1024 * 1024) {
+        errors.push(`${file.name}: hajmi ${MAX_FILE_MB} MB dan oshmasligi kerak`);
+      } else if (next.some((f) => f.name === file.name && f.size === file.size)) {
+        continue;
+      } else if (next.length >= MAX_FILES) {
+        errors.push(`Ko‘pi bilan ${MAX_FILES} ta fayl biriktirish mumkin`);
+        break;
+      } else {
+        next.push(file);
+      }
+    }
+    setAttachedFiles(next);
+    setFileError(errors.length ? errors.join('; ') : null);
+  };
+
   const close = () => {
+    setFileError(null);
     setRecipient('custom');
     setApproverSearch('');
     onClose();
@@ -209,6 +256,17 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
               <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 mt-2 max-w-md mx-auto">
                 «{createdDocSuccess.title}»
               </p>
+              {uploadWarnings.length > 0 && (
+                <div className="mt-3 p-2.5 text-left bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 rounded-lg text-[11px]">
+                  <p className="font-semibold mb-1">Hujjat yaratildi, lekin ayrim fayllar biriktirilmadi:</p>
+                  <ul className="list-disc pl-4 space-y-0.5">
+                    {uploadWarnings.map((w) => (
+                      <li key={w}>{w}</li>
+                    ))}
+                  </ul>
+                  <p className="mt-1">Ularni hujjat sahifasidan qayta yuklashingiz mumkin.</p>
+                </div>
+              )}
             </div>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 pt-2">
@@ -354,13 +412,15 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
                   ) : (
                     <select value={recipient} onChange={(e) => selectRecipient(e.target.value)} className={inputCls}>
                       <option value="custom">Qo‘lda yozish</option>
-                      <optgroup label="Bo‘limlar (mudiriga yuboriladi)">
-                        {departmentsList.map((d) => (
-                          <option key={d.id} value={`d:${d.id}`}>
-                            {d.name}
-                          </option>
-                        ))}
-                      </optgroup>
+                      {groupDepartments(departmentsList).map((g) => (
+                        <optgroup key={g.key} label={`${g.label} (mudiriga yuboriladi)`}>
+                          {g.items.map((d) => (
+                            <option key={d.id} value={`d:${d.id}`}>
+                              {d.name}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ))}
                       <optgroup label="Xodimlar">
                         {[...activeUsers]
                           .sort((a, b) => a.fullName.localeCompare(b.fullName))
@@ -449,6 +509,51 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
                   </span>
                 </label>
               )}
+
+              {/* Fayl biriktirish */}
+              <div>
+                <label className={labelCls}>Fayl biriktirish</label>
+                <label className="flex items-center justify-center gap-2 p-3 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60 cursor-pointer transition-colors">
+                  <Paperclip className="w-4 h-4" />
+                  <span>Fayllarni tanlang (PDF, Word, Excel, rasm, ZIP)</span>
+                  <input
+                    type="file"
+                    multiple
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.zip"
+                    className="hidden"
+                    onChange={(e) => {
+                      addFiles(e.target.files);
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+                <p className="text-[11px] text-slate-500 mt-1">
+                  Ko‘pi bilan {MAX_FILES} ta fayl, har biri {MAX_FILE_MB} MB gacha. Fayllar hujjat yaratilgach biriktiriladi.
+                </p>
+                {fileError && <p className="text-[11px] text-rose-600 dark:text-rose-400 mt-1">{fileError}</p>}
+                {attachedFiles.length > 0 && (
+                  <ul className="mt-2 space-y-1">
+                    {attachedFiles.map((f, i) => (
+                      <li
+                        key={`${f.name}-${f.size}`}
+                        className="flex items-center gap-2 p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60"
+                      >
+                        <Paperclip className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+                        <span className="flex-1 min-w-0 truncate text-slate-800 dark:text-slate-200">{f.name}</span>
+                        <span className="text-[11px] text-slate-500 shrink-0">{formatSize(f.size)}</span>
+                        <button
+                          type="button"
+                          onClick={() => setAttachedFiles(attachedFiles.filter((_, idx) => idx !== i))}
+                          className="p-1 text-rose-500 hover:text-rose-700 cursor-pointer"
+                          aria-label="Olib tashlash"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
 
               {/* 3. Imzolovchilar (ketma-ket) */}
               <div>
@@ -557,7 +662,7 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
                   disabled={submitting}
                   className="px-5 py-2 rounded-lg bg-blue-700 hover:bg-blue-600 text-white font-semibold shadow-sm disabled:opacity-50 cursor-pointer"
                 >
-                  {submitting ? 'Yaratilmoqda...' : 'Hujjatni yuborish'}
+                  {submitting ? (attachedFiles.length > 0 ? 'Yaratilmoqda va fayllar yuklanmoqda...' : 'Yaratilmoqda...') : 'Hujjatni yuborish'}
                 </button>
               </div>
             </form>

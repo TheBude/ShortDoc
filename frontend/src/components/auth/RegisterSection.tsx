@@ -1,5 +1,6 @@
 'use client';
 
+import { groupDepartments } from '@/lib/departments';
 import React from 'react';
 import { Department } from '@/types';
 import {
@@ -179,10 +180,14 @@ export const RegisterSection: React.FC<RegisterSectionProps> = ({
               className="w-full pl-10 pr-8 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all appearance-none cursor-pointer"
             >
               <option value="">Fakultet yoki bo‘limni tanlang...</option>
-              {departments.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.name}
-                </option>
+              {groupDepartments(departments).map((g) => (
+                <optgroup key={g.key} label={g.label}>
+                  {g.items.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.name}
+                    </option>
+                  ))}
+                </optgroup>
               ))}
               <option value="__other__">+ Boshqa bo‘lim (qo‘lda kiritish)...</option>
             </select>

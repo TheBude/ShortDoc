@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const path = require('path');
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
+const { syncOrgStructure } = require('./sync-org-structure');
 
 const schemaPath = path.resolve(__dirname, '../prisma/schema.prisma');
 const schemaArg = `--schema="${schemaPath}"`;
@@ -82,7 +83,7 @@ async function deploy() {
     // 5. DepartmentType enumini yaratish
     await prisma.$executeRawUnsafe(`
       DO $$ BEGIN
-        CREATE TYPE "DepartmentType" AS ENUM ('RECTORATE', 'FACULTY', 'CHANCELLERY', 'DEPARTMENT', 'DIVISION');
+        CREATE TYPE "DepartmentType" AS ENUM ('RECTORATE', 'FACULTY', 'CHANCELLERY', 'DEPARTMENT', 'DIVISION', 'INSTITUTE', 'CHAIR', 'CENTER');
       EXCEPTION
         WHEN duplicate_object THEN null;
       END $$;
@@ -240,6 +241,16 @@ async function deploy() {
   } catch (deployErr) {
     console.error('[Migrate] Deploy xatosi:', deployErr.message);
     process.exit(1);
+  }
+
+  // 11. Universitet tuzilmasini (bo'lim guruhlari) sinxronlash
+  const orgPrisma = new PrismaClient();
+  try {
+    await syncOrgStructure(orgPrisma);
+  } catch (orgErr) {
+    console.error('[Migrate] Tuzilmani sinxronlashda xato:', orgErr.message);
+  } finally {
+    await orgPrisma.$disconnect();
   }
 }
 

@@ -518,7 +518,7 @@ export const swaggerDocument = {
                 properties: {
                   name: { type: 'string' },
                   code: { type: 'string' },
-                  type: { type: 'string', enum: ['RECTORATE', 'FACULTY', 'CHANCELLERY', 'DEPARTMENT', 'DIVISION'] },
+                  type: { type: 'string', enum: ['RECTORATE', 'FACULTY', 'CHANCELLERY', 'DEPARTMENT', 'DIVISION', 'INSTITUTE', 'CHAIR', 'CENTER'] },
                 },
               },
             },

@@ -7,7 +7,7 @@ import { logActivity } from '../middleware/audit.js';
 
 const router = Router();
 
-const departmentTypeEnum = z.enum(['RECTORATE', 'FACULTY', 'CHANCELLERY', 'DEPARTMENT', 'DIVISION']);
+const departmentTypeEnum = z.enum(['RECTORATE', 'FACULTY', 'CHANCELLERY', 'DEPARTMENT', 'DIVISION', 'INSTITUTE', 'CHAIR', 'CENTER']);
 
 // Barcha bo'limlar ro'yxati (ro'yxatdan o'tish va barcha foydalanuvchilar uchun ochiq)
 router.get('/', async (req, res, next) => {
@@ -18,7 +18,7 @@ router.get('/', async (req, res, next) => {
           select: { users: true, documents: true },
         },
       },
-      orderBy: { name: 'asc' },
+      orderBy: { createdAt: 'asc' },
     });
 
     return sendSuccess(res, departments, 'Bo‘limlar ro‘yxati');

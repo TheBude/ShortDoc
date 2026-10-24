@@ -65,6 +65,8 @@ function DocumentsContent() {
     summary: '',
     approverIds: [] as string[],
   });
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const [uploadWarnings, setUploadWarnings] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -95,6 +97,8 @@ function DocumentsContent() {
     });
     setFormError(null);
     setCreatedDocSuccess(null);
+    setAttachedFiles([]);
+    setUploadWarnings([]);
   };
 
   const urlDocType = searchParams.get('documentType') || '';
@@ -204,13 +208,23 @@ function DocumentsContent() {
       body: JSON.stringify(payload),
     });
 
-    setSubmitting(false);
-
     if (res.success && res.data) {
+      // Hujjat yaratilgach, tanlangan fayllar ketma-ket biriktiriladi; xato bo'lsa hujjat baribir saqlanadi
+      const warnings: string[] = [];
+      for (const file of attachedFiles) {
+        const fd = new FormData();
+        fd.append('documentId', res.data.id);
+        fd.append('file', file);
+        const up = await fetchApi('/document-files/upload', { method: 'POST', body: fd });
+        if (!up.success) warnings.push(`${file.name}: ${up.message || 'yuklab bo‘lmadi'}`);
+      }
+      setUploadWarnings(warnings);
+      setSubmitting(false);
       setCreatedDocSuccess(res.data);
       refreshCounts();
       loadDocuments();
     } else {
+      setSubmitting(false);
       const errorMsg = res.errors && Array.isArray(res.errors) && res.errors.length > 0
         ? res.errors.map((err: any) => err.message).join('; ')
         : (res.message || 'Xatolik yuz berdi');
@@ -575,6 +589,9 @@ function DocumentsContent() {
         handleCreateDocument={handleCreateDocument}
         submitting={submitting}
         usersList={usersList}
+        attachedFiles={attachedFiles}
+        setAttachedFiles={setAttachedFiles}
+        uploadWarnings={uploadWarnings}
         departmentsList={departmentsList}
         user={user}
       />

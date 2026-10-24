@@ -1,5 +1,6 @@
 'use client';
 
+import { DEPARTMENT_TYPE_LABELS } from '@/lib/departments';
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { fetchApi } from '@/lib/api';
@@ -101,7 +102,7 @@ export default function AdminDepartmentsPage() {
                     <td className="py-3 px-4 font-mono font-bold text-primary-700 dark:text-primary-400">{dep.code}</td>
                     <td className="py-3 px-4">
                       <span className="font-semibold text-[11px] px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                        {dep.type}
+                        {DEPARTMENT_TYPE_LABELS[dep.type] || dep.type}
                       </span>
                     </td>
                     <td className="py-3 px-4">{dep._count?.users || 0} nafar</td>
@@ -160,11 +161,13 @@ export default function AdminDepartmentsPage() {
                   onChange={(e) => setType(e.target.value)}
                   className="w-full p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 text-xs"
                 >
-                  <option value="DEPARTMENT">Kafedra</option>
+                  <option value="RECTORATE">Rahbariyat</option>
+                  <option value="INSTITUTE">Institut</option>
                   <option value="FACULTY">Fakultet</option>
-                  <option value="ADMIN_UNIT">Boshqarma / Ma’muriy bo‘lim</option>
+                  <option value="CHAIR">Kafedra</option>
+                  <option value="DEPARTMENT">Boshqarma / bo‘lim</option>
                   <option value="CHANCELLERY">Devonxona</option>
-                  <option value="RECTORATE">Rektorat</option>
+                  <option value="CENTER">Markaz</option>
                 </select>
               </div>
 
