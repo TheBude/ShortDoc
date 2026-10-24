@@ -20,6 +20,7 @@ import taskRoutes from './routes/task.routes.js';
 import fileRoutes from './routes/file.routes.js';
 import reportRoutes from './routes/report.routes.js';
 import auditRoutes from './routes/audit.routes.js';
+import adminRoutes from './routes/admin.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
 
 export const app = express();
@@ -153,6 +154,7 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/document-files', fileRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/audit-logs', auditRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationRoutes);
 
 // Mavjud bo'lmagan API manzillari uchun JSON formatidagi 404 javobi

@@ -24,6 +24,7 @@ import {
   FileCheck2,
   Clock,
   UserCheck,
+  Trash2,
 } from 'lucide-react';
 
 function SidebarContent() {
@@ -540,6 +541,29 @@ function SidebarContent() {
                       }`}
                     />
                     {!isCollapsed && <span className="truncate">Audit jurnali</span>}
+                  </Link>
+                )}
+
+                {/* Ma'lumotlarni tozalash (faqat Super Admin) */}
+                {isSuperAdmin && (
+                  <Link
+                    href="/admin/maintenance"
+                    onClick={closeMobile}
+                    title={isCollapsed ? 'Ma’lumotlarni tozalash' : undefined}
+                    className={`group flex items-center rounded-lg font-medium transition-all ${
+                      isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-2.5 px-3 py-2'
+                    } ${
+                      isItemActive('/admin/maintenance')
+                        ? 'bg-slate-800 text-white font-semibold border border-slate-700'
+                        : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
+                    }`}
+                  >
+                    <Trash2
+                      className={`w-4 h-4 shrink-0 transition-colors ${
+                        isItemActive('/admin/maintenance') ? 'text-red-400' : 'text-slate-400 group-hover:text-slate-200'
+                      }`}
+                    />
+                    {!isCollapsed && <span className="truncate">Ma’lumotlarni tozalash</span>}
                   </Link>
                 )}
               </div>
