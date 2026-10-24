@@ -142,12 +142,15 @@ describe('Mantiqiy tuzatishlar: viza poygasi, holat o‘tishlari, topshiriqlar, 
     expect(listed).not.toContain(doc.id);
   });
 
-  it('7. Kiruvchi hujjatni ko‘ra olgan begona xodim unga fayl biriktira olmaydi (403)', async () => {
-    const doc = await createDoc('staff1', { title: 'Kiruvchi xat', documentType: 'INCOMING' });
+  it('7. Kiruvchi hujjatni begona xodim ko‘ra olmaydi va unga fayl biriktira olmaydi (403)', async () => {
+    const doc = await createDoc('chancellery', { title: 'Kiruvchi xat', documentType: 'INCOMING' });
     const pdf = Buffer.from('%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF');
 
     const view = await request(app).get(`/api/documents/${doc.id}`).set(auth('staff2'));
-    expect(view.status).toBe(200);
+    expect(view.status).toBe(404);
+
+    const list = await request(app).get('/api/documents?limit=100').set(auth('staff2'));
+    expect(list.body.data.map((d: any) => d.id)).not.toContain(doc.id);
 
     const res = await request(app)
       .post('/api/document-files/upload')
@@ -158,10 +161,25 @@ describe('Mantiqiy tuzatishlar: viza poygasi, holat o‘tishlari, topshiriqlar, 
 
     const own = await request(app)
       .post('/api/document-files/upload')
-      .set(auth('staff1'))
+      .set(auth('chancellery'))
       .field('documentId', doc.id)
       .attach('file', pdf, 'x.pdf');
     expect(own.status).toBe(201);
+  });
+
+  it('7b. Oddiy xodim buyruq yoki kiruvchi hujjat yarata olmaydi (403), rahbariyat esa yaratadi', async () => {
+    for (const body of [{ category: 'ORDER' }, { category: 'Qaror' }, { documentType: 'INCOMING' }]) {
+      const denied = await request(app)
+        .post('/api/documents')
+        .set(auth('staff1'))
+        .send({ title: 'Cheklangan hujjat', ...body });
+      expect(denied.status).toBe(403);
+    }
+    const allowed = await request(app)
+      .post('/api/documents')
+      .set(auth('rector'))
+      .send({ title: 'Rektor buyrug‘i', category: 'ORDER' });
+    expect(allowed.status).toBe(201);
   });
 
   it('8. Login: faol bo‘lmagan hisob noto‘g‘ri parol bilan 401 qaytaradi (hisob holati oshkor bo‘lmaydi)', async () => {

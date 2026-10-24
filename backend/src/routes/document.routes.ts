@@ -13,6 +13,7 @@ import { optionalDate, optionalId } from '../utils/validation.js';
 import {
   buildDocumentVisibilityWhere,
   canViewDocument,
+  canCreateRestrictedDocument,
   canChangeStatus,
   isValidStatusTransition,
   DocumentStatusType,
@@ -392,6 +393,11 @@ router.post('/', authenticate, async (req: AuthRequest, res, next) => {
     const data = schema.parse(req.body);
     const parsedCategory = parseDocumentCategory(data.category);
 
+    // Buyruq, qaror, farmoyish va kiruvchi xatlarni faqat vakolatli rollar rasmiylashtiradi
+    if (!canCreateRestrictedDocument(req.user!.role, parsedCategory, data.documentType)) {
+      return sendError(res, 'Ushbu turdagi hujjatni yaratish uchun sizda vakolat yo‘q (faqat Rahbariyat, Kantselyariya va Super Admin)', 403);
+    }
+
     // Takrorlanmagan kelishuvchilar ro'yxati
     const uniqueApproverIds = data.approverIds ? [...new Set(data.approverIds)] : [];
 
@@ -524,8 +530,28 @@ router.post('/', authenticate, async (req: AuthRequest, res, next) => {
         });
       }
 
+      // Qabul qiluvchi (mas'ul) imzolovchi bo'lmasa, unga alohida xabar yuboriladi
+      if (data.assigneeId && data.assigneeId !== req.user!.userId && !uniqueApproverIds.includes(data.assigneeId)) {
+        await tx.notification.create({
+          data: {
+            userId: data.assigneeId,
+            title: 'Sizga yangi hujjat biriktirildi',
+            message: `${req.user!.fullName || 'Xodim'} hujjatni sizga yubordi: "${doc.title}" (${doc.regNumber})`,
+            link: `/documents/${doc.id}`,
+          },
+        });
+      }
+
       return doc;
     });
+
+    if (data.assigneeId && data.assigneeId !== req.user!.userId && !uniqueApproverIds.includes(data.assigneeId)) {
+      realtime.sendToUser(data.assigneeId, 'NOTIFICATION', {
+        title: 'Sizga yangi hujjat biriktirildi',
+        message: `${req.user!.fullName || 'Xodim'} hujjatni sizga yubordi: "${document.title}" (${document.regNumber})`,
+        link: `/documents/${document.id}`,
+      });
+    }
 
     // Real-time bildirishnoma va hisoblagichlarni approverlarga jo'natish
     if (uniqueApproverIds.length > 0) {

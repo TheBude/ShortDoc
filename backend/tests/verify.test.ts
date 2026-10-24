@@ -9,7 +9,7 @@ describe('FAZA 5.1: Ommaviy Tekshirish (Public Verify) va Ma’lumotlar Xavfsizl
 
     const docRes = await request(app)
       .post('/api/documents')
-      .set('Authorization', `Bearer ${testUsers.staff1.token}`)
+      .set('Authorization', `Bearer ${testUsers.rector.token}`)
       .send({
         title: 'Universitet Bo‘yicha Rasmiy Buyruq',
         documentType: 'INTERNAL',

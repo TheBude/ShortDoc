@@ -57,6 +57,7 @@ function DocumentsContent() {
     category: 'Bildirgi',
     sender: user?.department?.name || user?.fullName || '',
     receiver: 'Universitet rektoriga',
+    assigneeId: '',
     departmentId: user?.departmentId || '',
     priority: 'MEDIUM',
     deadline: '',
@@ -83,6 +84,7 @@ function DocumentsContent() {
       category: 'Bildirgi',
       sender: user?.department?.name || user?.fullName || '',
       receiver: 'Universitet rektoriga',
+      assigneeId: '',
       departmentId: user?.departmentId || '',
       priority: 'MEDIUM',
       deadline: '',
@@ -176,7 +178,7 @@ function DocumentsContent() {
 
   const loadAuxData = async () => {
     const [uRes, dRes] = await Promise.all([
-      fetchApi<User[]>('/users', {}, 60000),
+      fetchApi<User[]>('/users?limit=100', {}, 60000),
       fetchApi<Department[]>('/departments', {}, 60000),
     ]);
     if (uRes.success && uRes.data) setUsersList(uRes.data);
@@ -191,6 +193,7 @@ function DocumentsContent() {
     const payload = {
       ...formData,
       departmentId: formData.departmentId?.trim() || null,
+      assigneeId: formData.assigneeId?.trim() || null,
       deadline: formData.deadline?.trim() || null,
     };
 
@@ -567,6 +570,7 @@ function DocumentsContent() {
         handleCreateDocument={handleCreateDocument}
         submitting={submitting}
         usersList={usersList}
+        departmentsList={departmentsList}
         user={user}
       />
     </div>

@@ -76,15 +76,12 @@ export function buildDocumentVisibilityWhere(user: UserAuth) {
     return {};
   }
 
-  // Umumiy qoida: o'zi yaratgan, biriktirilgan, vizachi bo'lgan, topshiriq berilgan,
-  // va umumiy universitet "Buyruq/Qaror" (ORDER, DECISION enumlari) hamda "INCOMING" hujjatlar
+  // Umumiy qoida: faqat o'ziga bog'liq hujjatlar: o'zi yaratgan, biriktirilgan, vizachi bo'lgan yoki topshiriq berilgan
   const conditions: any[] = [
     { creatorId: user.userId },
     { assigneeId: user.userId },
     { approvals: { some: { approverId: user.userId } } },
     { tasks: { some: { assignedToId: user.userId } } },
-    { category: { in: ['ORDER', 'DECISION'] } },
-    { documentType: 'INCOMING' },
   ];
 
   // DEPARTMENT_HEAD uchun o'z bo'limi hujjatlari ham ko'rinadi
@@ -105,14 +102,6 @@ export function canViewDocument(user: UserAuth, doc: DocumentAccessData): boolea
 
   if (doc.creatorId === user.userId) return true;
   if (doc.assigneeId === user.userId) return true;
-
-  // Umumiy ochiq hujjat toifalari (Buyruq va Qarorlar: ORDER, DECISION enum)
-  if (doc.category === 'ORDER' || doc.category === 'DECISION' || (doc.category && (/buyru/i.test(doc.category) || /qaror/i.test(doc.category)))) {
-    return true;
-  }
-  if (doc.documentType === 'INCOMING') {
-    return true;
-  }
 
   // Viza beruvchi
   if (doc.approvals?.some((a) => a.approverId === user.userId)) {
@@ -202,8 +191,7 @@ export function canCreateTask(user: UserAuth, doc: DocumentAccessData): boolean 
 
 /**
  * Hujjatga fayl biriktirish huquqi.
- * Ko'rish huquqi yetarli emas: kiruvchi xatlar va buyruqlar barcha xodimlarga ko'rinadi, ammo
- * ularga fayl biriktirish faqat hujjat ishtirokchilari va rahbariyat uchun ruxsat etiladi.
+ * Ko'rish huquqi yetarli emas: fayl biriktirish faqat hujjat ishtirokchilari va rahbariyat uchun ruxsat etiladi.
  */
 export function canUploadFile(user: UserAuth, doc: DocumentAccessData): boolean {
   if (!canViewDocument(user, doc)) return false;
@@ -231,4 +219,15 @@ export function canAccessFile(user: UserAuth, file: FileAccessData, doc?: Docume
   }
 
   return false;
+}
+
+const RESTRICTED_CATEGORIES = ['ORDER', 'DECISION', 'DIRECTIVE'];
+const RESTRICTED_CREATOR_ROLES = ['SUPER_ADMIN', 'LEADERSHIP', 'CHANCELLERY'];
+
+/**
+ * Buyruq/Qaror/Farmoyish va kiruvchi hujjatlarni faqat Rahbariyat, Kantselyariya va Super Admin yaratadi.
+ */
+export function canCreateRestrictedDocument(role: string, category: string, documentType: string): boolean {
+  const restricted = RESTRICTED_CATEGORIES.includes(category) || documentType === 'INCOMING';
+  return !restricted || RESTRICTED_CREATOR_ROLES.includes(role);
 }

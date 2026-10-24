@@ -1,8 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Document, User } from '@/types';
+import { Department, Document, User } from '@/types';
 import { downloadDocumentDocx } from '@/lib/downloadDocx';
 import { getCategoryLabel } from '@/lib/categories';
 import {
@@ -10,6 +10,10 @@ import {
   Download,
   Eye,
   AlertCircle,
+  ArrowUp,
+  ArrowDown,
+  X,
+  Search,
 } from 'lucide-react';
 
 interface CreateDocumentModalProps {
@@ -24,6 +28,9 @@ interface CreateDocumentModalProps {
     category: string;
     sender: string;
     receiver: string;
+    assigneeId: string;
+    priority: string;
+    deadline: string;
     summary: string;
     approverIds: string[];
   };
@@ -31,8 +38,37 @@ interface CreateDocumentModalProps {
   handleCreateDocument: (e: React.FormEvent) => void;
   submitting: boolean;
   usersList: User[];
+  departmentsList: Department[];
   user: User | null;
 }
+
+// Hujjat turlari yagona manba sifatida: qabul qiluvchi namunasi va cheklov shu yerda
+const DOC_TYPES: { label: string; defaultReceiver: string; restricted?: boolean }[] = [
+  { label: 'Bildirgi', defaultReceiver: 'Universitet rektoriga' },
+  { label: 'Xizmat xati', defaultReceiver: 'O‘quv boshqarmasiga' },
+  { label: 'Ariza', defaultReceiver: 'Fakultet dekanatiga' },
+  { label: 'Murojaat', defaultReceiver: 'Rahbariyatga' },
+  { label: 'Hisobot', defaultReceiver: 'Kafedra mudiriga' },
+  { label: 'Rasmiy xat', defaultReceiver: 'Tashkilot rahbariga' },
+  { label: 'Shartnoma', defaultReceiver: 'Hamkor tashkilotga' },
+  { label: 'Buyruq', defaultReceiver: 'Universitet bo‘yicha', restricted: true },
+  { label: 'Qaror', defaultReceiver: 'Kengash a’zolariga', restricted: true },
+  { label: 'Farmoyish', defaultReceiver: 'Universitet bo‘yicha', restricted: true },
+  { label: 'Arxiv hujjati', defaultReceiver: 'Arxivga' },
+  { label: 'Boshqa', defaultReceiver: '' },
+];
+
+const PRIVILEGED_ROLES = ['SUPER_ADMIN', 'LEADERSHIP', 'CHANCELLERY'];
+
+const DIRECTIONS = [
+  { value: 'INTERNAL', label: 'Ichki (universitet ichida)' },
+  { value: 'OUTGOING', label: 'Chiquvchi (tashqi tashkilotga)' },
+  { value: 'INCOMING', label: 'Kiruvchi (tashqi tashkilotdan)', restricted: true },
+];
+
+const inputCls =
+  'w-full p-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-1 focus:ring-blue-500';
+const labelCls = 'block font-semibold text-slate-700 dark:text-slate-300 mb-1';
 
 export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
   isOpen,
@@ -45,9 +81,106 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
   handleCreateDocument,
   submitting,
   usersList,
+  departmentsList,
   user,
 }) => {
+  // 'custom' | 'u:<userId>' | 'd:<departmentId>'
+  const [recipient, setRecipient] = useState('custom');
+  const [approverSearch, setApproverSearch] = useState('');
+
+  const canUseRestricted = PRIVILEGED_ROLES.includes(user?.role || '');
+  const isIncoming = formData.documentType === 'INCOMING';
+  const isOutgoing = formData.documentType === 'OUTGOING';
+  const today = new Date().toISOString().slice(0, 10);
+
+  const activeUsers = useMemo(() => usersList.filter((u) => u.isActive && u.id !== user?.id), [usersList, user]);
+
+  // Imzolovchi bo'la oladiganlar: o'zi va Super Admin chiqarib tashlanadi, bo'lim bo'yicha guruhlanadi
+  const approverGroups = useMemo(() => {
+    const q = approverSearch.trim().toLowerCase();
+    const groups = new Map<string, User[]>();
+    activeUsers
+      .filter((u) => u.role !== 'SUPER_ADMIN' && !formData.approverIds.includes(u.id))
+      .filter((u) => !q || `${u.fullName} ${u.position} ${u.department?.name || ''}`.toLowerCase().includes(q))
+      .sort((a, b) => a.fullName.localeCompare(b.fullName))
+      .forEach((u) => {
+        const key = u.department?.name || 'Bo‘limsiz';
+        groups.set(key, [...(groups.get(key) || []), u]);
+      });
+    return [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  }, [activeUsers, approverSearch, formData.approverIds]);
+
+  const selectedApprovers = formData.approverIds
+    .map((id) => usersList.find((u) => u.id === id))
+    .filter((u): u is User => !!u);
+
   if (!isOpen) return null;
+
+  const selectType = (label: string) => {
+    const def = DOC_TYPES.find((t) => t.label === label);
+    setFormData((prev: any) => ({
+      ...prev,
+      category: label,
+      // Qabul qiluvchi qo'lda yozilayotgan bo'lsa, namuna yangilanadi; tanlangan xodim/bo'lim saqlanadi
+      receiver: recipient === 'custom' ? def?.defaultReceiver || '' : prev.receiver,
+    }));
+  };
+
+  const selectDirection = (value: string) => {
+    setRecipient('custom');
+    setFormData((prev: any) => ({
+      ...prev,
+      documentType: value,
+      assigneeId: '',
+      receiver: DOC_TYPES.find((t) => t.label === prev.category)?.defaultReceiver || '',
+      // Kiruvchi hujjatda "Kimdan" tashqi tashkilot, qolganlarida avtomatik
+      sender: value === 'INCOMING' ? '' : user?.department?.name || user?.fullName || '',
+    }));
+  };
+
+  const selectRecipient = (value: string) => {
+    setRecipient(value);
+    if (value === 'custom') {
+      setFormData((prev: any) => ({ ...prev, assigneeId: '' }));
+      return;
+    }
+    const [kind, id] = [value.slice(0, 1), value.slice(2)];
+    if (kind === 'u') {
+      const target = activeUsers.find((u) => u.id === id);
+      setFormData((prev: any) => ({
+        ...prev,
+        assigneeId: id,
+        receiver: target ? `${target.fullName} (${target.position})` : prev.receiver,
+      }));
+    } else {
+      // Bo'limga yuborilsa, hujjat shu bo'lim mudiriga mas'ul sifatida biriktiriladi
+      const dept = departmentsList.find((d) => d.id === id);
+      const head = activeUsers.find((u) => u.role === 'DEPARTMENT_HEAD' && u.departmentId === id);
+      setFormData((prev: any) => ({
+        ...prev,
+        assigneeId: head?.id || '',
+        receiver: dept?.name || prev.receiver,
+      }));
+    }
+  };
+
+  const moveApprover = (index: number, delta: number) => {
+    const target = index + delta;
+    if (target < 0 || target >= formData.approverIds.length) return;
+    const next = [...formData.approverIds];
+    [next[index], next[target]] = [next[target], next[index]];
+    setFormData({ ...formData, approverIds: next });
+  };
+
+  const headMissing =
+    recipient.startsWith('d:') &&
+    !activeUsers.some((u) => u.role === 'DEPARTMENT_HEAD' && u.departmentId === recipient.slice(2));
+
+  const close = () => {
+    setRecipient('custom');
+    setApproverSearch('');
+    onClose();
+  };
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/75 backdrop-blur-sm p-4 overflow-y-auto">
@@ -102,7 +235,7 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  onClose();
+                  close();
                   resetForm();
                 }}
                 className="w-full sm:w-auto px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
@@ -118,11 +251,7 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
                 <h2 className="text-base font-bold text-slate-900 dark:text-white">Yangi hujjat yaratish</h2>
                 <p className="text-xs text-slate-500">Quyidagi ma’lumotlarni to‘ldiring va imzo qo‘yuvchilarni tanlang</p>
               </div>
-              <button
-                type="button"
-                onClick={onClose}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
-              >
+              <button type="button" onClick={close} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
                 ✕
               </button>
             </div>
@@ -135,165 +264,264 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
             )}
 
             <form onSubmit={handleCreateDocument} className="space-y-3.5 text-xs">
-              {/* Step 1: Category selector buttons and dropdown */}
+              {/* 1. Hujjat turi */}
               <div>
-                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                  1. Hujjat turini tanlang
-                </label>
-                <div className="grid grid-cols-3 gap-2 mb-2">
-                  {[
-                    { cat: 'Bildirgi', to: 'Universitet rektoriga', type: 'INTERNAL' },
-                    { cat: 'Xizmat xati', to: 'O‘quv boshqarmasiga', type: 'INTERNAL' },
-                    { cat: 'Ariza', to: 'Fakultet dekanatiga', type: 'INTERNAL' },
-                    { cat: 'Buyruq', to: 'Universitet bo‘yicha', type: 'INTERNAL' },
-                    { cat: 'Qaror', to: 'Kengash a’zolariga', type: 'INTERNAL' },
-                    { cat: 'Murojaat', to: 'Rahbariyatga', type: 'INTERNAL' },
-                  ].map((item) => (
+                <label className={labelCls}>1. Hujjat turini tanlang</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {DOC_TYPES.filter((t) => !t.restricted || canUseRestricted).map((t) => (
                     <button
                       type="button"
-                      key={item.cat}
-                      onClick={() => setFormData({ ...formData, category: item.cat, receiver: item.to, documentType: item.type })}
+                      key={t.label}
+                      onClick={() => selectType(t.label)}
                       className={`p-2 rounded-lg border text-xs font-semibold text-center transition-all cursor-pointer ${
-                        formData.category === item.cat
+                        formData.category === t.label
                           ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-600 text-blue-700 dark:text-blue-300'
                           : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50'
                       }`}
                     >
-                      {item.cat}
+                      {t.label}
                     </button>
                   ))}
                 </div>
-                <select
-                  value={formData.category}
-                  onChange={(e) => {
-                    const sel = e.target.value;
-                    let to = formData.receiver || 'Universitet rektoriga';
-                    let type = formData.documentType || 'INTERNAL';
-                    if (sel === 'Rasmiy xat' || sel === 'Xat') { to = 'Tashkilot rahbariga'; type = 'OUTGOING'; }
-                    else if (sel === 'Ariza') { to = 'Fakultet dekanatiga'; }
-                    else if (sel === 'Xizmat xati') { to = 'O‘quv boshqarmasiga'; }
-                    else if (sel === 'Buyruq') { to = 'Universitet bo‘yicha'; }
-                    else if (sel === 'Qaror') { to = 'Kengash a’zolariga'; }
-                    else if (sel === 'Hisobot') { to = 'Kafedra mudiriga'; }
-                    else if (sel === 'Murojaat') { to = 'Rahbariyatga'; }
-                    setFormData({ ...formData, category: sel, receiver: to, documentType: type });
-                  }}
-                  className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs"
-                >
-                  <option value="Bildirgi">Bildirgi</option>
-                  <option value="Xizmat xati">Xizmat xati</option>
-                  <option value="Ariza">Ariza</option>
-                  <option value="Buyruq">Buyruq</option>
-                  <option value="Qaror">Qaror</option>
-                  <option value="Farmoyish">Farmoyish</option>
-                  <option value="Murojaat">Murojaat</option>
-                  <option value="Rasmiy xat">Rasmiy xat</option>
-                  <option value="Shartnoma">Shartnoma</option>
-                  <option value="Hisobot">Hisobot</option>
-                  <option value="Arxiv hujjati">Arxiv hujjati</option>
-                  <option value="Boshqa">Boshqa</option>
-                </select>
               </div>
 
-              {/* Step 2: Title */}
+              {/* 2. Sarlavha */}
               <div>
-                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  2. Hujjat sarlavhasi (Nomi) *
-                </label>
+                <label className={labelCls}>2. Hujjat sarlavhasi (Nomi) *</label>
                 <input
                   type="text"
                   required
+                  minLength={3}
                   placeholder="Masalan: AI laboratoriyasini tashkil qilish to‘g‘risida"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs"
+                  className={inputCls}
                 />
               </div>
 
-              {/* Sender & Receiver (Auto-filled) */}
+              {/* Yo'nalish */}
+              <div>
+                <label className={labelCls}>Hujjat yo‘nalishi</label>
+                <select
+                  value={formData.documentType}
+                  onChange={(e) => selectDirection(e.target.value)}
+                  className={inputCls}
+                >
+                  {DIRECTIONS.filter((d) => !d.restricted || canUseRestricted).map((d) => (
+                    <option key={d.value} value={d.value}>
+                      {d.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Kimdan / Kimga */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Kimdan (Avtomatik to‘ldirilgan)
+                  <label className={labelCls}>
+                    {isIncoming ? 'Kimdan (tashqi tashkilot) *' : 'Kimdan (avtomatik)'}
                   </label>
                   <input
                     type="text"
                     value={formData.sender}
+                    required={isIncoming}
+                    readOnly={!isIncoming}
                     onChange={(e) => setFormData({ ...formData, sender: e.target.value })}
-                    placeholder="Kafedra / Mas’ul..."
-                    className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs"
+                    placeholder={isIncoming ? 'Tashkilot nomi...' : ''}
+                    className={`${inputCls} ${!isIncoming ? 'bg-slate-50 dark:bg-slate-800/60 cursor-not-allowed' : ''}`}
                   />
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Kimga (Qabul qiluvchi)
-                  </label>
+                  <label className={labelCls}>Kimga (qabul qiluvchi)</label>
+                  {isOutgoing ? (
+                    <input
+                      type="text"
+                      value={formData.receiver}
+                      onChange={(e) => setFormData({ ...formData, receiver: e.target.value })}
+                      placeholder="Tashkilot nomi..."
+                      className={inputCls}
+                    />
+                  ) : (
+                    <select value={recipient} onChange={(e) => selectRecipient(e.target.value)} className={inputCls}>
+                      <option value="custom">Qo‘lda yozish</option>
+                      <optgroup label="Bo‘limlar (mudiriga yuboriladi)">
+                        {departmentsList.map((d) => (
+                          <option key={d.id} value={`d:${d.id}`}>
+                            {d.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Xodimlar">
+                        {[...activeUsers]
+                          .sort((a, b) => a.fullName.localeCompare(b.fullName))
+                          .map((u) => (
+                            <option key={u.id} value={`u:${u.id}`}>
+                              {u.fullName} — {u.position}
+                            </option>
+                          ))}
+                      </optgroup>
+                    </select>
+                  )}
+                </div>
+              </div>
+
+              {!isOutgoing && recipient === 'custom' && (
+                <input
+                  type="text"
+                  value={formData.receiver}
+                  onChange={(e) => setFormData({ ...formData, receiver: e.target.value })}
+                  placeholder="Qabul qiluvchi nomi..."
+                  className={inputCls}
+                />
+              )}
+              {headMissing && (
+                <p className="text-[11px] text-amber-600 dark:text-amber-400">
+                  Tanlangan bo‘limda mudir biriktirilmagan: hujjat faqat matn sifatida yoziladi, hech kimga biriktirilmaydi.
+                </p>
+              )}
+              {recipient !== 'custom' && !headMissing && (
+                <p className="text-[11px] text-slate-500">
+                  Hujjat tanlangan qabul qiluvchiga mas’ul sifatida biriktiriladi va uning ro‘yxatida ko‘rinadi.
+                </p>
+              )}
+
+              {/* Muhimlik va muddat */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls}>Muhimlik darajasi</label>
+                  <select
+                    value={formData.priority}
+                    onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+                    className={inputCls}
+                  >
+                    <option value="LOW">Past</option>
+                    <option value="MEDIUM">Oddiy</option>
+                    <option value="HIGH">Yuqori</option>
+                    <option value="URGENT">Shoshilinch</option>
+                  </select>
+                </div>
+                <div>
+                  <label className={labelCls}>Ijro muddati</label>
                   <input
-                    type="text"
-                    value={formData.receiver}
-                    onChange={(e) => setFormData({ ...formData, receiver: e.target.value })}
-                    placeholder="Universitet rektoriga..."
-                    className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs"
+                    type="date"
+                    min={today}
+                    value={formData.deadline}
+                    onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+                    className={inputCls}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Qisqacha mazmuni
-                </label>
+                <label className={labelCls}>Qisqacha mazmuni</label>
                 <textarea
                   rows={2}
                   value={formData.summary}
                   onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
                   placeholder="Hujjat mohiyati..."
-                  className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs"
+                  className={inputCls}
                 />
               </div>
 
-              {/* Step 3: Approvers */}
+              {/* 3. Imzolovchilar (ketma-ket) */}
               <div>
-                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  3. Kimlar tasdiqlashi (imzolashi) kerak?
-                </label>
-                <div className="max-h-32 overflow-y-auto border border-slate-200 dark:border-slate-700 rounded-lg p-2 space-y-1 bg-slate-50 dark:bg-slate-800/60">
-                  {usersList
-                    .filter((u) => u.id !== user?.id && u.role !== 'SUPER_ADMIN')
-                    .map((u) => {
-                      const isChecked = formData.approverIds.includes(u.id);
-                      return (
-                        <label
-                          key={u.id}
-                          className="flex items-center gap-2 p-1.5 rounded hover:bg-white dark:hover:bg-slate-700/60 cursor-pointer text-xs"
+                <label className={labelCls}>3. Kimlar tasdiqlashi (imzolashi) kerak?</label>
+                <p className="text-[11px] text-slate-500 mb-1.5">
+                  Imzo tartib bilan olinadi: avval 1-imzolovchi, u imzolagach keyingisiga o‘tadi. Tartibni o‘q tugmalari bilan o‘zgartiring.
+                </p>
+
+                {selectedApprovers.length > 0 && (
+                  <ol className="mb-2 space-y-1">
+                    {selectedApprovers.map((u, i) => (
+                      <li
+                        key={u.id}
+                        className="flex items-center gap-2 p-1.5 rounded-lg border border-blue-200 dark:border-blue-900 bg-blue-50/60 dark:bg-blue-950/30"
+                      >
+                        <span className="w-5 h-5 shrink-0 rounded-full bg-blue-700 text-white text-[11px] font-bold flex items-center justify-center">
+                          {i + 1}
+                        </span>
+                        <span className="flex-1 min-w-0 truncate">
+                          <span className="font-semibold text-slate-900 dark:text-slate-100">{u.fullName}</span>{' '}
+                          <span className="text-slate-500 text-[11px]">
+                            ({u.position}
+                            {u.department?.name ? `, ${u.department.name}` : ''})
+                          </span>
+                        </span>
+                        <button
+                          type="button"
+                          disabled={i === 0}
+                          onClick={() => moveApprover(i, -1)}
+                          className="p-1 text-slate-500 hover:text-slate-900 disabled:opacity-30 cursor-pointer"
+                          aria-label="Yuqoriga"
                         >
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setFormData({ ...formData, approverIds: [...formData.approverIds, u.id] });
-                              } else {
-                                setFormData({
-                                  ...formData,
-                                  approverIds: formData.approverIds.filter((id) => id !== u.id),
-                                });
-                              }
-                            }}
-                            className="rounded text-blue-600 focus:ring-blue-500"
-                          />
-                          <span className="font-semibold text-slate-900 dark:text-slate-100">{u.fullName}</span>
-                          <span className="text-slate-500 text-[11px]">({u.position})</span>
-                        </label>
-                      );
-                    })}
+                          <ArrowUp className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={i === selectedApprovers.length - 1}
+                          onClick={() => moveApprover(i, 1)}
+                          className="p-1 text-slate-500 hover:text-slate-900 disabled:opacity-30 cursor-pointer"
+                          aria-label="Pastga"
+                        >
+                          <ArrowDown className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setFormData({ ...formData, approverIds: formData.approverIds.filter((id) => id !== u.id) })
+                          }
+                          className="p-1 text-rose-500 hover:text-rose-700 cursor-pointer"
+                          aria-label="Olib tashlash"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+
+                <div className="relative mb-1.5">
+                  <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    value={approverSearch}
+                    onChange={(e) => setApproverSearch(e.target.value)}
+                    placeholder="Ism, lavozim yoki bo‘lim bo‘yicha qidirish..."
+                    className={`${inputCls} pl-8`}
+                  />
+                </div>
+
+                <div className="max-h-40 overflow-y-auto border border-slate-200 dark:border-slate-700 rounded-lg p-2 space-y-1 bg-slate-50 dark:bg-slate-800/60">
+                  {approverGroups.length === 0 ? (
+                    <p className="text-center text-slate-400 py-2">Mos xodim topilmadi</p>
+                  ) : (
+                    approverGroups.map(([dept, members]) => (
+                      <div key={dept}>
+                        <div className="px-1.5 pt-1 text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                          {dept}
+                        </div>
+                        {members.map((u) => (
+                          <button
+                            type="button"
+                            key={u.id}
+                            onClick={() => setFormData({ ...formData, approverIds: [...formData.approverIds, u.id] })}
+                            className="w-full text-left flex items-center gap-2 p-1.5 rounded hover:bg-white dark:hover:bg-slate-700/60 cursor-pointer"
+                          >
+                            <span className="font-semibold text-slate-900 dark:text-slate-100">{u.fullName}</span>
+                            <span className="text-slate-500 text-[11px]">({u.position})</span>
+                          </button>
+                        ))}
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
 
               <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
-                  onClick={onClose}
+                  onClick={close}
                   className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 font-semibold cursor-pointer"
                 >
                   Bekor qilish
