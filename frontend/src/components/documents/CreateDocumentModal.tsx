@@ -94,7 +94,7 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
   const isOutgoing = formData.documentType === 'OUTGOING';
   const today = new Date().toISOString().slice(0, 10);
 
-  const activeUsers = useMemo(() => usersList.filter((u) => u.isActive && u.id !== user?.id), [usersList, user]);
+  const activeUsers = useMemo(() => usersList.filter((u) => u.isActive !== false && u.id !== user?.id), [usersList, user]);
 
   // Imzolovchi bo'la oladiganlar: o'zi va Super Admin chiqarib tashlanadi, bo'lim bo'yicha guruhlanadi
   const approverGroups = useMemo(() => {

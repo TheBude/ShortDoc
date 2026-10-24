@@ -70,6 +70,8 @@ router.get('/', authenticate, async (req: AuthRequest, res, next) => {
         position: u.position,
         departmentId: u.departmentId,
         department: u.department,
+        // Holat (faol/nofaol) hammaga ko'rinadi: oddiy xodimga faqat faol foydalanuvchilar qaytadi
+        isActive: u.isActive,
         registrationStatus: u.isActive ? 'APPROVED' : 'PENDING',
       };
 
@@ -77,7 +79,6 @@ router.get('/', authenticate, async (req: AuthRequest, res, next) => {
       if (isPrivileged) {
         baseUser.email = u.email;
         baseUser.phone = u.phone;
-        baseUser.isActive = u.isActive;
         baseUser.createdAt = u.createdAt;
       }
 

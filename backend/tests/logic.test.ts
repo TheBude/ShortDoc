@@ -420,4 +420,18 @@ describe('Mantiqiy tuzatishlar: viza poygasi, holat o‘tishlari, topshiriqlar, 
       .send({ status: 'ARCHIVED' });
     expect([403, 404]).toContain(status.status);
   });
+
+  it('19. Oddiy xodim foydalanuvchilar ro‘yxatini oladi (imzolovchi tanlash uchun): faqat faol, email/telefonsiz', async () => {
+    const res = await request(app).get('/api/users?limit=100').set(auth('staff1'));
+    expect(res.status).toBe(200);
+    expect(res.body.data.length).toBeGreaterThan(1);
+    for (const u of res.body.data) {
+      expect(u.isActive).toBe(true);
+      expect(u.email).toBeUndefined();
+      expect(u.phone).toBeUndefined();
+    }
+    const ids = res.body.data.map((u: any) => u.id);
+    expect(ids).toContain(testUsers.head.id);
+    expect(ids).not.toContain(testUsers.inactiveStaff.id);
+  });
 });
