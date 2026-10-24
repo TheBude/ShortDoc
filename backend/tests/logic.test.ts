@@ -260,4 +260,71 @@ describe('Mantiqiy tuzatishlar: viza poygasi, holat o‘tishlari, topshiriqlar, 
     const ok = await request(app).get('/health').set('Origin', 'http://localhost:3000');
     expect(ok.headers['access-control-allow-origin']).toBe('http://localhost:3000');
   });
+
+  it('15. Super Admin foydalanuvchi login (email) va parolini almashtira oladi, oddiy xodim esa ololmaydi', async () => {
+    const target = testUsers.staff2;
+    const targetUser = await prisma.user.findUniqueOrThrow({ where: { id: target.id } });
+    const oldEmail = targetUser.email;
+    const newEmail = 'test_staff2_renamed@shortdoc.uz';
+
+    const denied = await request(app)
+      .put(`/api/users/${target.id}`)
+      .set(auth('staff1'))
+      .send({ password: 'NewPass12345!' });
+    expect(denied.status).toBe(403);
+
+    const changed = await request(app)
+      .put(`/api/users/${target.id}`)
+      .set(auth('admin'))
+      .send({ email: newEmail, password: 'NewPass12345!' });
+    expect(changed.status).toBe(200);
+    expect(changed.body.data.email).toBe(newEmail);
+
+    // Eski sessiya bekor qilinadi, yangi login/parol bilan kirish mumkin
+    const stale = await request(app).get('/api/auth/me').set(auth('staff2'));
+    expect(stale.status).toBe(401);
+
+    const oldLogin = await request(app).post('/api/auth/login').send({ email: oldEmail, password: 'NewPass12345!' });
+    expect(oldLogin.status).toBe(401);
+    const newLogin = await request(app).post('/api/auth/login').send({ email: newEmail, password: 'NewPass12345!' });
+    expect(newLogin.status).toBe(200);
+
+    // Band emailga o'tkazish rad etiladi
+    const dup = await request(app).put(`/api/users/${target.id}`).set(auth('admin')).send({ email: testUsers.staff1.email });
+    expect(dup.status).toBe(400);
+
+    // Boshqa testlar uchun holatni tiklash
+    await request(app).put(`/api/users/${target.id}`).set(auth('admin')).send({ email: oldEmail, password: 'TestPass123!' });
+    const relogin = await request(app).post('/api/auth/login').send({ email: oldEmail, password: 'TestPass123!' });
+    testUsers.staff2.token = relogin.body.data.token;
+  });
+
+  it('16. Super Admin izsiz hisobni ochira oladi; hujjati bor hisob, ozi va oddiy xodim uchun rad etiladi', async () => {
+    const bcrypt = (await import('bcryptjs')).default;
+    const temp = await prisma.user.create({
+      data: {
+        email: 'test_delete_me@shortdoc.uz',
+        passwordHash: await bcrypt.hash('TestPass123!', 4),
+        fullName: 'Ochiriladigan Xodim',
+        position: 'Sinov',
+        role: 'STAFF',
+      },
+    });
+
+    const denied = await request(app).delete(`/api/users/${temp.id}`).set(auth('staff1'));
+    expect(denied.status).toBe(403);
+
+    const self = await request(app).delete(`/api/users/${testUsers.admin.id}`).set(auth('admin'));
+    expect(self.status).toBe(400);
+
+    const doc = await createDoc('staff1', { title: 'Boglangan hujjat' });
+    expect(doc.id).toBeDefined();
+    const linked = await request(app).delete(`/api/users/${testUsers.staff1.id}`).set(auth('admin'));
+    expect(linked.status).toBe(409);
+    expect(linked.body.message).toContain('hujjat');
+
+    const ok = await request(app).delete(`/api/users/${temp.id}`).set(auth('admin'));
+    expect(ok.status).toBe(200);
+    expect(await prisma.user.findUnique({ where: { id: temp.id } })).toBeNull();
+  });
 });

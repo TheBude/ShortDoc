@@ -184,6 +184,7 @@ router.put('/:id', authenticate, authorize(['SUPER_ADMIN']), async (req: AuthReq
       departmentId: z.string().uuid().optional().nullable(),
       isActive: z.boolean().optional(),
       password: z.string().min(8, 'Parol kamida 8 ta belgidan iborat bo‘lishi shart').optional(),
+      email: z.string().trim().email('Noto‘g‘ri email formati').optional(),
     });
 
     const data = schema.parse(req.body);
@@ -196,6 +197,23 @@ router.put('/:id', authenticate, authorize(['SUPER_ADMIN']), async (req: AuthReq
     const updateData: any = { ...data };
     let passwordChanged = false;
     let roleChanged = false;
+    let loginChanged = false;
+
+    // Login (email) o'zgartirilsa: yagonaligi tekshiriladi va eski sessiyalar bekor qilinadi
+    if (data.email) {
+      const normalizedEmail = data.email.toLowerCase();
+      if (normalizedEmail !== existingUser.email) {
+        const taken = await prisma.user.findUnique({ where: { email: normalizedEmail }, select: { id: true } });
+        if (taken) {
+          return sendError(res, 'Bu email bilan boshqa foydalanuvchi allaqachon mavjud', 400);
+        }
+        updateData.email = normalizedEmail;
+        updateData.tokenVersion = { increment: 1 };
+        loginChanged = true;
+      } else {
+        delete updateData.email;
+      }
+    }
 
     if (data.password) {
       updateData.passwordHash = await bcrypt.hash(data.password, 10);
@@ -232,6 +250,19 @@ router.put('/:id', authenticate, authorize(['SUPER_ADMIN']), async (req: AuthReq
         entity: 'USER',
         entityId: user.id,
         details: `${user.fullName} paroli administrator tomonidan yangilandi (eski sessiyalar bekor qilindi)`,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+        requestId: (req as any).id,
+      });
+    }
+
+    if (loginChanged) {
+      await logActivity({
+        userId: req.user!.userId,
+        action: 'CHANGE_LOGIN',
+        entity: 'USER',
+        entityId: user.id,
+        details: `${user.fullName} logini (email) ${existingUser.email} dan ${user.email} ga o‘zgartirildi`,
         ipAddress: req.ip,
         userAgent: req.headers['user-agent'],
         requestId: (req as any).id,
@@ -361,6 +392,78 @@ router.post('/:id/reject', authenticate, authorize(['SUPER_ADMIN']), async (req:
     });
 
     return sendSuccess(res, user, 'Foydalanuvchi muvaffaqiyatli rad etildi');
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Foydalanuvchi hisobini butunlay o'chirish (faqat Super Admin).
+// Hujjat, imzo, vazifa, izoh yoki holat tarixi bilan bog'langan hisob o'chirilmaydi: tarix butunligi buzilmasligi uchun bloklash tavsiya etiladi.
+router.delete('/:id', authenticate, authorize(['SUPER_ADMIN']), async (req: AuthRequest, res, next) => {
+  try {
+    const { id } = req.params;
+    const uuidCheck = z.string().uuid('Noto‘g‘ri foydalanuvchi identifikatori').safeParse(id);
+    if (!uuidCheck.success) {
+      return sendError(res, 'Noto‘g‘ri foydalanuvchi identifikatori (UUID)', 400);
+    }
+
+    if (id === req.user!.userId) {
+      return sendError(res, 'O‘z hisobingizni o‘chirib bo‘lmaydi', 400);
+    }
+
+    const target = await prisma.user.findUnique({ where: { id } });
+    if (!target) {
+      return sendError(res, 'Foydalanuvchi topilmadi', 404);
+    }
+
+    if (target.role === 'SUPER_ADMIN') {
+      const otherAdmins = await prisma.user.count({ where: { role: 'SUPER_ADMIN', isActive: true, id: { not: id } } });
+      if (otherAdmins === 0) {
+        return sendError(res, 'Tizimdagi oxirgi Super Adminni o‘chirib bo‘lmaydi', 400);
+      }
+    }
+
+    const [documents, files, approvals, tasks, comments, history] = await Promise.all([
+      prisma.document.count({ where: { creatorId: id } }),
+      prisma.documentFile.count({ where: { uploadedById: id } }),
+      prisma.documentApproval.count({ where: { approverId: id } }),
+      prisma.task.count({ where: { OR: [{ assignedToId: id }, { createdById: id }] } }),
+      prisma.documentComment.count({ where: { userId: id } }),
+      prisma.documentStatusHistory.count({ where: { changedById: id } }),
+    ]);
+
+    const links: string[] = [];
+    if (documents) links.push(`${documents} ta hujjat`);
+    if (files) links.push(`${files} ta fayl`);
+    if (approvals) links.push(`${approvals} ta imzo/viza`);
+    if (tasks) links.push(`${tasks} ta vazifa`);
+    if (comments) links.push(`${comments} ta izoh`);
+    if (history) links.push(`${history} ta holat o‘zgarishi`);
+
+    if (links.length > 0) {
+      return sendError(
+        res,
+        `Bu hisobni o‘chirib bo‘lmaydi: unga ${links.join(', ')} bog‘langan. Tarix saqlanishi uchun hisobni bloklang.`,
+        409
+      );
+    }
+
+    // Bildirishnomalar cascade, audit yozuvlari va biriktirilgan hujjatlar esa bo'shatiladi (SetNull)
+    await prisma.user.delete({ where: { id } });
+    invalidateUserCache(id);
+
+    await logActivity({
+      userId: req.user!.userId,
+      action: 'DELETE_USER',
+      entity: 'USER',
+      entityId: id,
+      details: `Foydalanuvchi hisobi butunlay o‘chirildi: ${target.fullName} (${target.email})`,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+      requestId: (req as any).id,
+    });
+
+    return sendSuccess(res, null, 'Foydalanuvchi hisobi butunlay o‘chirildi');
   } catch (error) {
     next(error);
   }

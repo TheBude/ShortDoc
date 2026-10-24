@@ -28,6 +28,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { UserModal } from '@/components/users/UserModal';
+import { UserCredentialsModal } from '@/components/users/UserCredentialsModal';
 
 // Helper to determine role and platform capabilities dynamically based on department & position
 function getDepartmentScope(deptName: string = '', position: string = '') {
@@ -143,6 +144,7 @@ export default function AdminUsersPage() {
   // Tab: 'all' or 'pending'
   const [activeTab, setActiveTab] = useState<'pending' | 'all'>('pending');
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+  const [credentialsTarget, setCredentialsTarget] = useState<User | null>(null);
 
   // Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -256,6 +258,22 @@ export default function AdminUsersPage() {
       loadData();
     } else {
       setFormError(res.message || 'Xatolik yuz berdi');
+    }
+  };
+
+  const handleDeleteUser = async (u: User) => {
+    if (!confirm(`${u.fullName} (${u.email}) hisobini butunlay o‘chirishni tasdiqlaysizmi? Bu amalni qaytarib bo‘lmaydi.`)) {
+      return;
+    }
+
+    setActionLoadingId(u.id);
+    const res = await fetchApi(`/users/${u.id}`, { method: 'DELETE' });
+    setActionLoadingId(null);
+
+    if (res.success) {
+      loadData();
+    } else {
+      alert(res.message || 'O‘chirishda xatolik yuz berdi');
     }
   };
 
@@ -520,6 +538,14 @@ export default function AdminUsersPage() {
                         <td className="py-3 px-4 text-right whitespace-nowrap">
                           {u.id !== user?.id && (
                             <button
+                              onClick={() => setCredentialsTarget(u)}
+                              className="mr-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                            >
+                              Login / Parol
+                            </button>
+                          )}
+                          {u.id !== user?.id && (
+                            <button
                               onClick={() => handleToggleActive(u)}
                               className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer ${
                                 u.isActive
@@ -528,6 +554,15 @@ export default function AdminUsersPage() {
                               }`}
                             >
                               {u.isActive ? 'Bloklash' : 'Faollashtirish'}
+                            </button>
+                          )}
+                          {u.id !== user?.id && (
+                            <button
+                              onClick={() => handleDeleteUser(u)}
+                              disabled={actionLoadingId === u.id}
+                              className="ml-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-rose-600 hover:bg-rose-700 text-white disabled:opacity-50 transition-colors cursor-pointer"
+                            >
+                              O‘chirish
                             </button>
                           )}
                         </td>
@@ -571,6 +606,12 @@ export default function AdminUsersPage() {
           )}
         </div>
       )}
+
+      <UserCredentialsModal
+        target={credentialsTarget}
+        onClose={() => setCredentialsTarget(null)}
+        onSaved={() => loadData()}
+      />
 
       {/* Create User Modal (Manual add by SuperAdmin) */}
       <UserModal
