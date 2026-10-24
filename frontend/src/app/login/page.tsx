@@ -202,12 +202,6 @@ export default function LoginPage() {
     }
   };
 
-  // Handle Quick Demo Login
-  const handleQuickLogin = (demoEmail: string, demoPass: string) => {
-    setLoginEmail(demoEmail);
-    setLoginPassword(demoPass);
-    setLoginError(null);
-  };
 
   // Handle Registration Submit
   const handleRegisterSubmit = async (e: React.FormEvent) => {
@@ -485,40 +479,6 @@ export default function LoginPage() {
                       )}
                     </button>
                   </form>
-
-                  {/* Quick Demo Credentials */}
-                  <div className="mt-8 pt-5 border-t border-slate-100 dark:border-slate-800">
-                    <p className="text-[12px] font-medium text-slate-500 dark:text-slate-400 mb-3 text-center">
-                      Sinov uchun namunaviy hisoblar:
-                    </p>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <button
-                        type="button"
-                        onClick={() => handleQuickLogin('rektor@shortdoc.uz', 'Rektor123!')}
-                        className="p-2.5 text-left rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 transition-colors cursor-pointer"
-                      >
-                        <div className="font-semibold text-slate-900 dark:text-slate-100">Rektorat</div>
-                        <div className="text-[11px] text-slate-500 dark:text-slate-400">Monitoring & imzo</div>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleQuickLogin('dekan@shortdoc.uz', 'Dekan123!')}
-                        className="p-2.5 text-left rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 transition-colors cursor-pointer"
-                      >
-                        <div className="font-semibold text-slate-900 dark:text-slate-100">Dekanat</div>
-                        <div className="text-[11px] text-slate-500 dark:text-slate-400">Fakultet boshqaruvi</div>
-                      </button>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => handleQuickLogin('xodim@shortdoc.uz', 'Xodim123!')}
-                      className="w-full mt-2 p-2.5 text-center rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold transition-colors cursor-pointer"
-                    >
-                      Xodim / O‘qituvchi hisobi (xodim@shortdoc.uz)
-                    </button>
-                  </div>
                 </div>
               ) : (
                 <RegisterSection
