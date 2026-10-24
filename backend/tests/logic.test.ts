@@ -381,4 +381,43 @@ describe('Mantiqiy tuzatishlar: viza poygasi, holat o‘tishlari, topshiriqlar, 
     expect(xml).toContain(`${testUsers.head.fullName} imzoladi`);
     expect(xml).toContain(`${testUsers.staff2.fullName} imzoladi`);
   });
+
+  it('18. Faqat Super Admin hamma hujjatni ko‘radi; Rahbariyat/Kantselyariya faqat o‘ziga tegishli va umumiy hujjatlarni', async () => {
+    const priv = await createDoc('staff1', { title: 'Shaxsiy hujjat' });
+    const pub = await createDoc('rector', { title: 'Umumiy buyruq', category: 'ORDER', isPublic: true });
+    const fakePublic = await createDoc('staff1', { title: 'Soxta umumiy', isPublic: true });
+
+    const ids = async (key: keyof typeof testUsers) => {
+      const res = await request(app).get('/api/documents?limit=100').set(auth(key));
+      return res.body.data.map((d: any) => d.id) as string[];
+    };
+
+    // Super Admin hammasini ko'radi
+    const adminIds = await ids('admin');
+    expect(adminIds).toEqual(expect.arrayContaining([priv.id, pub.id, fakePublic.id]));
+
+    // Rahbariyat va Kantselyariya begona shaxsiy hujjatni ko'rmaydi, umumiyni ko'radi
+    for (const key of ['rector', 'chancellery'] as const) {
+      const list = await ids(key);
+      expect(list).not.toContain(priv.id);
+      expect(list).toContain(pub.id);
+      const view = await request(app).get(`/api/documents/${priv.id}`).set(auth(key));
+      expect(view.status).toBe(404);
+      const docx = await request(app).get(`/api/documents/${priv.id}/docx`).set(auth(key));
+      expect(docx.status).toBe(404);
+    }
+
+    // Oddiy xodim ham umumiy hujjatni ko'radi, lekin o'zi umumiy belgisini qo'ya olmaydi
+    expect(await ids('staff2')).toContain(pub.id);
+    expect(await ids('staff2')).not.toContain(priv.id);
+    expect(fakePublic.isPublic).toBe(false);
+    expect(await ids('staff2')).not.toContain(fakePublic.id);
+
+    // Rahbariyat begona hujjat holatini o'zgartira olmaydi
+    const status = await request(app)
+      .patch(`/api/documents/${priv.id}/status`)
+      .set(auth('rector'))
+      .send({ status: 'ARCHIVED' });
+    expect([403, 404]).toContain(status.status);
+  });
 });

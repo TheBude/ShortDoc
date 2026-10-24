@@ -21,6 +21,7 @@ export interface DocumentAccessData {
   documentType: string;
   status?: string;
   isArchived?: boolean;
+  isPublic?: boolean;
   approvals?: ApprovalAccessData[];
   tasks?: Array<{ assignedToId: string }>;
 }
@@ -119,19 +120,20 @@ export async function getApproverDocumentIds(userId: string): Promise<{ visible:
  * Eslatma: isArchived: true hujjatlar xodimlar uchun ochiq qolmaydi, faqat tegishli qoida asosida ko'rinadi.
  */
 export async function buildDocumentVisibilityWhere(user: UserAuth) {
-  // SUPER_ADMIN, LEADERSHIP, CHANCELLERY barcha hujjatlarni ko'radi
-  if (['SUPER_ADMIN', 'LEADERSHIP', 'CHANCELLERY'].includes(user.role)) {
+  // Faqat SUPER_ADMIN barcha hujjatlarni ko'radi
+  if (user.role === 'SUPER_ADMIN') {
     return {};
   }
 
   const { visible } = await getApproverDocumentIds(user.userId);
 
-  // Umumiy qoida: faqat o'ziga bog'liq hujjatlar: o'zi yaratgan, biriktirilgan, navbati kelgan vizachi yoki topshiriq berilgan
+  // Umumiy qoida: o'ziga bog'liq hujjatlar (o'zi yaratgan, biriktirilgan, navbati kelgan vizachi, topshiriq berilgan) va hammaga ochiq (umumiy) hujjatlar
   const conditions: any[] = [
     { creatorId: user.userId },
     { assigneeId: user.userId },
     { id: { in: visible } },
     { tasks: { some: { assignedToId: user.userId } } },
+    { isPublic: true },
   ];
 
   // DEPARTMENT_HEAD uchun o'z bo'limi hujjatlari ham ko'rinadi
@@ -146,9 +148,12 @@ export async function buildDocumentVisibilityWhere(user: UserAuth) {
  * Hujjatni ko'rish ruxsatini tekshirish
  */
 export function canViewDocument(user: UserAuth, doc: DocumentAccessData): boolean {
-  if (['SUPER_ADMIN', 'LEADERSHIP', 'CHANCELLERY'].includes(user.role)) {
+  if (user.role === 'SUPER_ADMIN') {
     return true;
   }
+
+  // Hammaga ochiq (umumiy) hujjat
+  if (doc.isPublic) return true;
 
   if (doc.creatorId === user.userId) return true;
   if (doc.assigneeId === user.userId) return true;
@@ -172,11 +177,24 @@ export function canViewDocument(user: UserAuth, doc: DocumentAccessData): boolea
 }
 
 /**
+ * Foydalanuvchining hujjat bilan shaxsiy aloqasi (yaratuvchi, mas'ul, navbati kelgan kelishuvchi yoki ijrochi).
+ * Rahbariyat va Kantselyariya uchun ham faqat shu aloqa boshqaruv huquqini beradi.
+ */
+function isRelatedToDocument(user: UserAuth, doc: DocumentAccessData): boolean {
+  return (
+    doc.creatorId === user.userId ||
+    doc.assigneeId === user.userId ||
+    hasApproverAccess(user.userId, doc.approvals) ||
+    !!doc.tasks?.some((t) => t.assignedToId === user.userId)
+  );
+}
+
+/**
  * Hujjatni tahrirlash huquqi
  */
 export function canEditDocument(user: UserAuth, doc: DocumentAccessData): boolean {
   if (user.role === 'SUPER_ADMIN') return true;
-  if (['LEADERSHIP', 'CHANCELLERY'].includes(user.role) && !doc.isArchived) return true;
+  if (['LEADERSHIP', 'CHANCELLERY'].includes(user.role) && !doc.isArchived && isRelatedToDocument(user, doc)) return true;
 
   // Yaratuvchi faqat qoralama yoki dastlabki bosqichlarda tahrirlashi mumkin
   if (doc.creatorId === user.userId && !doc.isArchived) {
@@ -191,7 +209,11 @@ export function canEditDocument(user: UserAuth, doc: DocumentAccessData): boolea
  * Hujjat holatini o'zgartirish huquqi
  */
 export function canChangeStatus(user: UserAuth, doc: DocumentAccessData): boolean {
-  if (['SUPER_ADMIN', 'LEADERSHIP', 'CHANCELLERY'].includes(user.role)) {
+  if (user.role === 'SUPER_ADMIN') {
+    return true;
+  }
+
+  if (['LEADERSHIP', 'CHANCELLERY'].includes(user.role) && isRelatedToDocument(user, doc)) {
     return true;
   }
 
@@ -215,8 +237,8 @@ export function canManageTask(user: UserAuth, task: TaskAccessData, forSubmitRes
     return task.assignedToId === user.userId;
   }
 
-  // Holatni o'zgartirish: ijrochi, yaratuvchi yoki rahbariyat
-  if (['SUPER_ADMIN', 'LEADERSHIP'].includes(user.role)) {
+  // Holatni o'zgartirish: ijrochi, yaratuvchi yoki Super Admin
+  if (user.role === 'SUPER_ADMIN') {
     return true;
   }
 
@@ -246,7 +268,7 @@ export function canCreateTask(user: UserAuth, doc: DocumentAccessData): boolean 
 export function canUploadFile(user: UserAuth, doc: DocumentAccessData): boolean {
   if (!canViewDocument(user, doc)) return false;
 
-  if (['SUPER_ADMIN', 'LEADERSHIP', 'CHANCELLERY'].includes(user.role)) return true;
+  if (user.role === 'SUPER_ADMIN') return true;
   if (doc.creatorId === user.userId || doc.assigneeId === user.userId) return true;
   if (user.role === 'DEPARTMENT_HEAD' && user.departmentId && doc.departmentId === user.departmentId) return true;
 

@@ -392,6 +392,7 @@ router.post('/', authenticate, async (req: AuthRequest, res, next) => {
       deadline: optionalDate,
       summary: z.string().optional().nullable(),
       approverIds: z.array(z.string().min(1)).optional().default([]),
+      isPublic: z.boolean().optional().default(false),
     });
 
     const data = schema.parse(req.body);
@@ -496,6 +497,8 @@ router.post('/', authenticate, async (req: AuthRequest, res, next) => {
           priority: data.priority,
           deadline: data.deadline ? new Date(data.deadline) : null,
           summary: data.summary,
+          // Hammaga ochiq belgisini faqat vakolatli rollar qo'ya oladi
+          isPublic: data.isPublic && ['SUPER_ADMIN', 'LEADERSHIP', 'CHANCELLERY'].includes(req.user!.role),
           status: initialStatus,
         },
       });

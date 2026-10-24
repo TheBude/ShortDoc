@@ -45,7 +45,7 @@ async function buildCounts(user: ReportUser) {
   const isLeadershipOrAdmin = ['SUPER_ADMIN', 'LEADERSHIP', 'CHANCELLERY'].includes(user.role);
 
   const whereDoc: any = await buildDocumentVisibilityWhere(user);
-  const whereTask: any = isLeadershipOrAdmin
+  const whereTask: any = user.role === 'SUPER_ADMIN'
     ? {}
     : { OR: [{ assignedToId: user.userId }, { createdById: user.userId }] };
 
@@ -122,21 +122,21 @@ router.get('/counts', authenticate, async (req: AuthRequest, res: Response, next
 // Asosiy dashboard statistikasi
 router.get('/dashboard', authenticate, async (req: AuthRequest, res: Response, next) => {
   try {
-    const isLeadershipOrAdmin = ['SUPER_ADMIN', 'LEADERSHIP', 'CHANCELLERY'].includes(req.user!.role);
+    const isSuperAdmin = req.user!.role === 'SUPER_ADMIN';
 
     const { myTurn: myTurnIds } = await getApproverDocumentIds(req.user!.userId);
 
     const [counts, recentActivities, departmentsStat, pendingDocs, myTasks, mySubmitted] = await Promise.all([
       buildCounts(req.user!),
       prisma.auditLog.findMany({
-        where: !isLeadershipOrAdmin ? { userId: req.user!.userId } : {},
+        where: !isSuperAdmin ? { userId: req.user!.userId } : {},
         take: 8,
         orderBy: { createdAt: 'desc' },
         include: { user: { select: { fullName: true, role: true } } },
       }),
-      // Hujjatlari eng ko'p bo'lgan 8 ta bo'lim
+      // Hujjatlari eng ko'p bo'lgan 8 ta bo'lim (butun tizim statistikasi faqat Super Admin uchun)
       prisma.department.findMany({
-        take: 8,
+        take: isSuperAdmin ? 8 : 0,
         orderBy: { documents: { _count: 'desc' } },
         select: {
           id: true,

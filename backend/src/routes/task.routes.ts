@@ -82,13 +82,18 @@ router.get('/', authenticate, async (req: AuthRequest, res, next) => {
 
     const where: any = {};
 
-    // Oddiy xodim yoki shaxsiy topshiriqlarini so'raganlar faqat o'ziga tegishlisini ko'radi
-    if (req.user!.role === 'STAFF' || myTasks === 'true') {
+    // Faqat Super Admin barcha topshiriqlarni ko'radi; qolganlar faqat o'ziga tegishlisini
+    if (req.user!.role !== 'SUPER_ADMIN' && req.user!.role !== 'DEPARTMENT_HEAD') {
       where.OR = [
         { assignedToId: req.user!.userId },
         { createdById: req.user!.userId },
       ];
-    } else if (req.user!.role === 'DEPARTMENT_HEAD' && !all) {
+    } else if (myTasks === 'true') {
+      where.OR = [
+        { assignedToId: req.user!.userId },
+        { createdById: req.user!.userId },
+      ];
+    } else if (req.user!.role === 'DEPARTMENT_HEAD') {
       where.OR = [
         { assignedToId: req.user!.userId },
         { createdById: req.user!.userId },

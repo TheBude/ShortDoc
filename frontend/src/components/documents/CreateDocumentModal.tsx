@@ -29,6 +29,7 @@ interface CreateDocumentModalProps {
     sender: string;
     receiver: string;
     assigneeId: string;
+    isPublic: boolean;
     priority: string;
     deadline: string;
     summary: string;
@@ -121,6 +122,8 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
     setFormData((prev: any) => ({
       ...prev,
       category: label,
+      // Buyruq/Qaror/Farmoyish odatda hammaga ochiq (faqat vakolatli rollar uchun)
+      isPublic: canUseRestricted ? !!def?.restricted : false,
       // Qabul qiluvchi qo'lda yozilayotgan bo'lsa, namuna yangilanadi; tanlangan xodim/bo'lim saqlanadi
       receiver: recipient === 'custom' ? def?.defaultReceiver || '' : prev.receiver,
     }));
@@ -429,6 +432,23 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
                   className={inputCls}
                 />
               </div>
+
+              {canUseRestricted && (
+                <label className="flex items-start gap-2 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.isPublic}
+                    onChange={(e) => setFormData({ ...formData, isPublic: e.target.checked })}
+                    className="mt-0.5 rounded text-blue-600 focus:ring-blue-500"
+                  />
+                  <span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">Hammaga ochiq (umumiy hujjat)</span>
+                    <span className="block text-[11px] text-slate-500">
+                      Belgilansa, tizimdagi barcha xodimlar bu hujjatni ko‘ra oladi. Belgilanmasa, faqat unga bog‘liq shaxslar ko‘radi.
+                    </span>
+                  </span>
+                </label>
+              )}
 
               {/* 3. Imzolovchilar (ketma-ket) */}
               <div>
