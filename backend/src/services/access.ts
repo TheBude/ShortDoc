@@ -201,6 +201,24 @@ export function canCreateTask(user: UserAuth, doc: DocumentAccessData): boolean 
 }
 
 /**
+ * Hujjatga fayl biriktirish huquqi.
+ * Ko'rish huquqi yetarli emas: kiruvchi xatlar va buyruqlar barcha xodimlarga ko'rinadi, ammo
+ * ularga fayl biriktirish faqat hujjat ishtirokchilari va rahbariyat uchun ruxsat etiladi.
+ */
+export function canUploadFile(user: UserAuth, doc: DocumentAccessData): boolean {
+  if (!canViewDocument(user, doc)) return false;
+
+  if (['SUPER_ADMIN', 'LEADERSHIP', 'CHANCELLERY'].includes(user.role)) return true;
+  if (doc.creatorId === user.userId || doc.assigneeId === user.userId) return true;
+  if (user.role === 'DEPARTMENT_HEAD' && user.departmentId && doc.departmentId === user.departmentId) return true;
+
+  return !!(
+    doc.approvals?.some((a) => a.approverId === user.userId) ||
+    doc.tasks?.some((t) => t.assignedToId === user.userId)
+  );
+}
+
+/**
  * Hujjat faylini ko'rish/yuklab olish huquqi
  */
 export function canAccessFile(user: UserAuth, file: FileAccessData, doc?: DocumentAccessData | null): boolean {

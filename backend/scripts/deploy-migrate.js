@@ -1,4 +1,5 @@
 const { execSync } = require('child_process');
+const crypto = require('crypto');
 const path = require('path');
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
@@ -183,10 +184,12 @@ async function deploy() {
       where: { email: adminEmail },
     });
 
-    const defaultAdminPassword = process.env.SEED_ADMIN_PASSWORD || 'Admin123!';
-    const passwordHash = await bcrypt.hash(defaultAdminPassword, 10);
-
     if (!adminUser) {
+      // Ma'lum (kodda yozilgan) standart parol ishlatilmaydi: SEED_ADMIN_PASSWORD berilmasa tasodifiy parol yaratiladi
+      const hasSeedPassword = Boolean(process.env.SEED_ADMIN_PASSWORD);
+      const initialPassword = process.env.SEED_ADMIN_PASSWORD || crypto.randomBytes(12).toString('base64url');
+      const passwordHash = await bcrypt.hash(initialPassword, 10);
+
       console.log(`[Migrate] SuperAdmin mavjud emas. ${adminEmail} yaratilmoqda...`);
       await prisma.user.create({
         data: {
@@ -199,14 +202,22 @@ async function deploy() {
           tokenVersion: 1,
         },
       });
-      console.log(`[Migrate OK] Bosh SuperAdmin yaratildi: ${adminEmail} (parol: ${defaultAdminPassword})`);
+
+      if (hasSeedPassword) {
+        console.log(`[Migrate OK] Bosh SuperAdmin yaratildi: ${adminEmail} (parol SEED_ADMIN_PASSWORD dan olindi)`);
+      } else {
+        console.log(`[Migrate OK] Bosh SuperAdmin yaratildi: ${adminEmail}`);
+        console.log(`[Migrate] Boshlang'ich parol (faqat bir marta ko'rsatiladi, kirgach darhol almashtiring): ${initialPassword}`);
+      }
     } else {
       const updateData = {
         role: 'SUPER_ADMIN',
         isActive: true,
       };
       if (process.env.SEED_ADMIN_PASSWORD) {
-        updateData.passwordHash = passwordHash;
+        updateData.passwordHash = await bcrypt.hash(process.env.SEED_ADMIN_PASSWORD, 10);
+        // Parol qayta tiklanganda eski sessiyalar ham bekor qilinadi
+        updateData.tokenVersion = { increment: 1 };
       }
       await prisma.user.update({
         where: { email: adminEmail },

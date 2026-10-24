@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import { z } from 'zod';
 import { prisma } from '../prisma.js';
 import { sendSuccess, sendError } from '../utils/response.js';
@@ -9,6 +9,7 @@ import { realtime } from '../services/realtime.js';
 import { config } from '../config.js';
 import { publicVerifyLimiter } from '../middleware/rateLimit.js';
 import { parseDocumentCategory } from '../utils/categories.js';
+import { optionalDate, optionalId } from '../utils/validation.js';
 import {
   buildDocumentVisibilityWhere,
   canViewDocument,
@@ -18,6 +19,28 @@ import {
 } from '../services/access.js';
 
 const router = Router();
+
+const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+// Konflikt (poyga) holatlari uchun 409 xatosi: errorHandler statusCode bo'yicha javob qaytaradi
+const conflictError = (message: string) => Object.assign(new Error(message), { statusCode: 409 });
+
+// Hujjatni Word (.docx) formatida javob sifatida yuborish (ochiq va autentifikatsiyali yo'nalishlar uchun umumiy)
+const sendDocumentDocx = async (res: Response, document: Parameters<typeof generateDocumentDocx>[0]) => {
+  const docxBuffer = await generateDocumentDocx(document, config.APP_URL);
+
+  const safeRegNumber = document.regNumber.replace(/[\/\\:*"<>|]/g, '_');
+  const filename = `${safeRegNumber}_${document.category || 'bildirishnoma'}.docx`;
+
+  res.setHeader('Content-Type', DOCX_MIME);
+  res.setHeader(
+    'Content-Disposition',
+    `attachment; filename="${encodeURIComponent(filename)}"; filename*=UTF-8''${encodeURIComponent(filename)}`
+  );
+  res.setHeader('Content-Length', docxBuffer.length);
+
+  return res.end(docxBuffer);
+};
 
 const listDocumentsQuerySchema = z.object({
   search: z.string().optional(),
@@ -307,23 +330,7 @@ router.get('/:id/public-docx', publicVerifyLimiter, async (req, res, next) => {
       return sendError(res, 'Hujjat topilmadi yoki mavjud emas', 404);
     }
 
-    const verifyBaseUrl = config.APP_URL;
-    const docxBuffer = await generateDocumentDocx(document, verifyBaseUrl);
-
-    const safeRegNumber = document.regNumber.replace(/[\/\\:*"<>|]/g, '_');
-    const filename = `${safeRegNumber}_${document.category || 'bildirishnoma'}.docx`;
-
-    res.setHeader(
-      'Content-Type',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-    );
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="${encodeURIComponent(filename)}"; filename*=UTF-8''${encodeURIComponent(filename)}`
-    );
-    res.setHeader('Content-Length', docxBuffer.length);
-
-    return res.end(docxBuffer);
+    return await sendDocumentDocx(res, document);
   } catch (error) {
     next(error);
   }
@@ -359,23 +366,7 @@ router.get('/:id/docx', authenticate, async (req: AuthRequest, res, next) => {
       return sendError(res, 'Hujjat topilmadi', 404);
     }
 
-    const verifyBaseUrl = config.APP_URL;
-    const docxBuffer = await generateDocumentDocx(document, verifyBaseUrl);
-
-    const safeRegNumber = document.regNumber.replace(/[\/\\:*"<>|]/g, '_');
-    const filename = `${safeRegNumber}_${document.category || 'bildirishnoma'}.docx`;
-
-    res.setHeader(
-      'Content-Type',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-    );
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="${encodeURIComponent(filename)}"; filename*=UTF-8''${encodeURIComponent(filename)}`
-    );
-    res.setHeader('Content-Length', docxBuffer.length);
-
-    return res.end(docxBuffer);
+    return await sendDocumentDocx(res, document);
   } catch (error) {
     next(error);
   }
@@ -390,10 +381,10 @@ router.post('/', authenticate, async (req: AuthRequest, res, next) => {
       category: z.string().default('Bildirgi'),
       sender: z.string().optional().nullable(),
       receiver: z.string().optional().nullable(),
-      departmentId: z.preprocess((val) => (typeof val === 'string' && val.trim() === '' ? null : val), z.string().optional().nullable()),
-      assigneeId: z.preprocess((val) => (typeof val === 'string' && val.trim() === '' ? null : val), z.string().optional().nullable()),
+      departmentId: optionalId,
+      assigneeId: optionalId,
       priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).default('MEDIUM'),
-      deadline: z.preprocess((val) => (typeof val === 'string' && val.trim() === '' ? null : val), z.string().optional().nullable()),
+      deadline: optionalDate,
       summary: z.string().optional().nullable(),
       approverIds: z.array(z.string().min(1)).optional().default([]),
     });
@@ -403,6 +394,21 @@ router.post('/', authenticate, async (req: AuthRequest, res, next) => {
 
     // Takrorlanmagan kelishuvchilar ro'yxati
     const uniqueApproverIds = data.approverIds ? [...new Set(data.approverIds)] : [];
+
+    // Bog'langan bo'lim va mas'ul xodim mavjudligini oldindan tekshirish (aks holda tushunarsiz FK xatosi chiqadi)
+    if (data.departmentId) {
+      const department = await prisma.department.findUnique({ where: { id: data.departmentId }, select: { id: true } });
+      if (!department) {
+        return sendError(res, 'Tanlangan bo‘lim tizimda topilmadi', 400);
+      }
+    }
+
+    if (data.assigneeId) {
+      const assignee = await prisma.user.findUnique({ where: { id: data.assigneeId }, select: { isActive: true } });
+      if (!assignee || !assignee.isActive) {
+        return sendError(res, 'Mas’ul xodim tizimda topilmadi yoki faol emas', 400);
+      }
+    }
 
     // Kelishuvchilar faol va mavjud foydalanuvchilar ekanligini tekshirish
     if (uniqueApproverIds.length > 0) {
@@ -499,25 +505,23 @@ router.post('/', authenticate, async (req: AuthRequest, res, next) => {
 
       // Agar kelishuvchilar (viza zanjiri) mavjud bo'lsa
       if (uniqueApproverIds.length > 0) {
-        for (let i = 0; i < uniqueApproverIds.length; i++) {
-          await tx.documentApproval.create({
-            data: {
-              documentId: doc.id,
-              approverId: uniqueApproverIds[i],
-              stepOrder: i + 1,
-              status: 'PENDING',
-            },
-          });
+        await tx.documentApproval.createMany({
+          data: uniqueApproverIds.map((approverId, i) => ({
+            documentId: doc.id,
+            approverId,
+            stepOrder: i + 1,
+            status: 'PENDING' as const,
+          })),
+        });
 
-          await tx.notification.create({
-            data: {
-              userId: uniqueApproverIds[i],
-              title: 'Imzolash uchun yangi hujjat',
-              message: `${req.user!.fullName || 'Xodim'} sizga imzolash uchun hujjat yubordi: "${doc.title}" (${doc.regNumber})`,
-              link: `/documents/${doc.id}`,
-            },
-          });
-        }
+        await tx.notification.createMany({
+          data: uniqueApproverIds.map((approverId) => ({
+            userId: approverId,
+            title: 'Imzolash uchun yangi hujjat',
+            message: `${req.user!.fullName || 'Xodim'} sizga imzolash uchun hujjat yubordi: "${doc.title}" (${doc.regNumber})`,
+            link: `/documents/${doc.id}`,
+          })),
+        });
       }
 
       return doc;
@@ -606,14 +610,35 @@ router.patch('/:id/status', authenticate, async (req: AuthRequest, res, next) =>
       );
     }
 
+    // Holat o'zgarmasa tarixga ortiqcha yozuv qo'shilmaydi
+    if (doc.status === status) {
+      return sendSuccess(res, doc, 'Hujjat holati o‘zgarmadi');
+    }
+
+    // Viza zanjirini aylanib o'tishni taqiqlash: imzolar faqat /approvals orqali qo'yiladi
+    const hasPendingApprovals = doc.approvals.some((a) => a.status === 'PENDING');
+
+    if (status === 'IN_APPROVAL' && !hasPendingApprovals) {
+      return sendError(res, 'Kelishuvchilar belgilanmagan hujjatni imzolash bosqichiga o‘tkazib bo‘lmaydi', 409);
+    }
+
+    if (doc.status === 'IN_APPROVAL' && status === 'IN_EXECUTION' && hasPendingApprovals && req.user!.role !== 'SUPER_ADMIN') {
+      return sendError(res, 'Barcha kelishuvchilar imzosisiz hujjatni ijroga o‘tkazib bo‘lmaydi', 409);
+    }
+
     const updatedDoc = await prisma.$transaction(async (tx) => {
-      const updated = await tx.document.update({
-        where: { id },
+      // Holat o'qilgandan beri o'zgargan bo'lsa (parallel so'rov) yangilanmaydi
+      const changed = await tx.document.updateMany({
+        where: { id, status: doc.status },
         data: {
           status,
           isArchived: status === 'ARCHIVED' ? true : doc.isArchived,
         },
       });
+
+      if (changed.count === 0) {
+        throw conflictError('Hujjat holati boshqa foydalanuvchi tomonidan o‘zgartirilgan. Sahifani yangilang.');
+      }
 
       await tx.documentStatusHistory.create({
         data: {
@@ -625,7 +650,7 @@ router.patch('/:id/status', authenticate, async (req: AuthRequest, res, next) =>
         },
       });
 
-      return updated;
+      return tx.document.findUniqueOrThrow({ where: { id } });
     });
 
     await logActivity({
@@ -719,13 +744,22 @@ router.post('/:id/approvals', authenticate, async (req: AuthRequest, res, next) 
 
     // Qaror qabul qilish va hujjat holatini atomik yangilash
     const result = await prisma.$transaction(async (tx) => {
-      const updatedApproval = await tx.documentApproval.update({
-        where: { id: nextPendingApproval.id },
+      // Imzo faqat hali PENDING bo'lsa qabul qilinadi: ikki marta bosish yoki parallel so'rovlar ikkinchi marta imzolay olmaydi
+      const claimed = await tx.documentApproval.updateMany({
+        where: { id: nextPendingApproval.id, status: 'PENDING' },
         data: {
           status,
           comments: comments || null,
           signedAt: new Date(),
         },
+      });
+
+      if (claimed.count === 0) {
+        throw conflictError('Ushbu viza qarori allaqachon qabul qilingan');
+      }
+
+      const updatedApproval = await tx.documentApproval.findUniqueOrThrow({
+        where: { id: nextPendingApproval.id },
       });
 
       const remainingPending = doc.approvals.filter(
@@ -741,10 +775,13 @@ router.post('/:id/approvals', authenticate, async (req: AuthRequest, res, next) 
           ? `Kelishuvchi tomonidan rad etildi: ${comments}`
           : 'Kelishuvchi tomonidan rad etildi';
 
-        await tx.document.update({
-          where: { id },
+        const docUpdate = await tx.document.updateMany({
+          where: { id, status: 'IN_APPROVAL' },
           data: { status: 'REJECTED' },
         });
+        if (docUpdate.count === 0) {
+          throw conflictError('Hujjat holati o‘zgargan. Sahifani yangilang.');
+        }
 
         await tx.documentStatusHistory.create({
           data: {
@@ -760,10 +797,13 @@ router.post('/:id/approvals', authenticate, async (req: AuthRequest, res, next) 
         newDocStatus = 'IN_EXECUTION';
         statusReason = 'Barcha kelishuvchilar tomonidan tasdiqlandi va ijro bosqichiga o‘tkazildi';
 
-        await tx.document.update({
-          where: { id },
+        const docUpdate = await tx.document.updateMany({
+          where: { id, status: 'IN_APPROVAL' },
           data: { status: 'IN_EXECUTION' },
         });
+        if (docUpdate.count === 0) {
+          throw conflictError('Hujjat holati o‘zgargan. Sahifani yangilang.');
+        }
 
         await tx.documentStatusHistory.create({
           data: {

@@ -63,10 +63,12 @@ export async function fetchApi<T = any>(
   }
 
   try {
+    // keepalive so'rovlarida body hajmi 64 KB bilan cheklangan: fayl yuklash (FormData) uchun yoqilmaydi,
+    // aks holda katta fayllar "Failed to fetch" xatosi bilan yuborilmay qoladi
     const res = await fetch(url, {
       ...options,
       headers,
-      keepalive: true,
+      ...(options.body instanceof FormData ? {} : { keepalive: true }),
     });
 
     const data = await res.json().catch(() => ({

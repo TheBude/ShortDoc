@@ -116,6 +116,7 @@ model User {
   auditLogs            AuditLog[]
   notifications        Notification[]
 
+  @@index([departmentId])
   @@map("users")
 }
 
@@ -148,10 +149,14 @@ model Document {
   comments       DocumentComment[]
   statusHistory  DocumentStatusHistory[]
 
-  @@index([regNumber])
   @@index([status])
   @@index([documentType])
   @@index([deadline])
+  @@index([departmentId])
+  @@index([assigneeId])
+  @@index([creatorId])
+  @@index([category])
+  @@index([createdAt])
   @@map("documents")
 }
 
@@ -168,6 +173,7 @@ model DocumentFile {
   uploadedBy   User     @relation(fields: [uploadedById], references: [id])
   createdAt    DateTime @default(now())
 
+  @@index([documentId])
   @@map("document_files")
 }
 
@@ -184,6 +190,7 @@ model DocumentApproval {
   createdAt  DateTime       @default(now())
 
   @@index([documentId, stepOrder])
+  @@index([approverId, status])
   @@map("document_approvals")
 }
 
@@ -208,6 +215,8 @@ model Task {
   @@index([documentId])
   @@index([assignedToId])
   @@index([status])
+  @@index([createdById])
+  @@index([status, deadline])
   @@map("tasks")
 }
 
@@ -220,6 +229,7 @@ model DocumentComment {
   comment    String   @db.Text
   createdAt  DateTime @default(now())
 
+  @@index([documentId])
   @@map("document_comments")
 }
 
@@ -234,6 +244,7 @@ model DocumentStatusHistory {
   reason      String?
   createdAt   DateTime       @default(now())
 
+  @@index([documentId])
   @@map("document_status_histories")
 }
 
@@ -251,6 +262,8 @@ model AuditLog {
 
   @@index([action])
   @@index([entity])
+  @@index([userId])
+  @@index([createdAt])
   @@map("audit_logs")
 }
 
@@ -265,6 +278,7 @@ model Notification {
   createdAt DateTime @default(now())
 
   @@index([userId, isRead])
+  @@index([userId, createdAt])
   @@map("notifications")
 }
 

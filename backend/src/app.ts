@@ -10,6 +10,7 @@ import crypto from 'crypto';
 import { swaggerDocument } from './swagger.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { globalLimiter } from './middleware/rateLimit.js';
+import { sendError } from './utils/response.js';
 
 import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/user.routes.js';
@@ -54,21 +55,35 @@ app.use(
 );
 
 // CORS sozlamasi: CORS_ORIGIN whitelist bo'yicha ruxsat berish
-const allowedOrigins = config.CORS_ORIGIN.split(',').map((o) => o.trim());
+const allowedOrigins = [...config.CORS_ORIGIN.split(','), config.APP_URL]
+  .map((o) => o.trim().replace(/\/+$/, ''))
+  .filter(Boolean);
+
+// Origin matn bo'yicha emas, ajratilgan hostname bo'yicha tekshiriladi
+// (aks holda "evil-localhost.com" yoki "x.vercel.app.evil.com" kabi manzillar o'tib ketardi)
+const isAllowedOrigin = (origin: string): boolean => {
+  if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) return true;
+
+  let hostname: string;
+  try {
+    hostname = new URL(origin).hostname;
+  } catch {
+    return false;
+  }
+
+  return (
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname.endsWith('.vercel.app') ||
+    hostname.endsWith('.onrender.com')
+  );
+};
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Server-to-server so'rovlar, mobile ilovalar yoki Vercel / Render domenlari uchun avtomatik ruxsat
-      if (
-        !origin ||
-        allowedOrigins.includes(origin) ||
-        allowedOrigins.includes('*') ||
-        origin.endsWith('.vercel.app') ||
-        origin.endsWith('.onrender.com') ||
-        origin.includes('localhost') ||
-        origin.includes('127.0.0.1')
-      ) {
+      // Origin sarlavhasi yo'q so'rovlar (server-to-server, mobile, curl) ruxsat etiladi
+      if (!origin || isAllowedOrigin(origin)) {
         callback(null, true);
       } else {
         const corsErr = new Error(`CORS xatoligi: '${origin}' manzili uchun kirish taqiqlangan`);
@@ -81,8 +96,9 @@ app.use(
 );
 
 app.use(compression());
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Fayllar multer orqali yuklanadi; JSON/form so'rovlari uchun 1 MB yetarli (katta body xotirani to'ldirmasligi uchun)
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // Global so'rovlar tezligini cheklovchi (Rate Limiting)
 app.use('/api', globalLimiter);
@@ -138,6 +154,9 @@ app.use('/api/document-files', fileRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/audit-logs', auditRoutes);
 app.use('/api/notifications', notificationRoutes);
+
+// Mavjud bo'lmagan API manzillari uchun JSON formatidagi 404 javobi
+app.use('/api', (req, res) => sendError(res, 'So‘ralgan API manzili topilmadi', 404));
 
 // Xatoliklarni markazlashgan boshqarish
 app.use(errorHandler);

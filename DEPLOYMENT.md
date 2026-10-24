@@ -184,25 +184,55 @@ sudo certbot --nginx -d doc.samdu.uz
 
 ---
 
-## 4. Tizim Administratori Ma'lumotlari (Default Seed)
+## 4. Tizim Administratori Ma'lumotlari (Seed)
 
-Tizim birinchi marta o‘rnatilganda avtomatik quyidagi foydalanuvchilar yaratiladi:
+`npm run seed` quyidagi boshlang'ich foydalanuvchilarni yaratadi: `admin@shortdoc.uz`, `rektor@shortdoc.uz`,
+`devonxona@shortdoc.uz`, `dekan@shortdoc.uz`, `xodim@shortdoc.uz` va boshqalar.
 
-- **Super Admin (Tizim boshqaruvchisi):**
-  - Login: `admin@samdu.uz`
-  - Parol: `admin123`
-- **Rektorat (Rahbariyat):**
-  - Login: `rector@samdu.uz`
-  - Parol: `rector123`
-- **Devonxona mudiri:**
-  - Login: `devonxona@samdu.uz`
-  - Parol: `devon123`
+Parollar kodda yozilmagan:
+- `SEED_ADMIN_PASSWORD`, `SEED_REKTOR_PASSWORD`, `SEED_DEVON_PASSWORD`, `SEED_DEKAN_PASSWORD`, `SEED_XODIM_PASSWORD`
+  o'zgaruvchilari berilsa, shu qiymatlar ishlatiladi;
+- berilmasa, tasodifiy parol yaratilib, seed jurnaliga **bir marta** chiqariladi.
 
-> ⚠️ **MUHIM:** Tizimni ommaviy ishga tushirishdan oldin `admin@samdu.uz` parolini ma'murlar kabinetida darhol o‘zgartiring!
+Production'da seed faqat `SEED_ALLOW=true` bo'lganda ishlaydi. Production deploy skripti (`prisma:deploy`) asosiy
+`admin@shortdoc.uz` hisobi yo'q bo'lsa uni yaratadi: `SEED_ADMIN_PASSWORD` berilmasa tasodifiy parol jurnalga bir marta
+chiqariladi.
+
+> ⚠️ **MUHIM:** Tizimni ommaviy ishga tushirishdan oldin administrator parolini darhol almashtiring!
 
 ---
 
-## 5. Zaxira nusxa (Backup) olish
+## 5. Render (Backend + Baza) va Vercel (Frontend) orqali Deploy
+
+### 5.1. Render — Backend
+| O'zgaruvchi | Qiymat |
+|---|---|
+| `NODE_ENV` | `production` |
+| `DATABASE_URL` | Render PostgreSQL ning **Internal** ulanish manzili |
+| `JWT_SECRET` | kamida 32 belgili tasodifiy kalit (`openssl rand -hex 32`) |
+| `CORS_ORIGIN` | Vercel domeni, masalan `https://shortdoc.vercel.app` (vergul bilan bir nechta) |
+| `APP_URL` | Vercel domeni (QR-kodlardagi tekshiruv havolasi uchun) |
+| `SEED_ADMIN_PASSWORD` | (ixtiyoriy) administrator boshlang'ich paroli |
+
+- Build: `npm ci && npx prisma generate && npm run build`, Start: `npm run prisma:deploy && npm start`.
+- Health check yo'li: `/health`.
+- Bazaga ulanish soni cheklangan bo'lsa `DATABASE_URL` oxiriga `&connection_limit=5` qo'shing.
+
+### 5.2. Vercel — Frontend
+- Root Directory: `frontend`.
+- `NEXT_PUBLIC_API_URL` = `https://<render-backend>.onrender.com` (SSE real-time oqimi to'g'ridan-to'g'ri backendga ulanishi shart;
+  Vercel rewrite orqali SSE ishlamaydi).
+
+### 5.3. Cheklovlar
+- **Yuklangan fayllar:** Render'ning bepul/standart xizmatlarida disk vaqtinchalik — har deploy yoki qayta ishga tushirishda
+  `uploads/` papkasi tozalanadi. Doimiy saqlash uchun Render **Persistent Disk** ulang (`UPLOAD_DIR` ni disk yo'liga
+  yo'naltiring) yoki S3-mos obyekt saqlash xizmatiga o'ting.
+- **Bepul reja:** Backend 15 daqiqa harakatsizlikdan keyin uxlaydi, birinchi so'rov 30–60 soniya olishi mumkin; uxlab turgan
+  paytda real-time (SSE) va soatlik cron (muddati o'tgan topshiriqlar) ishlamaydi.
+
+---
+
+## 6. Zaxira nusxa (Backup) olish
 
 PostgreSQL bazasining zaxira nusxasini muntazam saqlab borish uchun:
 ```bash

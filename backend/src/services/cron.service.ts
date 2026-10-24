@@ -14,42 +14,44 @@ export async function checkOverdueTasks(): Promise<number> {
         status: { in: ['PENDING', 'IN_PROGRESS'] },
         deadline: { lt: now },
       },
-      include: {
-        document: { select: { id: true, regNumber: true, title: true } },
+      select: {
+        id: true,
+        title: true,
+        assignedToId: true,
+        document: { select: { regNumber: true } },
       },
     });
 
-    for (const task of overdueTasks) {
-      await prisma.task.update({
-        where: { id: task.id },
+    if (overdueTasks.length === 0) return 0;
+
+    const notifTitle = 'Topshiriq muddati o‘tib ketdi';
+    const notifLink = '/tasks';
+    const notifications = overdueTasks.map((task) => ({
+      userId: task.assignedToId,
+      title: notifTitle,
+      message: `"${task.title}" topshirig‘i ijro muddati o‘tib ketdi (${task.document.regNumber}).`,
+      link: notifLink,
+    }));
+
+    // Holat va bildirishnomalar bitta tranzaksiyada, har biri uchun alohida so'rovsiz (N+1 oldini olish)
+    await prisma.$transaction([
+      prisma.task.updateMany({
+        where: { id: { in: overdueTasks.map((t) => t.id) }, status: { in: ['PENDING', 'IN_PROGRESS'] } },
         data: { status: 'OVERDUE' },
+      }),
+      prisma.notification.createMany({ data: notifications }),
+    ]);
+
+    notifications.forEach((n) => {
+      realtime.sendToUser(n.userId, 'NOTIFICATION', {
+        title: n.title,
+        message: n.message,
+        link: n.link,
       });
+      realtime.sendToUser(n.userId, 'COUNTS_UPDATE', {});
+    });
 
-      const notifTitle = 'Topshiriq muddati o‘tib ketdi';
-      const notifMessage = `"${task.title}" topshirig‘i ijro muddati o‘tib ketdi (${task.document.regNumber}).`;
-      const notifLink = '/tasks';
-
-      await prisma.notification.create({
-        data: {
-          userId: task.assignedToId,
-          title: notifTitle,
-          message: notifMessage,
-          link: notifLink,
-        },
-      });
-
-      realtime.sendToUser(task.assignedToId, 'NOTIFICATION', {
-        title: notifTitle,
-        message: notifMessage,
-        link: notifLink,
-      });
-
-      realtime.sendToUser(task.assignedToId, 'COUNTS_UPDATE', {});
-    }
-
-    if (overdueTasks.length > 0) {
-      console.log(`[Cron] ${overdueTasks.length} ta muddati o‘tgan topshiriq OVERDUE holatiga o‘tkazildi.`);
-    }
+    console.log(`[Cron] ${overdueTasks.length} ta muddati o‘tgan topshiriq OVERDUE holatiga o‘tkazildi.`);
 
     return overdueTasks.length;
   } catch (error) {

@@ -4,13 +4,16 @@ import { z } from 'zod';
 import { prisma } from '../prisma.js';
 import { generateToken } from '../utils/jwt.js';
 import { sendSuccess, sendError } from '../utils/response.js';
-import { authenticate, AuthRequest } from '../middleware/auth.js';
+import { authenticate, invalidateUserCache, AuthRequest } from '../middleware/auth.js';
 import { logActivity } from '../middleware/audit.js';
 import { realtime } from '../services/realtime.js';
 import { createStreamTicket } from '../services/ticket.service.js';
 import { loginLimiter, registerLimiter, checkEmailLimiter } from '../middleware/rateLimit.js';
 
 const router = Router();
+
+// Mavjud bo'lmagan email uchun ham bcrypt solishtiriladi: javob vaqti orqali foydalanuvchi mavjudligi bilinmasligi uchun
+const DUMMY_PASSWORD_HASH = '$2a$10$lpu9yDGfKS0yxqEO0XvOFuWDBqzfKueT9G3sxmSbdn0wipra1HKwG';
 
 // Stream ticket endpoint: authenticated client requests a one-time, 30s ticket for SSE
 router.post('/stream-ticket', authenticate, (req: AuthRequest, res) => {
@@ -84,12 +87,7 @@ router.post('/register', registerLimiter, async (req, res, next) => {
       } else {
         // 2. Agar bo'lim nomi uzatilgan bo'lsa (masalan "Axborot texnologiyalari fakulteti")
         const depByName = await prisma.department.findFirst({
-          where: {
-            OR: [
-              { name: { equals: data.departmentId, mode: 'insensitive' } },
-              { name: { contains: data.departmentId, mode: 'insensitive' } },
-            ],
-          },
+          where: { name: { equals: data.departmentId, mode: 'insensitive' } },
         });
 
         if (depByName) {
@@ -104,29 +102,26 @@ router.post('/register', registerLimiter, async (req, res, next) => {
     if (!finalDepartmentId && data.customDepartment && data.customDepartment.trim()) {
       const depName = data.customDepartment.trim();
       const depByName = await prisma.department.findFirst({
-        where: {
-          OR: [
-            { name: { equals: depName, mode: 'insensitive' } },
-            { name: { contains: depName, mode: 'insensitive' } },
-          ],
-        },
+        where: { name: { equals: depName, mode: 'insensitive' } },
       });
 
       if (depByName) {
         finalDepartmentId = depByName.id;
       } else {
-        // Yangi bo'lim sifatida bazaga kiritish
-        const generatedCode = 'DEP-' + Math.floor(100 + Math.random() * 900);
-        const newDep = await prisma.department.create({
-          data: {
-            name: depName,
-            code: generatedCode,
-            type: 'DEPARTMENT',
-          },
-        }).catch(() => null);
+        // Yangi bo'lim sifatida bazaga kiritish (kod to'qnashuvi bo'lsa qayta urinadi)
+        for (let attempt = 0; attempt < 5 && !finalDepartmentId; attempt++) {
+          const generatedCode = 'DEP-' + Math.floor(1000 + Math.random() * 9000);
+          const newDep = await prisma.department.create({
+            data: {
+              name: depName,
+              code: generatedCode,
+              type: 'DEPARTMENT',
+            },
+          }).catch(() => null);
 
-        if (newDep) {
-          finalDepartmentId = newDep.id;
+          if (newDep) {
+            finalDepartmentId = newDep.id;
+          }
         }
       }
     }
@@ -136,7 +131,7 @@ router.post('/register', registerLimiter, async (req, res, next) => {
     const user = await prisma.user.create({
       data: {
         fullName: data.fullName,
-        email: data.email.trim().toLowerCase(),
+        email: normalizedEmail,
         passwordHash,
         position: data.position,
         phone: data.phone || null,
@@ -164,16 +159,18 @@ router.post('/register', registerLimiter, async (req, res, next) => {
     const notifMessage = `${user.fullName} (${user.position}) tizimga kirish uchun ariza yubordi. Tasdiqlash talab etiladi.`;
     const notifLink = '/admin/users';
 
-    for (const admin of superAdmins) {
-      await prisma.notification.create({
-        data: {
+    if (superAdmins.length > 0) {
+      await prisma.notification.createMany({
+        data: superAdmins.map((admin) => ({
           userId: admin.id,
           title: notifTitle,
           message: notifMessage,
           link: notifLink,
-        },
+        })),
       });
+    }
 
+    for (const admin of superAdmins) {
       realtime.sendToUser(admin.id, 'NOTIFICATION', {
         title: notifTitle,
         message: notifMessage,
@@ -209,12 +206,18 @@ router.post('/login', loginLimiter, async (req, res, next) => {
       include: { department: true },
     });
 
-    if (!user) {
+    // Parol avval tekshiriladi: hisob holati (faol emas) faqat to'g'ri parol egasiga ma'lum qilinadi
+    const isMatch = await bcrypt.compare(password, user?.passwordHash ?? DUMMY_PASSWORD_HASH);
+
+    if (!user || !isMatch) {
       await logActivity({
-        userId: null,
+        userId: user?.id ?? null,
         action: 'LOGIN_FAILED',
         entity: 'AUTH',
-        details: `Muvaffaqiyatsiz kirish urinishi: '${normalizedEmail}' tizimda topilmadi`,
+        entityId: user?.id,
+        details: user
+          ? `Muvaffaqiyatsiz kirish urinishi: noto‘g‘ri parol (${normalizedEmail})`
+          : `Muvaffaqiyatsiz kirish urinishi: '${normalizedEmail}' tizimda topilmadi`,
         ipAddress: req.ip,
         userAgent: req.headers['user-agent'],
         requestId: (req as any).id,
@@ -234,21 +237,6 @@ router.post('/login', loginLimiter, async (req, res, next) => {
         requestId: (req as any).id,
       });
       return sendError(res, 'Sizning hisobingiz tasdiqlanmagan. Iltimos, administrator tasdiqlashini kuting.', 403);
-    }
-
-    const isMatch = await bcrypt.compare(password, user.passwordHash);
-    if (!isMatch) {
-      await logActivity({
-        userId: user.id,
-        action: 'LOGIN_FAILED',
-        entity: 'AUTH',
-        entityId: user.id,
-        details: `Muvaffaqiyatsiz kirish urinishi: noto‘g‘ri parol (${normalizedEmail})`,
-        ipAddress: req.ip,
-        userAgent: req.headers['user-agent'],
-        requestId: (req as any).id,
-      });
-      return sendError(res, 'Email yoki parol noto‘g‘ri', 401);
     }
 
     const token = generateToken({
@@ -300,7 +288,7 @@ router.get('/me', authenticate, async (req: AuthRequest, res, next) => {
       return sendError(res, 'Foydalanuvchi topilmadi', 404);
     }
 
-    const { passwordHash, ...safeUser } = user;
+    const { passwordHash, tokenVersion, ...safeUser } = user;
     return sendSuccess(res, safeUser, 'Foydalanuvchi ma’lumotlari');
   } catch (error) {
     next(error);
@@ -337,6 +325,7 @@ router.post('/change-password', authenticate, async (req: AuthRequest, res, next
         tokenVersion: { increment: 1 },
       },
     });
+    invalidateUserCache(user.id);
 
     await logActivity({
       userId: user.id,

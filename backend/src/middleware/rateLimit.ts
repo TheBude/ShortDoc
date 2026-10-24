@@ -1,9 +1,10 @@
 import rateLimit from 'express-rate-limit';
 
-// Global API rate limiter: 500 requests per 15 minutes per IP
+// Global API rate limiter: 2000 requests per 15 minutes per IP
+// (universitet tarmog'ida ko'plab xodimlar bitta umumiy IP (NAT) ortida ishlaydi)
 export const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 500,
+  max: 2000,
   standardHeaders: true,
   legacyHeaders: false,
   message: {

@@ -19,6 +19,11 @@ export const server = app.listen(PORT, HOST, () => {
   startCronJobs();
 });
 
+// Render/Nginx kabi proxylar ulanishni 60s gacha ochiq ushlaydi. Node'ning standart 5s keep-alive
+// qiymati proxy bilan poyga (race) hosil qilib, vaqti-vaqti bilan 502 xatolarga olib keladi.
+server.keepAliveTimeout = 65_000;
+server.headersTimeout = 66_000;
+
 let isShuttingDown = false;
 
 // Graceful shutdown
@@ -70,8 +75,10 @@ export const gracefulShutdown = async (signal: string) => {
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
+// Kutilmagan xatodan keyin jarayon holati noaniq bo'ladi: log yozib, chiqamiz (Render avtomatik qayta ishga tushiradi)
 process.on('uncaughtException', (err) => {
   console.error('❌ [ShortDoc Server Uncaught Exception]:', err);
+  process.exit(1);
 });
 
 process.on('unhandledRejection', (reason) => {

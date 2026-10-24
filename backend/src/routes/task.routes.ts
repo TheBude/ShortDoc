@@ -6,8 +6,63 @@ import { authenticate, AuthRequest } from '../middleware/auth.js';
 import { logActivity } from '../middleware/audit.js';
 import { realtime } from '../services/realtime.js';
 import { canCreateTask, canManageTask } from '../services/access.js';
+import { optionalDate } from '../utils/validation.js';
 
 const router = Router();
+
+/**
+ * Hujjatdagi barcha (bekor qilinmagan) topshiriqlar bajarilgan bo'lsa, IN_EXECUTION holatidagi hujjatni COMPLETED qiladi.
+ * Bekor qilingan topshiriqlar hisobga olinmaydi, aks holda ular hujjat yakunlanishini abadiy to'sib qo'yardi.
+ */
+async function completeDocumentIfAllTasksDone(documentId: string, actorId: string) {
+  const tasks = await prisma.task.findMany({
+    where: { documentId, status: { not: 'CANCELLED' } },
+    select: { status: true },
+  });
+
+  if (tasks.length === 0 || !tasks.every((t) => t.status === 'COMPLETED')) return;
+
+  const doc = await prisma.document.findUnique({
+    where: { id: documentId },
+    select: { id: true, status: true, creatorId: true, regNumber: true },
+  });
+
+  if (!doc || doc.status !== 'IN_EXECUTION') return;
+
+  const title = 'Hujjat ijrosi to‘liq yakunlandi';
+  const message = `${doc.regNumber} hujjati bo‘yicha barcha topshiriqlar bajarildi.`;
+  const link = `/documents/${documentId}`;
+  const notifyCreator = !!doc.creatorId && doc.creatorId !== actorId;
+
+  const completed = await prisma.$transaction(async (tx) => {
+    const changed = await tx.document.updateMany({
+      where: { id: documentId, status: 'IN_EXECUTION' },
+      data: { status: 'COMPLETED' },
+    });
+    if (changed.count === 0) return false;
+
+    await tx.documentStatusHistory.create({
+      data: {
+        documentId,
+        changedById: actorId,
+        oldStatus: 'IN_EXECUTION',
+        newStatus: 'COMPLETED',
+        reason: 'Barcha ijro topshiriqlari muvaffaqiyatli yakunlandi',
+      },
+    });
+
+    if (notifyCreator) {
+      await tx.notification.create({ data: { userId: doc.creatorId, title, message, link } });
+    }
+
+    return true;
+  });
+
+  if (completed && notifyCreator) {
+    realtime.sendToUser(doc.creatorId, 'NOTIFICATION', { title, message, link });
+    realtime.sendToUser(doc.creatorId, 'COUNTS_UPDATE', {});
+  }
+}
 
 const listTasksQuerySchema = z.object({
   documentId: z.string().uuid('Noto‘g‘ri hujjat identifikatori').optional(),
@@ -81,7 +136,7 @@ router.post('/', authenticate, async (req: AuthRequest, res, next) => {
       title: z.string().min(2, 'Topshiriq sarlavhasi talab qilinadi'),
       description: z.string().optional(),
       assignedToId: z.string().uuid('Mas’ul xodim tanlanishi shart (UUID)'),
-      deadline: z.string().optional().nullable(),
+      deadline: optionalDate,
     });
 
     const data = schema.parse(req.body);
@@ -196,38 +251,8 @@ router.patch('/:id/status', authenticate, async (req: AuthRequest, res, next) =>
       },
     });
 
-    // Agar topshiriq bajarilgan bo'lsa, hujjatdagi barcha topshiriqlar bajarilganini tekshiramiz
     if (status === 'COMPLETED') {
-      const allTasks = await prisma.task.findMany({
-        where: { documentId: existingTask.documentId },
-      });
-      const allDone = allTasks.every((t) => t.status === 'COMPLETED');
-
-      if (allDone && existingTask.document.status === 'IN_EXECUTION') {
-        await prisma.document.update({
-          where: { id: existingTask.documentId },
-          data: { status: 'COMPLETED' },
-        });
-
-        await prisma.documentStatusHistory.create({
-          data: {
-            documentId: existingTask.documentId,
-            changedById: req.user!.userId,
-            oldStatus: 'IN_EXECUTION',
-            newStatus: 'COMPLETED',
-            reason: 'Barcha ijro topshiriqlari muvaffaqiyatli yakunlandi',
-          },
-        });
-
-        if (existingTask.document.creatorId) {
-          realtime.sendToUser(existingTask.document.creatorId, 'NOTIFICATION', {
-            title: 'Hujjat ijrosi to‘liq yakunlandi',
-            message: `${existingTask.document.regNumber} hujjati bo‘yicha barcha topshiriqlar bajarildi.`,
-            link: `/documents/${existingTask.documentId}`,
-          });
-          realtime.sendToUser(existingTask.document.creatorId, 'COUNTS_UPDATE', {});
-        }
-      }
+      await completeDocumentIfAllTasksDone(existingTask.documentId, req.user!.userId);
     }
 
     await logActivity({
@@ -277,6 +302,10 @@ router.post('/:id/submit-result', authenticate, async (req: AuthRequest, res, ne
       return sendError(res, 'Topshiriq natijasini faqat tayinlangan mas’ul ijrochi topshirishi mumkin', 403);
     }
 
+    if (existingTask.status === 'CANCELLED') {
+      return sendError(res, 'Bekor qilingan topshiriq bo‘yicha natija topshirib bo‘lmaydi', 409);
+    }
+
     const task = await prisma.task.update({
       where: { id },
       data: {
@@ -290,37 +319,7 @@ router.post('/:id/submit-result', authenticate, async (req: AuthRequest, res, ne
       },
     });
 
-    // Hujjatdagi barcha topshiriqlar bajarilganini tekshirish
-    const allTasks = await prisma.task.findMany({
-      where: { documentId: existingTask.documentId },
-    });
-    const allDone = allTasks.every((t) => t.status === 'COMPLETED');
-
-    if (allDone && existingTask.document.status === 'IN_EXECUTION') {
-      await prisma.document.update({
-        where: { id: existingTask.documentId },
-        data: { status: 'COMPLETED' },
-      });
-
-      await prisma.documentStatusHistory.create({
-        data: {
-          documentId: existingTask.documentId,
-          changedById: req.user!.userId,
-          oldStatus: 'IN_EXECUTION',
-          newStatus: 'COMPLETED',
-          reason: 'Barcha ijro topshiriqlari muvaffaqiyatli yakunlandi',
-        },
-      });
-
-      if (existingTask.document.creatorId) {
-        realtime.sendToUser(existingTask.document.creatorId, 'NOTIFICATION', {
-          title: 'Hujjat ijrosi to‘liq yakunlandi',
-          message: `${existingTask.document.regNumber} hujjati bo‘yicha barcha topshiriqlar bajarildi.`,
-          link: `/documents/${existingTask.documentId}`,
-        });
-        realtime.sendToUser(existingTask.document.creatorId, 'COUNTS_UPDATE', {});
-      }
-    }
+    await completeDocumentIfAllTasksDone(existingTask.documentId, req.user!.userId);
 
     if (task.createdById && task.createdById !== req.user!.userId) {
       await prisma.notification.create({

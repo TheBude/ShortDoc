@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { prisma } from '../prisma.js';
 import { sendSuccess, sendError } from '../utils/response.js';
-import { authenticate, authorize, AuthRequest } from '../middleware/auth.js';
+import { authenticate, authorize, invalidateUserCache, AuthRequest } from '../middleware/auth.js';
 import { logActivity } from '../middleware/audit.js';
 import { realtime } from '../services/realtime.js';
 
@@ -23,7 +23,11 @@ router.get('/', authenticate, async (req: AuthRequest, res, next) => {
     const query = listUsersQuerySchema.parse(req.query);
     const { role, departmentId, search, page, limit } = query;
 
+    const isPrivileged = ['SUPER_ADMIN', 'LEADERSHIP', 'CHANCELLERY', 'DEPARTMENT_HEAD'].includes(req.user?.role || '');
+
     const where: any = {};
+    // Oddiy xodimlarga tasdiqlanmagan (ariza bosqichidagi) foydalanuvchilar ko'rsatilmaydi
+    if (!isPrivileged) where.isActive = true;
     if (role) where.role = role;
     if (departmentId) where.departmentId = departmentId;
     if (search) {
@@ -57,8 +61,6 @@ router.get('/', authenticate, async (req: AuthRequest, res, next) => {
         take: limit,
       }),
     ]);
-
-    const isPrivileged = ['SUPER_ADMIN', 'LEADERSHIP', 'CHANCELLERY', 'DEPARTMENT_HEAD'].includes(req.user?.role || '');
 
     const mappedUsers = users.map((u) => {
       const baseUser: any = {
@@ -186,6 +188,11 @@ router.put('/:id', authenticate, authorize(['SUPER_ADMIN']), async (req: AuthReq
 
     const data = schema.parse(req.body);
 
+    // Administrator o'z rolini pasaytirib yoki o'zini nofaol qilib tizimdan chiqib ketmasligi uchun
+    if (id === req.user!.userId && ((data.role && data.role !== existingUser.role) || data.isActive === false)) {
+      return sendError(res, 'O‘z rolingizni o‘zgartirish yoki o‘zingizni nofaol qilish mumkin emas', 400);
+    }
+
     const updateData: any = { ...data };
     let passwordChanged = false;
     let roleChanged = false;
@@ -215,6 +222,7 @@ router.put('/:id', authenticate, authorize(['SUPER_ADMIN']), async (req: AuthReq
         departmentId: true,
       },
     });
+    invalidateUserCache(id);
 
     // Audit logs
     if (passwordChanged) {
@@ -273,6 +281,7 @@ router.post('/:id/approve', authenticate, authorize(['SUPER_ADMIN']), async (req
       where: { id },
       data: { isActive: true },
     });
+    invalidateUserCache(id);
 
     await prisma.notification.create({
       data: {
@@ -315,10 +324,15 @@ router.post('/:id/reject', authenticate, authorize(['SUPER_ADMIN']), async (req:
       return sendError(res, 'Noto‘g‘ri foydalanuvchi identifikatori (UUID)', 400);
     }
 
+    if (id === req.user!.userId) {
+      return sendError(res, 'O‘zingizni rad etish (nofaol qilish) mumkin emas', 400);
+    }
+
     const user = await prisma.user.update({
       where: { id },
       data: { isActive: false },
     });
+    invalidateUserCache(id);
 
     await prisma.notification.create({
       data: {

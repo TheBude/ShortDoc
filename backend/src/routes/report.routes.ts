@@ -7,95 +7,140 @@ import { generateReportsExcel } from '../utils/excelGenerator.js';
 
 const router = Router();
 
+type ReportUser = NonNullable<AuthRequest['user']>;
+
+// Tugallanmagan topshiriq holatlari (muddati o'tib OVERDUE ga o'tganlari ham hali bajarilmagan hisoblanadi)
+const OPEN_TASK_STATUSES = ['PENDING', 'IN_PROGRESS', 'OVERDUE'] as any[];
+
+// Eksport uchun hujjatlar soni chegarasi (xotira to'lib ketmasligi uchun)
+const EXPORT_MAX_ROWS = 5000;
+
+const exportDocumentSelect = {
+  regNumber: true,
+  title: true,
+  documentType: true,
+  category: true,
+  status: true,
+  priority: true,
+  createdAt: true,
+  deadline: true,
+  department: { select: { name: true } },
+  creator: { select: { fullName: true } },
+  assignee: { select: { fullName: true } },
+} as const;
+
+// CSV formula injection'dan himoya: "=", "+", "-", "@" bilan boshlanuvchi matn oldiga apostrof qo'yiladi
+const CSV_DANGEROUS_PREFIX = /^[=+\-@\t\r]/;
+
+const csvCell = (value: string = '') => {
+  const safe = CSV_DANGEROUS_PREFIX.test(value) ? `'${value}` : value;
+  return `"${safe.replace(/"/g, '""')}"`;
+};
+
+/**
+ * Foydalanuvchiga ko'rinadigan hisoblagichlar. Dashboard va yengil /counts endpointi uchun umumiy.
+ * Hujjat turi va holati bo'yicha sonlar groupBy bilan olinadi (avval har biri uchun alohida COUNT so'rovi edi).
+ */
+async function buildCounts(user: ReportUser) {
+  const isLeadershipOrAdmin = ['SUPER_ADMIN', 'LEADERSHIP', 'CHANCELLERY'].includes(user.role);
+
+  const whereDoc: any = buildDocumentVisibilityWhere(user);
+  const whereTask: any = isLeadershipOrAdmin
+    ? {}
+    : { OR: [{ assignedToId: user.userId }, { createdById: user.userId }] };
+
+  const now = new Date();
+  const threeDaysLater = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+
+  const [
+    byStatus,
+    byType,
+    archivedCount,
+    pendingSignaturesCount,
+    pendingTasksCount,
+    overdueTasksCount,
+    approachingDeadlineCount,
+    pendingUsersCount,
+  ] = await Promise.all([
+    prisma.document.groupBy({ by: ['status'], where: whereDoc, _count: { _all: true } }),
+    prisma.document.groupBy({ by: ['documentType'], where: whereDoc, _count: { _all: true } }),
+    prisma.document.count({
+      where: whereDoc.OR
+        ? { AND: [{ OR: whereDoc.OR }, { OR: [{ status: 'ARCHIVED' }, { isArchived: true }] }] }
+        : { OR: [{ status: 'ARCHIVED' }, { isArchived: true }] },
+    }),
+    // Faqat imzolash bosqichidagi hujjatlar: rad etilgan hujjatda qolgan vizalar "kutilayotgan" hisoblanmaydi
+    prisma.documentApproval.count({
+      where: {
+        approverId: user.userId,
+        status: 'PENDING',
+        document: { status: 'IN_APPROVAL' },
+      },
+    }),
+    prisma.task.count({ where: { ...whereTask, status: { in: OPEN_TASK_STATUSES } } }),
+    prisma.task.count({
+      where: { ...whereTask, status: { in: OPEN_TASK_STATUSES }, deadline: { lt: now } },
+    }),
+    prisma.task.count({
+      where: {
+        ...whereTask,
+        status: { in: ['PENDING', 'IN_PROGRESS'] as any[] },
+        deadline: { gte: now, lte: threeDaysLater },
+      },
+    }),
+    // SuperAdmin uchun tasdiqlash kutilayotgan foydalanuvchilar soni
+    isLeadershipOrAdmin ? prisma.user.count({ where: { isActive: false } }) : Promise.resolve(0),
+  ]);
+
+  const statusCount = (status: string) => byStatus.find((r) => r.status === status)?._count._all ?? 0;
+  const typeCount = (type: string) => byType.find((r) => r.documentType === type)?._count._all ?? 0;
+
+  return {
+    total: byStatus.reduce((sum, r) => sum + r._count._all, 0),
+    incoming: typeCount('INCOMING'),
+    outgoing: typeCount('OUTGOING'),
+    internal: typeCount('INTERNAL'),
+    inApproval: pendingSignaturesCount, // Foydalanuvchining shaxsiy imzosi kutilayotganlar soni
+    registered: statusCount('REGISTERED'),
+    archived: archivedCount,
+    pendingSignatures: pendingSignaturesCount,
+    pendingTasks: pendingTasksCount,
+    inExecution: statusCount('IN_EXECUTION'),
+    completed: statusCount('COMPLETED'),
+    rejected: statusCount('REJECTED'),
+    overdue: overdueTasksCount,
+    approachingDeadline: approachingDeadlineCount,
+    pendingUsers: pendingUsersCount,
+  };
+}
+
+// Yengil hisoblagichlar (navbar nishonlari va real-time yangilanish uchun; dashboard ro'yxatlarini yuklamaydi)
+router.get('/counts', authenticate, async (req: AuthRequest, res: Response, next) => {
+  try {
+    const counts = await buildCounts(req.user!);
+    return sendSuccess(res, { counts }, 'Hisoblagichlar');
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Asosiy dashboard statistikasi
 router.get('/dashboard', authenticate, async (req: AuthRequest, res: Response, next) => {
   try {
     const isLeadershipOrAdmin = ['SUPER_ADMIN', 'LEADERSHIP', 'CHANCELLERY'].includes(req.user!.role);
 
-    const whereDoc = buildDocumentVisibilityWhere(req.user!);
-    const whereTask: any = {};
-
-    if (!isLeadershipOrAdmin) {
-      whereTask.OR = [
-        { assignedToId: req.user!.userId },
-        { createdById: req.user!.userId },
-      ];
-    }
-
-    const now = new Date();
-    const threeDaysLater = new Date();
-    threeDaysLater.setDate(now.getDate() + 3);
-
-    const [
-      totalDocuments,
-      incomingCount,
-      outgoingCount,
-      internalCount,
-      inExecutionCount,
-      completedCount,
-      rejectedCount,
-      inApprovalCount,
-      registeredCount,
-      archivedCount,
-      pendingSignaturesCount,
-      pendingTasksCount,
-      overdueTasksCount,
-      approachingDeadlineCount,
-      recentActivities,
-      departmentsStat,
-      pendingMySignaturesDocs,
-      myPendingTasksList,
-      mySubmittedDocs,
-      pendingUsersCount,
-    ] = await Promise.all([
-      prisma.document.count({ where: whereDoc }),
-      prisma.document.count({ where: { ...whereDoc, documentType: 'INCOMING' } }),
-      prisma.document.count({ where: { ...whereDoc, documentType: 'OUTGOING' } }),
-      prisma.document.count({ where: { ...whereDoc, documentType: 'INTERNAL' } }),
-      prisma.document.count({ where: { ...whereDoc, status: 'IN_EXECUTION' } }),
-      prisma.document.count({ where: { ...whereDoc, status: 'COMPLETED' } }),
-      prisma.document.count({ where: { ...whereDoc, status: 'REJECTED' } }),
-      prisma.document.count({ where: { ...whereDoc, status: 'IN_APPROVAL' } }),
-      prisma.document.count({ where: { ...whereDoc, status: 'REGISTERED' } }),
-      prisma.document.count({
-        where: whereDoc.OR
-          ? { AND: [{ OR: whereDoc.OR }, { OR: [{ status: 'ARCHIVED' }, { isArchived: true }] }] }
-          : { OR: [{ status: 'ARCHIVED' }, { isArchived: true }] },
-      }),
-      prisma.documentApproval.count({
-        where: {
-          approverId: req.user!.userId,
-          status: 'PENDING',
-        },
-      }),
-      prisma.task.count({
-        where: {
-          ...whereTask,
-          status: { in: ['PENDING', 'IN_PROGRESS'] },
-        },
-      }),
-      prisma.task.count({
-        where: {
-          ...whereTask,
-          status: { in: ['PENDING', 'IN_PROGRESS'] },
-          deadline: { lt: now },
-        },
-      }),
-      prisma.task.count({
-        where: {
-          ...whereTask,
-          status: { in: ['PENDING', 'IN_PROGRESS'] },
-          deadline: { gte: now, lte: threeDaysLater },
-        },
-      }),
+    const [counts, recentActivities, departmentsStat, pendingDocs, myTasks, mySubmitted] = await Promise.all([
+      buildCounts(req.user!),
       prisma.auditLog.findMany({
         where: !isLeadershipOrAdmin ? { userId: req.user!.userId } : {},
         take: 8,
         orderBy: { createdAt: 'desc' },
         include: { user: { select: { fullName: true, role: true } } },
       }),
+      // Hujjatlari eng ko'p bo'lgan 8 ta bo'lim
       prisma.department.findMany({
         take: 8,
+        orderBy: { documents: { _count: 'desc' } },
         select: {
           id: true,
           name: true,
@@ -106,6 +151,7 @@ router.get('/dashboard', authenticate, async (req: AuthRequest, res: Response, n
       // Foydalanuvchining shaxsan o'zi imzolashi kerak bo'lgan hujjatlar (Top 5)
       prisma.document.findMany({
         where: {
+          status: 'IN_APPROVAL',
           approvals: {
             some: {
               approverId: req.user!.userId,
@@ -128,7 +174,7 @@ router.get('/dashboard', authenticate, async (req: AuthRequest, res: Response, n
       prisma.task.findMany({
         where: {
           assignedToId: req.user!.userId,
-          status: { in: ['PENDING', 'IN_PROGRESS'] },
+          status: { in: OPEN_TASK_STATUSES },
         },
         take: 5,
         orderBy: [{ deadline: 'asc' }, { createdAt: 'desc' }],
@@ -149,40 +195,18 @@ router.get('/dashboard', authenticate, async (req: AuthRequest, res: Response, n
           },
         },
       }),
-      // SuperAdmin uchun tasdiqlash kutilayotgan foydalanuvchilar soni
-      isLeadershipOrAdmin ? prisma.user.count({ where: { isActive: false } }) : 0,
     ]);
-
-    const pendingDocs = (pendingMySignaturesDocs || []) as any[];
-    const myTasks = (myPendingTasksList || []) as any[];
-    const mySubmitted = (mySubmittedDocs || []) as any[];
 
     return sendSuccess(
       res,
       {
-        counts: {
-          total: totalDocuments,
-          incoming: incomingCount,
-          outgoing: outgoingCount,
-          internal: internalCount,
-          inApproval: pendingSignaturesCount, // Foydalanuvchining shaxsiy imzosi kutilayotganlar soni
-          registered: registeredCount,
-          archived: archivedCount,
-          pendingSignatures: pendingSignaturesCount,
-          pendingTasks: pendingTasksCount,
-          inExecution: inExecutionCount,
-          completed: completedCount,
-          rejected: rejectedCount,
-          overdue: overdueTasksCount,
-          approachingDeadline: approachingDeadlineCount,
-          pendingUsers: pendingUsersCount,
-        },
+        counts,
         recentActivities,
         departmentsStat,
         actionItems: {
           pendingSignatures: pendingDocs,
-          myTasks: myTasks,
-          mySubmitted: mySubmitted,
+          myTasks,
+          mySubmitted,
         },
       },
       'Dashboard ko‘rsatkichlari'
@@ -200,12 +224,9 @@ router.get(['/export-excel', '/export-xlsx'], authenticate, async (req: AuthRequ
     const [documents, departments] = await Promise.all([
       prisma.document.findMany({
         where,
-        include: {
-          department: true,
-          creator: true,
-          assignee: true,
-        },
+        select: exportDocumentSelect,
         orderBy: { createdAt: 'desc' },
+        take: EXPORT_MAX_ROWS,
       }),
       prisma.department.findMany({
         select: {
@@ -257,36 +278,20 @@ router.get(['/export-excel', '/export-xlsx'], authenticate, async (req: AuthRequ
     res.setHeader('Content-Length', excelBuffer.length);
 
     return res.end(excelBuffer);
-  } catch (error: any) {
-    console.error('❌ [EXPORT-EXCEL XATOLIK]:', error);
-    return res.status(500).json({
-      success: false,
-      message: error?.message || 'Excel hisobotini yaratishda xatolik yuz berdi',
-    });
+  } catch (error) {
+    next(error);
   }
 });
 
 // CSV formatida hisobot eksport qilish (Tozalangan apostroflar va universal UTF-8 BOM bilan)
 router.get('/export-csv', authenticate, async (req: AuthRequest, res: Response, next) => {
   try {
-    const where: any = {};
-    if (req.user!.role === 'STAFF') {
-      where.OR = [
-        { creatorId: req.user!.userId },
-        { assigneeId: req.user!.userId },
-      ];
-    } else if (req.user!.role === 'DEPARTMENT_HEAD' && req.user!.departmentId) {
-      where.departmentId = req.user!.departmentId;
-    }
-
+    // Hujjatlar ro'yxati va Excel eksporti bilan bir xil ko'rinish qoidasi
     const documents = await prisma.document.findMany({
-      where,
-      include: {
-        department: true,
-        creator: true,
-        assignee: true,
-      },
+      where: buildDocumentVisibilityWhere(req.user!),
+      select: exportDocumentSelect,
       orderBy: { createdAt: 'desc' },
+      take: EXPORT_MAX_ROWS,
     });
 
     const formatType = (type: string) => {
@@ -356,14 +361,14 @@ router.get('/export-csv', authenticate, async (req: AuthRequest, res: Response, 
     ];
 
     const rows = documents.map((d) => [
-      `"${clean(d.regNumber)}"`,
-      `"${clean(d.title).replace(/"/g, '""')}"`,
-      `"${formatType(d.documentType)}"`,
-      `"${clean(formatCategory(d.category))}"`,
-      `"${formatStatus(d.status)}"`,
-      `"${formatPriority(d.priority)}"`,
-      `"${clean(d.department?.name || 'Noma’lum')}"`,
-      `"${clean(d.assignee?.fullName || d.creator?.fullName || '')}"`,
+      csvCell(clean(d.regNumber)),
+      csvCell(clean(d.title)),
+      csvCell(formatType(d.documentType)),
+      csvCell(clean(formatCategory(d.category))),
+      csvCell(formatStatus(d.status)),
+      csvCell(formatPriority(d.priority)),
+      csvCell(clean(d.department?.name || 'Noma’lum')),
+      csvCell(clean(d.assignee?.fullName || d.creator?.fullName || '')),
       d.createdAt ? new Date(d.createdAt).toLocaleDateString('uz-UZ') : '',
       d.deadline ? new Date(d.deadline).toLocaleDateString('uz-UZ') : 'Belgilanmagan',
     ]);
@@ -372,7 +377,7 @@ router.get('/export-csv', authenticate, async (req: AuthRequest, res: Response, 
 
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', 'attachment; filename="SamDU_ShortDoc_Hisobot.csv"');
-    return res.send('\uFEFF' + csvContent);
+    return res.send('﻿' + csvContent);
   } catch (error) {
     next(error);
   }

@@ -61,6 +61,8 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [activeToast, setActiveToast] = useState<ToastItem | null>(null);
   const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // SSE ulanishi faol bo'lsa polling kerak emas (server o'zgarishlarni o'zi yuboradi)
+  const sseConnectedRef = useRef(false);
 
   const showToast = useCallback((toast: ToastItem) => {
     playNotificationSound();
@@ -74,7 +76,11 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
   const refreshCounts = useCallback(async () => {
     if (!user) return;
     try {
-      const res = await fetchApi('/reports/dashboard');
+      // Yengil /reports/counts endpointi; eski backend versiyasida bo'lmasa to'liq dashboard'ga qaytiladi
+      let res = await fetchApi('/reports/counts');
+      if (!res.success) {
+        res = await fetchApi('/reports/dashboard');
+      }
       if (res.success && res.data?.counts) {
         setCounts(res.data.counts);
       }
@@ -134,14 +140,29 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
     }
   }, [user, refreshCounts, refreshNotifications]);
 
-  // Periodic polling fallback (every 12s) to guarantee resilience
+  // Polling faqat zaxira: SSE uzilgan va sahifa ochiq (ko'rinib turgan) bo'lsagina ishlaydi
   useEffect(() => {
     if (!user) return;
+
     const interval = setInterval(() => {
+      if (sseConnectedRef.current || document.hidden) return;
       refreshCounts();
       refreshNotifications();
-    }, 12000);
-    return () => clearInterval(interval);
+    }, 30000);
+
+    // Orqa fondagi sahifaga qaytilganda ma'lumotlar bir marta yangilanadi
+    const onVisible = () => {
+      if (!document.hidden) {
+        refreshCounts();
+        refreshNotifications();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [user, refreshCounts, refreshNotifications]);
 
   // Real-time SSE Connection
@@ -175,6 +196,9 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
         const sseUrl = `${baseUrl}/notifications/stream?ticket=${encodeURIComponent(ticketRes.data.ticket)}`;
 
         eventSource = new EventSource(sseUrl);
+        eventSource.onopen = () => {
+          sseConnectedRef.current = true;
+        };
 
         // APPROVAL_NEEDED: A new document needs this user's signature
         eventSource.addEventListener('APPROVAL_NEEDED', (e: MessageEvent) => {
@@ -238,6 +262,7 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
         });
 
         eventSource.onerror = () => {
+          sseConnectedRef.current = false;
           if (eventSource) {
             eventSource.close();
             eventSource = null;
@@ -259,6 +284,7 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
 
     return () => {
       isDisposed = true;
+      sseConnectedRef.current = false;
       if (eventSource) eventSource.close();
       if (reconnectTimeout) clearTimeout(reconnectTimeout);
     };

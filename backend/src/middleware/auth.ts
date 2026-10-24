@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { verifyToken, JwtPayload } from '../utils/jwt.js';
 import { sendError } from '../utils/response.js';
 import { prisma } from '../prisma.js';
+import { config } from '../config.js';
 import { consumeStreamTicket } from '../services/ticket.service.js';
 
 export interface AuthRequest extends Request {
@@ -10,6 +11,68 @@ export interface AuthRequest extends Request {
     position?: string;
   };
 }
+
+const authUserSelect = {
+  id: true,
+  email: true,
+  role: true,
+  departmentId: true,
+  fullName: true,
+  position: true,
+  isActive: true,
+  tokenVersion: true,
+} as const;
+
+type AuthUserRecord = {
+  id: string;
+  email: string;
+  role: string;
+  departmentId: string | null;
+  fullName: string;
+  position: string;
+  isActive: boolean;
+  tokenVersion: number;
+};
+
+// Har bir so'rovda bazaga murojaat qilmaslik uchun foydalanuvchi holati qisqa muddatga keshlanadi.
+// Rol/faollik/parol o'zgarganda `invalidateUserCache` chaqiriladi, shuning uchun eskirish muddati kichik.
+const USER_CACHE_TTL_MS = 5_000;
+const USER_CACHE_MAX_SIZE = 2_000;
+const userCache = new Map<string, { user: AuthUserRecord; expiresAt: number }>();
+
+export const invalidateUserCache = (userId?: string) => {
+  if (userId) userCache.delete(userId);
+  else userCache.clear();
+};
+
+async function loadAuthUser(userId: string): Promise<AuthUserRecord | null> {
+  // Testlar bazani to'g'ridan-to'g'ri o'zgartiradi, shuning uchun test muhitida kesh o'chirilgan
+  const useCache = !config.isTest;
+
+  if (useCache) {
+    const hit = userCache.get(userId);
+    if (hit && hit.expiresAt > Date.now()) return hit.user;
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: authUserSelect });
+
+  if (user && useCache) {
+    if (userCache.size >= USER_CACHE_MAX_SIZE) userCache.clear();
+    userCache.set(userId, { user, expiresAt: Date.now() + USER_CACHE_TTL_MS });
+  }
+
+  return user;
+}
+
+const toRequestUser = (dbUser: AuthUserRecord): NonNullable<AuthRequest['user']> => ({
+  userId: dbUser.id,
+  email: dbUser.email,
+  role: dbUser.role,
+  departmentId: dbUser.departmentId,
+  fullName: dbUser.fullName,
+  position: dbUser.position,
+  tokenVersion: dbUser.tokenVersion,
+});
 
 export const authenticate = async (
   req: AuthRequest,
@@ -27,22 +90,16 @@ export const authenticate = async (
     if (!token) {
       return sendError(res, 'Autentifikatsiya talab qilinadi. Token topilmadi.', 401);
     }
-    const payload = verifyToken(token);
 
-    // Verify user is still active in DB and tokenVersion matches
-    const dbUser = await prisma.user.findUnique({
-      where: { id: payload.userId },
-      select: {
-        id: true,
-        email: true,
-        role: true,
-        departmentId: true,
-        fullName: true,
-        position: true,
-        isActive: true,
-        tokenVersion: true,
-      },
-    });
+    let payload: JwtPayload;
+    try {
+      payload = verifyToken(token);
+    } catch {
+      return sendError(res, 'Yaroqsiz yoki muddati o‘tgan token.', 401);
+    }
+
+    // Foydalanuvchi hali faol ekanini va tokenVersion mosligini tekshirish
+    const dbUser = await loadAuthUser(payload.userId);
 
     if (!dbUser || !dbUser.isActive) {
       return sendError(res, 'Foydalanuvchi hisobi faol emas yoki mavjud emas.', 403);
@@ -53,19 +110,11 @@ export const authenticate = async (
       return sendError(res, 'Sessiya muddati tugagan yoki parol o‘zgartirilgan. Qaytadan kiring.', 401);
     }
 
-    req.user = {
-      userId: dbUser.id,
-      email: dbUser.email,
-      role: dbUser.role,
-      departmentId: dbUser.departmentId,
-      fullName: dbUser.fullName,
-      position: dbUser.position,
-      tokenVersion: dbUser.tokenVersion,
-    };
-
+    req.user = toRequestUser(dbUser);
     next();
   } catch (error) {
-    return sendError(res, 'Yaroqsiz yoki muddati o‘tgan token.', 401);
+    // Baza xatosi kabi ichki muammolar 401 emas, 500 bo'lishi kerak (aks holda frontend foydalanuvchini tizimdan chiqarib yuboradi)
+    next(error);
   }
 };
 
@@ -87,7 +136,11 @@ export const authenticateStream = async (
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.split(' ')[1];
-      tokenPayload = verifyToken(token);
+      try {
+        tokenPayload = verifyToken(token);
+      } catch {
+        return sendError(res, 'Yaroqsiz yoki muddati o‘tgan ulanish.', 401);
+      }
       userId = tokenPayload.userId;
     }
 
@@ -100,19 +153,7 @@ export const authenticateStream = async (
       return sendError(res, 'SSE ulanishi uchun ruxsat berilmadi. Yaroqli ticket yoki token taqdim etilmadi.', 401);
     }
 
-    const dbUser = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        role: true,
-        departmentId: true,
-        fullName: true,
-        position: true,
-        isActive: true,
-        tokenVersion: true,
-      },
-    });
+    const dbUser = await loadAuthUser(userId);
 
     if (!dbUser || !dbUser.isActive) {
       return sendError(res, 'Foydalanuvchi hisobi faol emas yoki mavjud emas.', 403);
@@ -122,19 +163,10 @@ export const authenticateStream = async (
       return sendError(res, 'Sessiya muddati tugagan yoki parol o‘zgartirilgan. Qaytadan kiring.', 401);
     }
 
-    req.user = {
-      userId: dbUser.id,
-      email: dbUser.email,
-      role: dbUser.role,
-      departmentId: dbUser.departmentId,
-      fullName: dbUser.fullName,
-      position: dbUser.position,
-      tokenVersion: dbUser.tokenVersion,
-    };
-
+    req.user = toRequestUser(dbUser);
     next();
   } catch (error) {
-    return sendError(res, 'Yaroqsiz yoki muddati o‘tgan ulanish.', 401);
+    next(error);
   }
 };
 
