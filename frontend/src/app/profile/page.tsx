@@ -5,7 +5,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { useAuth } from '@/context/AuthContext';
 import { fetchApi } from '@/lib/api';
 import { getRoleLabel } from '@/lib/labels';
-import { Mail, Lock, User as UserIcon, Building, Briefcase, Phone, ShieldCheck, Camera, Trash2, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Mail, Lock, User as UserIcon, Building, Briefcase, Phone, ShieldCheck, Camera, Trash2, Eye, EyeOff, CheckCircle2, AlertTriangle } from 'lucide-react';
 
 const inputClass =
   'w-full px-3 py-2.5 text-sm bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500 transition-colors';
@@ -74,17 +74,28 @@ const PasswordField = ({
   onChange: (v: string) => void;
   autoComplete: string;
 }) => {
+  const [visible, setVisible] = useState(false);
   return (
     <label className="block">
       <span className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">{label}</span>
-      <input
-        type="password"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        autoComplete={autoComplete}
-        className={inputClass}
-        required
-      />
+      <div className="relative">
+        <input
+          type={visible ? 'text' : 'password'}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          autoComplete={autoComplete}
+          className={`${inputClass} pr-11`}
+          required
+        />
+        <button
+          type="button"
+          onClick={() => setVisible(!visible)}
+          aria-label={visible ? 'Parolni yashirish' : 'Parolni ko‘rsatish'}
+          className="absolute inset-y-0 right-0 w-11 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer"
+        >
+          {visible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+        </button>
+      </div>
     </label>
   );
 };
