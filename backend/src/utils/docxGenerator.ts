@@ -12,6 +12,7 @@ import {
   WidthType,
   BorderStyle,
   ImageRun,
+  Footer,
 } from 'docx';
 
 interface ApproverInfo {
@@ -44,17 +45,27 @@ interface DocumentDataForDocx {
 }
 
 /**
- * Abbreviate Uzbek names:
- * e.g. "Omonov Abrorjon Esonboy o'g'li" -> "A. Omonov"
+ * O'zbek ismining bosh harfi: "Sh", "Ch" digrafi bitta harf sanaladi.
+ * "Shuhrat" -> "Sh.", "Akbar" -> "A."
  */
-function formatShortName(fullName?: string | null): string {
+function nameInitial(word?: string): string {
+  if (!word) return '';
+  const w = word.trim();
+  if (!w) return '';
+  const two = w.slice(0, 2).toLowerCase();
+  const head = two === 'sh' || two === 'ch' ? w.slice(0, 2) : w[0];
+  return `${head[0].toUpperCase()}${head.slice(1).toLowerCase()}.`;
+}
+
+/**
+ * "Fayzullayev Shuhrat Shuhrat o'g'li" -> "Sh.Sh.Fayzullayev" (ism va otasining ismi bosh harflari, familiya)
+ */
+function formatInitialsName(fullName?: string | null): string {
   if (!fullName) return '';
   const parts = fullName.trim().split(/\s+/);
   if (parts.length === 1) return parts[0];
-  const lastName = parts[0];
-  const firstName = parts[1];
-  const initial = firstName ? `${firstName[0].toUpperCase()}.` : '';
-  return `${initial} ${lastName}`;
+  const [lastName, firstName, patronymic] = parts;
+  return `${nameInitial(firstName)}${nameInitial(patronymic)}${lastName}`;
 }
 
 /**
@@ -68,31 +79,35 @@ function formatDate(date: Date): string {
   return `${day}.${month}.${year}`;
 }
 
-/**
- * Muhr uchun bo'lim nomini ikki qatorga muvozanatli bo'lish (so'z chegarasida).
- * Qisqa nom bitta qatorda qoladi; ikkinchi qator bo'sh bo'lishi mumkin.
- */
-function splitStampName(name: string): [string, string] {
-  const words = name.trim().split(/\s+/);
-  if (name.length <= 28 || words.length < 2) return [name, ''];
-
-  let best = 1;
-  let bestDiff = Infinity;
-  for (let i = 1; i < words.length; i++) {
-    const diff = Math.abs(words.slice(0, i).join(' ').length - words.slice(i).join(' ').length);
-    if (diff < bestDiff) {
-      bestDiff = diff;
-      best = i;
-    }
+/** Hujjat turi sarlavhasi (bosh harflarda, nuqtasiz): "BILDIRISH", "ARIZA", ... */
+function resolveTitle(category?: string | null): string {
+  const cat = (category || '').toUpperCase();
+  const map: Array<[string[], string]> = [
+    [['ARIZA', 'APPLICATION'], 'ARIZA'],
+    [['XIZMAT', 'OFFICIAL_NOTE'], 'XIZMAT XATI'],
+    [['BUYRU', 'ORDER'], 'BUYRUQ'],
+    [['QAROR', 'DECISION'], 'QAROR'],
+    [['FARMOYISH', 'DIRECTIVE'], 'FARMOYISH'],
+    [['MUROJAAT', 'APPEAL'], 'MUROJAAT'],
+    [['HISOBOT', 'REPORT'], 'HISOBOT'],
+    [['SHARTNOMA', 'CONTRACT'], 'SHARTNOMA'],
+    [['ARXIV', 'ARCHIVE'], 'ARXIV HUJJATI'],
+    [['XAT', 'LETTER'], 'RASMIY XAT'],
+    [['BILDIR'], 'BILDIRISH'],
+  ];
+  for (const [keys, title] of map) {
+    if (keys.some((k) => cat.includes(k))) return title;
   }
-  return [words.slice(0, best).join(' '), words.slice(best).join(' ')];
+  return category ? category.replace(/\.$/, '').toUpperCase() : 'BILDIRISH';
 }
 
 export async function generateDocumentDocx(
   docData: DocumentDataForDocx,
   verifyBaseUrl: string = config.APP_URL
 ): Promise<Buffer> {
-  const INK_COLOR = '002060'; // Royal Navy Blue ink color matching photo
+  const FONT = 'Times New Roman';
+  const TEXT_COLOR = '000000';
+  const SIZE = 28; // 14 pt
 
   const noBorder = { style: BorderStyle.NONE, size: 0, color: 'auto' };
   // Katak chegaralari
@@ -105,73 +120,48 @@ export async function generateDocumentDocx(
     insideVertical: noBorder,
   };
 
-  // Receiver formatting (Shapka - top right)
+  const run = (text: string, opts: { bold?: boolean; size?: number; italics?: boolean } = {}) =>
+    new TextRun({ text, font: FONT, size: opts.size ?? SIZE, bold: opts.bold, italics: opts.italics, color: TEXT_COLOR });
+
+  // Shapka: kimga (yuqori o'ng burchak). Qatorlar katak kengligiga qarab o'zi o'raladi
   const defaultReceiver =
     'Sharof Rashidov nomidagi\nSamarqand davlat universiteti\nrektori prof. R.I. Xalmuradovga';
-  const receiverText = docData.receiver?.trim() || defaultReceiver;
+  const receiverText = (docData.receiver?.trim() || defaultReceiver).split(/\s*\n\s*/).join(' ');
 
-  // Sender formatting (Shapka - from whom)
+  // Shapka: kimdan
+  const initialsName = formatInitialsName(docData.creator?.fullName) || 'Xodim';
+  const depName = docData.department?.name || 'Raqamli ta\'lim texnologiyalari markazi';
+  const position = docData.creator?.position || 'xodimi';
+  const signerPosition = `${depName} ${position}`;
+
   let senderText = docData.sender?.trim();
   if (!senderText) {
-    const depName = docData.department?.name || 'Raqamli ta\'lim texnologiyalari markazi';
-    const pos = docData.creator?.position || 'xodimi';
-    const name = docData.creator?.fullName || 'Xodim';
-    senderText = `${depName} ${pos} ${name} tomonidan.`;
-  } else if (!senderText.endsWith('tomonidan.') && !senderText.endsWith('tomonidan')) {
-    senderText = `${senderText} tomonidan.`;
+    senderText = `${signerPosition} ${initialsName} tomonidan`;
+  } else if (!/tomonidan\.?$/.test(senderText)) {
+    senderText = `${senderText} tomonidan`;
   }
+  senderText = senderText.replace(/\.$/, '');
 
-  // Title formatting (Center)
-  let titleText = 'Bildirildi.';
-  const cat = (docData.category || '').toUpperCase();
-  if (cat.includes('ARIZA') || cat.includes('APPLICATION')) {
-    titleText = 'Ariza.';
-  } else if (cat.includes('XIZMAT') || cat.includes('OFFICIAL_NOTE')) {
-    titleText = 'Xizmat xati.';
-  } else if (cat.includes('BUYRU') || cat.includes('ORDER')) {
-    titleText = 'Buyruq.';
-  } else if (cat.includes('QAROR') || cat.includes('DECISION')) {
-    titleText = 'Qaror.';
-  } else if (cat.includes('FARMOYISH') || cat.includes('DIRECTIVE')) {
-    titleText = 'Farmoyish.';
-  } else if (cat.includes('MUROJAAT') || cat.includes('APPEAL')) {
-    titleText = 'Murojaat.';
-  } else if (cat.includes('HISOBOT') || cat.includes('REPORT')) {
-    titleText = 'Hisobot.';
-  } else if (cat.includes('SHARTNOMA') || cat.includes('CONTRACT')) {
-    titleText = 'Shartnoma.';
-  } else if (cat.includes('ARXIV') || cat.includes('ARCHIVE')) {
-    titleText = 'Arxiv hujjati.';
-  } else if (cat.includes('XAT') || cat.includes('LETTER')) {
-    titleText = 'Rasmiy xat.';
-  } else if (cat.includes('BILDIR')) {
-    titleText = 'Bildirildi.';
-  } else if (docData.category) {
-    titleText = docData.category.endsWith('.') ? docData.category : `${docData.category}.`;
-  }
+  const titleText = resolveTitle(docData.category);
 
-  // Body text formatting
-  const bodyText =
+  // Asosiy matn: har bir qator alohida abzats
+  const bodyRaw =
     docData.summary?.trim() ||
     docData.title?.trim() ||
     'Men 2026-yil 29-sentabrdan kasallikdan so\'ng ishga chiqqanligimi ma\'lum qilaman.';
+  const bodyParagraphs = bodyRaw
+    .split(/\n+/)
+    .map((t) => t.trim())
+    .filter(Boolean);
 
-  // Short creator name for signature line (e.g. "A. Omonov")
-  const shortAuthorName = formatShortName(docData.creator?.fullName || docData.sender || 'A. Omonov');
-  const documentDate = formatDate(docData.createdAt);
-
-  // Department name for stamp
-  const stampDepName = docData.department?.name?.toUpperCase() || 'RAQAMLI TA\'LIM TEXNOLOGIYALARI MARKAZI';
-  const [stampLine1, stampLine2] = splitStampName(stampDepName);
-
-  // Generate QR Code buffer pointing to verification page
+  // QR-kod: tekshirish sahifasiga olib boradi
   const verifyUrl = `${verifyBaseUrl.replace(/\/+$/, '')}/verify/${docData.id}`;
   const qrBuffer = await QRCode.toBuffer(verifyUrl, {
     type: 'png',
-    width: 140,
+    width: 200,
     margin: 1,
     color: {
-      dark: '#002060', // Dark blue QR code matching the ink
+      dark: '#000000',
       light: '#ffffff',
     },
   });
@@ -183,45 +173,67 @@ export async function generateDocumentDocx(
       ? []
       : [
           new Paragraph({
-            spacing: { before: 400, after: 120 },
-            children: [
-              new TextRun({ text: 'Kelishildi:', font: 'Times New Roman', size: 26, bold: true, color: INK_COLOR }),
-            ],
+            spacing: { before: 500, after: 100 },
+            children: [run('Kelishildi:', { bold: true, size: 24 })],
           }),
           ...signedApprovals.map(
             (a) =>
               new Paragraph({
-                spacing: { after: 80 },
+                spacing: { after: 60 },
                 children: [
-                  new TextRun({
-                    text: `${a.approver.position ? a.approver.position + ' ' : ''}${a.approver.fullName} imzoladi${
+                  run(
+                    `${a.approver.position ? a.approver.position + ' ' : ''}${a.approver.fullName} imzoladi${
                       a.signedAt ? ` (${formatDate(a.signedAt)})` : ''
                     }`,
-                    font: 'Times New Roman',
-                    size: 24,
-                    color: INK_COLOR,
-                  }),
+                    { size: 22 }
+                  ),
                 ],
               })
           ),
         ];
 
-  // Build the complete docx document
   const doc = new Document({
     sections: [
       {
         properties: {
           page: {
             margin: {
-              top: 1134,    // 2.0 cm
-              right: 1134,  // 2.0 cm
-              bottom: 1134, // 2.0 cm
-              left: 1417,   // 2.5 cm
+              top: 1134, // 2.0 cm
+              right: 850, // 1.5 cm
+              bottom: 1700, // QR-kod pastki qismda o'rtada turadi
+              left: 1701, // 3.0 cm
+              footer: 500,
             },
           },
         },
+        footers: {
+          default: new Footer({
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                spacing: { after: 20 },
+                children: [
+                  new ImageRun({
+                    data: qrBuffer,
+                    transformation: { width: 80, height: 80 },
+                    type: 'png',
+                  }),
+                ],
+              }),
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [
+                  run(`Haqiqiylikni tekshirish uchun skanerlang • № ${docData.regNumber} • SamDU ShortDoc`, {
+                    size: 14,
+                    italics: true,
+                  }),
+                ],
+              }),
+            ],
+          }),
+        },
         children: [
-          // 1. Shapka (Header Table: 38% empty on left, 62% on right)
+          // 1. Shapka: chap tomoni bo'sh, o'ng tomonda kimga va kimdan
           new Table({
             width: { size: 100, type: WidthType.PERCENTAGE },
             borders: noTableBorders,
@@ -229,39 +241,23 @@ export async function generateDocumentDocx(
               new TableRow({
                 children: [
                   new TableCell({
-                    width: { size: 38, type: WidthType.PERCENTAGE },
+                    width: { size: 54, type: WidthType.PERCENTAGE },
                     borders: noBorders,
                     children: [new Paragraph({})],
                   }),
                   new TableCell({
-                    width: { size: 62, type: WidthType.PERCENTAGE },
+                    width: { size: 46, type: WidthType.PERCENTAGE },
                     borders: noBorders,
                     children: [
                       new Paragraph({
-                        spacing: { line: 260, after: 80 },
-                        children: receiverText.split('\n').map(
-                          (line, idx, arr) =>
-                            new TextRun({
-                              text: line,
-                              font: 'Times New Roman',
-                              size: 26, // 13 pt
-                              italics: true,
-                              color: INK_COLOR,
-                              break: idx > 0 ? 1 : 0,
-                            })
-                        ),
+                        alignment: AlignmentType.LEFT,
+                        spacing: { line: 276, after: 160 },
+                        children: [run(receiverText, { bold: true })],
                       }),
                       new Paragraph({
-                        spacing: { line: 260, after: 180 },
-                        children: [
-                          new TextRun({
-                            text: senderText,
-                            font: 'Times New Roman',
-                            size: 26, // 13 pt
-                            italics: true,
-                            color: INK_COLOR,
-                          }),
-                        ],
+                        alignment: AlignmentType.LEFT,
+                        spacing: { line: 276, after: 0 },
+                        children: [run(senderText, { bold: true })],
                       }),
                     ],
                   }),
@@ -270,87 +266,50 @@ export async function generateDocumentDocx(
             ],
           }),
 
-          // Spacing
-          new Paragraph({ spacing: { before: 280, after: 200 } }),
-
-          // 2. Title (e.g. 'Bildirildi.')
+          // 2. Sarlavha (BILDIRISH)
           new Paragraph({
             alignment: AlignmentType.CENTER,
-            spacing: { before: 200, after: 320 },
-            children: [
-              new TextRun({
-                text: titleText,
-                font: 'Times New Roman',
-                size: 34, // 17 pt
-                bold: true,
-                italics: true,
-                color: INK_COLOR,
-              }),
-            ],
+            spacing: { before: 900, after: 400 },
+            children: [run(titleText, { bold: true })],
           }),
 
-          // 3. Main Body Text (Mazmuni)
-          new Paragraph({
-            alignment: AlignmentType.CENTER,
-            spacing: { line: 360, after: 640 }, // 1.5 line spacing
-            children: [
-              new TextRun({
-                text: bodyText,
-                font: 'Times New Roman',
-                size: 28, // 14 pt
-                italics: true,
-                color: INK_COLOR,
-              }),
-            ],
-          }),
+          // 3. Asosiy matn: tekislangan, birinchi qator surilgan, 1.5 oraliq
+          ...bodyParagraphs.map(
+            (text, idx) =>
+              new Paragraph({
+                alignment: AlignmentType.JUSTIFIED,
+                indent: { firstLine: 709 },
+                spacing: { line: 360, after: idx === bodyParagraphs.length - 1 ? 700 : 0 },
+                children: [run(text)],
+              })
+          ),
 
-          // 4. Date, Realistic Signature and Full Name row (exactly matching photo)
+          // 4. Imzo qatori: chapda lavozim, o'ngda qisqa F.I.Sh.
           new Table({
             width: { size: 100, type: WidthType.PERCENTAGE },
             borders: noTableBorders,
             rows: [
               new TableRow({
                 children: [
-                  // Left: Date
                   new TableCell({
-                    width: { size: 32, type: WidthType.PERCENTAGE },
+                    width: { size: 62, type: WidthType.PERCENTAGE },
                     borders: noBorders,
                     children: [
                       new Paragraph({
-                        children: [
-                          new TextRun({
-                            text: documentDate,
-                            font: 'Times New Roman',
-                            size: 28,
-                            italics: true,
-                            color: INK_COLOR,
-                          }),
-                        ],
+                        alignment: AlignmentType.LEFT,
+                        spacing: { line: 276 },
+                        children: [run(signerPosition, { bold: true })],
                       }),
                     ],
                   }),
-                  // Center: Bo‘sh joy (qo‘lda imzo qo‘yish uchun bo‘sh qoldiriladi)
                   new TableCell({
-                    width: { size: 36, type: WidthType.PERCENTAGE },
+                    width: { size: 38, type: WidthType.PERCENTAGE },
                     borders: noBorders,
-                    children: [new Paragraph({})],
-                  }),
-                  // Right: Short Full Name (e.g. "A. Omonov")
-                  new TableCell({
-                    width: { size: 32, type: WidthType.PERCENTAGE },
-                    borders: noBorders,
+                    verticalAlign: 'bottom' as any,
                     children: [
                       new Paragraph({
                         alignment: AlignmentType.RIGHT,
-                        children: [
-                          new TextRun({
-                            text: shortAuthorName,
-                            font: 'Times New Roman',
-                            size: 28,
-                            italics: true,
-                            color: INK_COLOR,
-                          }),
-                        ],
+                        children: [run(initialsName, { bold: true })],
                       }),
                     ],
                   }),
@@ -361,112 +320,6 @@ export async function generateDocumentDocx(
 
           // Kelishuvchilar (imzo qo'ygan shaxslar) ro'yxati
           ...approvalParagraphs,
-
-          // Spacing before stamp
-          new Paragraph({ spacing: { before: 680, after: 150 } }),
-
-          // 5. Bottom Row: Stamp on Left + Authenticity QR-Code on Right
-          new Table({
-            width: { size: 100, type: WidthType.PERCENTAGE },
-            borders: noTableBorders,
-            rows: [
-              new TableRow({
-                children: [
-                  // Left: Official Organization Stamp
-                  new TableCell({
-                    width: { size: 55, type: WidthType.PERCENTAGE },
-                    borders: noBorders,
-                    children: [
-                      new Paragraph({
-                        spacing: { after: 30 },
-                        children: [
-                          new TextRun({
-                            text: stampLine1,
-                            font: 'Times New Roman',
-                            size: 18,
-                            bold: true,
-                            color: INK_COLOR,
-                          }),
-                        ],
-                      }),
-                      new Paragraph({
-                        spacing: { after: 40 },
-                        children: [
-                          new TextRun({
-                            text: stampLine2,
-                            font: 'Times New Roman',
-                            size: 18,
-                            bold: true,
-                            color: INK_COLOR,
-                          }),
-                        ],
-                      }),
-                      // Bo‘sh imzo joyi (muhr yoki imzo uchun)
-                      new Paragraph({
-                        spacing: { before: 160, after: 160 },
-                        children: [],
-                      }),
-                      new Paragraph({
-                        children: [
-                          new TextRun({
-                            text: documentDate.split('.').join('. '),
-                            font: 'Times New Roman',
-                            size: 24,
-                            italics: true,
-                            color: INK_COLOR,
-                          }),
-                        ],
-                      }),
-                    ],
-                  }),
-
-                  // Right: Scannable QR-Code for Authenticity Verification
-                  new TableCell({
-                    width: { size: 45, type: WidthType.PERCENTAGE },
-                    borders: noBorders,
-                    children: [
-                      new Paragraph({
-                        alignment: AlignmentType.RIGHT,
-                        spacing: { after: 40 },
-                        children: [
-                          new ImageRun({
-                            data: qrBuffer,
-                            transformation: { width: 85, height: 85 },
-                            type: 'png',
-                          }),
-                        ],
-                      }),
-                      new Paragraph({
-                        alignment: AlignmentType.RIGHT,
-                        spacing: { after: 20 },
-                        children: [
-                          new TextRun({
-                            text: 'Haqiqiylikni tekshirish uchun skanerlang',
-                            font: 'Times New Roman',
-                            size: 15,
-                            italics: true,
-                            color: INK_COLOR,
-                          }),
-                        ],
-                      }),
-                      new Paragraph({
-                        alignment: AlignmentType.RIGHT,
-                        children: [
-                          new TextRun({
-                            text: `№ ${docData.regNumber} | SamDU ShortDoc`,
-                            font: 'Times New Roman',
-                            size: 14,
-                            bold: true,
-                            color: INK_COLOR,
-                          }),
-                        ],
-                      }),
-                    ],
-                  }),
-                ],
-              }),
-            ],
-          }),
         ],
       },
     ],

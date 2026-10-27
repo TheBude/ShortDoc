@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { downloadDocumentDocx, isDocxAvailable, DOCX_LOCKED_HINT } from '@/lib/downloadDocx';
 import { DocumentCommentsSection } from '@/components/documents/DocumentCommentsSection';
+import { DocumentTimeline } from '@/components/documents/DocumentTimeline';
 import { Modal } from '@/components/ui/Modal';
 import { getCategoryMeta } from '@/lib/categories';
 
@@ -639,36 +640,8 @@ export default function DocumentDetailPage({
         submittingComment={submittingComment}
       />
 
-      {/* Status History / Audit Trail */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 sm:p-6 transition-colors duration-200">
-        <h2 className="text-base font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-          <History className="w-5 h-5 shrink-0 text-primary-600 dark:text-primary-400" />
-          <span>Holatlar O‘zgarishi Tarixi</span>
-        </h2>
-
-        <div className="space-y-2">
-          {!document.statusHistory || document.statusHistory.length === 0 ? (
-            <p className="text-xs text-slate-400 dark:text-slate-500">Tarix yozuvlari mavjud emas.</p>
-          ) : (
-            document.statusHistory.map((hist) => (
-              <div key={hist.id} className="text-xs flex items-start gap-3 py-1.5 border-b border-slate-100 dark:border-slate-800 last:border-0">
-                <div className="w-2 h-2 rounded-full bg-primary-600 mt-1.5 shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <span className="font-semibold text-slate-800 dark:text-slate-200">{hist.changedBy.fullName}</span>{' '}
-                  <span className="text-slate-500 dark:text-slate-400">holatni</span>{' '}
-                  <span className="font-bold text-slate-700 dark:text-slate-300">{getDocumentStatusLabel(hist.oldStatus)}</span>{' '}
-                  <span className="text-slate-500 dark:text-slate-400">dan</span>{' '}
-                  <span className="font-bold text-primary-700 dark:text-primary-400">{getDocumentStatusLabel(hist.newStatus)}</span>{' '}
-                  <span className="text-slate-500 dark:text-slate-400">ga o‘zgartirdi.</span>
-                  {hist.reason && <div className="text-[11px] text-slate-400 dark:text-slate-500 italic mt-0.5">Sabab: {hist.reason}</div>}
-                  <div className="sm:hidden text-[10px] text-slate-400 dark:text-slate-500 mt-1">{new Date(hist.createdAt).toLocaleString('uz-UZ')}</div>
-                </div>
-                <span className="hidden sm:block text-[10px] text-slate-400 dark:text-slate-500 shrink-0">{new Date(hist.createdAt).toLocaleString('uz-UZ')}</span>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
+      {/* Hujjat tarixi: yaratilish, fayllar, imzolar, izohlar, topshiriqlar, holatlar */}
+      <DocumentTimeline document={document} />
 
       {/* Complete Document Confirmation Modal */}
       {completeModalOpen && (

@@ -16,8 +16,6 @@ import {
   BarChart3,
   ShieldCheck,
   Plus,
-  Inbox,
-  Send,
   Scale,
   Hourglass,
   Archive,
@@ -364,52 +362,6 @@ function SidebarContent() {
                       </span>
                     )
                   )}
-                </Link>
-
-                {/* Kiruvchi xatlar */}
-                <Link
-                  href="/documents?documentType=INCOMING"
-                  onClick={closeMobile}
-                  title={isCollapsed ? 'Kiruvchi xatlar' : undefined}
-                  className={`group flex items-center rounded-lg font-medium transition-all ${
-                    isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-3 px-3 py-3 lg:gap-2.5 lg:py-2'
-                  } ${
-                    isItemActive('/documents?documentType=INCOMING')
-                      ? 'bg-white shadow-sm dark:shadow-none dark:bg-slate-800 text-blue-700 dark:text-white font-semibold border border-blue-200 dark:border-slate-700'
-                      : 'text-slate-700 dark:text-slate-300 hover:bg-white/60 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  <Inbox
-                    className={`w-4 h-4 shrink-0 transition-colors ${
-                      isItemActive('/documents?documentType=INCOMING')
-                        ? 'text-blue-600 dark:text-blue-400'
-                        : 'text-slate-600 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200'
-                    }`}
-                  />
-                  {!isCollapsed && <span className="truncate">Kiruvchi xatlar</span>}
-                </Link>
-
-                {/* Chiquvchi xatlar */}
-                <Link
-                  href="/documents?documentType=OUTGOING"
-                  onClick={closeMobile}
-                  title={isCollapsed ? 'Chiquvchi xatlar' : undefined}
-                  className={`group flex items-center rounded-lg font-medium transition-all ${
-                    isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-3 px-3 py-3 lg:gap-2.5 lg:py-2'
-                  } ${
-                    isItemActive('/documents?documentType=OUTGOING')
-                      ? 'bg-white shadow-sm dark:shadow-none dark:bg-slate-800 text-blue-700 dark:text-white font-semibold border border-blue-200 dark:border-slate-700'
-                      : 'text-slate-700 dark:text-slate-300 hover:bg-white/60 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  <Send
-                    className={`w-4 h-4 shrink-0 transition-colors ${
-                      isItemActive('/documents?documentType=OUTGOING')
-                        ? 'text-blue-600 dark:text-blue-400'
-                        : 'text-slate-600 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200'
-                    }`}
-                  />
-                  {!isCollapsed && <span className="truncate">Chiquvchi xatlar</span>}
                 </Link>
 
                 {/* Elektron arxiv */}

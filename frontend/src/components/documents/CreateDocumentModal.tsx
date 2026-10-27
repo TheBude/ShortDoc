@@ -7,6 +7,7 @@ import { downloadDocumentDocx } from '@/lib/downloadDocx';
 import { getCategoryLabel } from '@/lib/categories';
 import { getDepartmentGroupIndex, getDepartmentGroupLabel, groupDepartments } from '@/lib/departments';
 import { Modal } from '@/components/ui/Modal';
+import { composeReceiver, UNIVERSITY_NAME } from '@/lib/names';
 import {
   CheckCircle2,
   Download,
@@ -74,12 +75,6 @@ const formatSize = (bytes: number) =>
 
 const PRIVILEGED_ROLES = ['SUPER_ADMIN', 'LEADERSHIP', 'CHANCELLERY'];
 
-const DIRECTIONS = [
-  { value: 'INTERNAL', label: 'Ichki (universitet ichida)' },
-  { value: 'OUTGOING', label: 'Chiquvchi (tashqi tashkilotga)' },
-  { value: 'INCOMING', label: 'Kiruvchi (tashqi tashkilotdan)', restricted: true },
-];
-
 const inputCls =
   'w-full p-2.5 sm:p-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-1 focus:ring-blue-500';
 const labelCls = 'block font-semibold text-slate-700 dark:text-slate-300 mb-1';
@@ -107,8 +102,6 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
   const [fileError, setFileError] = useState<string | null>(null);
 
   const canUseRestricted = PRIVILEGED_ROLES.includes(user?.role || '');
-  const isIncoming = formData.documentType === 'INCOMING';
-  const isOutgoing = formData.documentType === 'OUTGOING';
   const today = new Date().toISOString().slice(0, 10);
 
   const activeUsers = useMemo(() => usersList.filter((u) => u.isActive !== false && u.id !== user?.id), [usersList, user]);
@@ -153,18 +146,6 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
     }));
   };
 
-  const selectDirection = (value: string) => {
-    setRecipient('custom');
-    setFormData((prev: any) => ({
-      ...prev,
-      documentType: value,
-      assigneeId: '',
-      receiver: DOC_TYPES.find((t) => t.label === prev.category)?.defaultReceiver || '',
-      // Kiruvchi hujjatda "Kimdan" tashqi tashkilot, qolganlarida avtomatik
-      sender: value === 'INCOMING' ? '' : user?.department?.name || user?.fullName || '',
-    }));
-  };
-
   const selectRecipient = (value: string) => {
     setRecipient(value);
     if (value === 'custom') {
@@ -177,7 +158,7 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
       setFormData((prev: any) => ({
         ...prev,
         assigneeId: id,
-        receiver: target ? `${target.fullName} (${target.position})` : prev.receiver,
+        receiver: target ? composeReceiver(target) : prev.receiver,
       }));
     } else {
       // Bo'limga yuborilsa, hujjat shu bo'lim mudiriga mas'ul sifatida biriktiriladi
@@ -186,7 +167,7 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
       setFormData((prev: any) => ({
         ...prev,
         assigneeId: head?.id || '',
-        receiver: dept?.name || prev.receiver,
+        receiver: head ? composeReceiver(head) : dept ? `${UNIVERSITY_NAME} ${dept.name}` : prev.receiver,
       }));
     }
   };
@@ -354,7 +335,7 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
 
             {/* 2. Sarlavha */}
             <div>
-              <label className={labelCls}>2. Hujjat sarlavhasi (Nomi) *</label>
+              <label className={labelCls}>2. Hujjat mavzusi (qisqa nomi) *</label>
               <input
                 type="text"
                 required
@@ -366,76 +347,45 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
               />
             </div>
 
-            {/* Yo'nalish */}
-            <div>
-              <label className={labelCls}>Hujjat yo‘nalishi</label>
-              <select
-                value={formData.documentType}
-                onChange={(e) => selectDirection(e.target.value)}
-                className={inputCls}
-              >
-                {DIRECTIONS.filter((d) => !d.restricted || canUseRestricted).map((d) => (
-                  <option key={d.value} value={d.value}>
-                    {d.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
             {/* Kimdan / Kimga */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className={labelCls}>
-                  {isIncoming ? 'Kimdan (tashqi tashkilot) *' : 'Kimdan (avtomatik)'}
-                </label>
+                <label className={labelCls}>Kimdan (avtomatik)</label>
                 <input
                   type="text"
                   value={formData.sender}
-                  required={isIncoming}
-                  readOnly={!isIncoming}
-                  onChange={(e) => setFormData({ ...formData, sender: e.target.value })}
-                  placeholder={isIncoming ? 'Tashkilot nomi...' : ''}
-                  className={`${inputCls} ${!isIncoming ? 'bg-slate-50 dark:bg-slate-800/60 cursor-not-allowed' : ''}`}
+                  readOnly
+                  className={`${inputCls} bg-slate-50 dark:bg-slate-800/60 cursor-not-allowed`}
                 />
               </div>
 
               <div>
                 <label className={labelCls}>Kimga (qabul qiluvchi)</label>
-                {isOutgoing ? (
-                  <input
-                    type="text"
-                    value={formData.receiver}
-                    onChange={(e) => setFormData({ ...formData, receiver: e.target.value })}
-                    placeholder="Tashkilot nomi..."
-                    className={inputCls}
-                  />
-                ) : (
-                  <select value={recipient} onChange={(e) => selectRecipient(e.target.value)} className={inputCls}>
-                    <option value="custom">Qo‘lda yozish</option>
-                    {groupDepartments(departmentsList).map((g) => (
-                      <optgroup key={g.key} label={`${g.label} (mudiriga yuboriladi)`}>
-                        {g.items.map((d) => (
-                          <option key={d.id} value={`d:${d.id}`}>
-                            {d.name}
-                          </option>
-                        ))}
-                      </optgroup>
-                    ))}
-                    <optgroup label="Xodimlar">
-                      {[...activeUsers]
-                        .sort((a, b) => a.fullName.localeCompare(b.fullName))
-                        .map((u) => (
-                          <option key={u.id} value={`u:${u.id}`}>
-                            {u.fullName} — {u.position}
-                          </option>
-                        ))}
+                <select value={recipient} onChange={(e) => selectRecipient(e.target.value)} className={inputCls}>
+                  <option value="custom">Qo‘lda yozish</option>
+                  {groupDepartments(departmentsList).map((g) => (
+                    <optgroup key={g.key} label={`${g.label} (mudiriga yuboriladi)`}>
+                      {g.items.map((d) => (
+                        <option key={d.id} value={`d:${d.id}`}>
+                          {d.name}
+                        </option>
+                      ))}
                     </optgroup>
-                  </select>
-                )}
+                  ))}
+                  <optgroup label="Xodimlar">
+                    {[...activeUsers]
+                      .sort((a, b) => a.fullName.localeCompare(b.fullName))
+                      .map((u) => (
+                        <option key={u.id} value={`u:${u.id}`}>
+                          {u.fullName} — {u.position}
+                        </option>
+                      ))}
+                  </optgroup>
+                </select>
               </div>
             </div>
 
-            {!isOutgoing && recipient === 'custom' && (
+            {recipient === 'custom' && (
               <input
                 type="text"
                 value={formData.receiver}
@@ -483,12 +433,13 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
             </div>
 
             <div>
-              <label className={labelCls}>Qisqacha mazmuni</label>
+              <label className={labelCls}>Hujjat matni (mazmuni) *</label>
               <textarea
-                rows={2}
+                rows={6}
+                required
                 value={formData.summary}
                 onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
-                placeholder="Hujjat mohiyati..."
+                placeholder="Sizga, ... ma’lum qilaman. (Word hujjatning asosiy matni shu yerdan olinadi)"
                 className={inputCls}
               />
             </div>

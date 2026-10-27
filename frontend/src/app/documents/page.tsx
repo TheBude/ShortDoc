@@ -22,6 +22,7 @@ import {
   Download,
 } from 'lucide-react';
 import { downloadDocumentDocx, isDocxAvailable, DOCX_LOCKED_HINT } from '@/lib/downloadDocx';
+import { composeSender } from '@/lib/names';
 import { CreateDocumentModal } from '@/components/documents/CreateDocumentModal';
 import { getCategoryMeta, ALL_CATEGORIES_LIST } from '@/lib/categories';
 
@@ -58,7 +59,7 @@ function DocumentsContent() {
     title: '',
     documentType: 'INTERNAL',
     category: 'Bildirgi',
-    sender: user?.department?.name || user?.fullName || '',
+    sender: composeSender(user),
     receiver: 'Universitet rektoriga',
     assigneeId: '',
     isPublic: false,
@@ -77,7 +78,7 @@ function DocumentsContent() {
     if (user && !formData.sender) {
       setFormData((prev) => ({
         ...prev,
-        sender: user.department?.name || user.fullName || '',
+        sender: composeSender(user),
         departmentId: user.departmentId || '',
       }));
     }
@@ -88,7 +89,7 @@ function DocumentsContent() {
       title: '',
       documentType: 'INTERNAL',
       category: 'Bildirgi',
-      sender: user?.department?.name || user?.fullName || '',
+      sender: composeSender(user),
       receiver: 'Universitet rektoriga',
       assigneeId: '',
       isPublic: false,
