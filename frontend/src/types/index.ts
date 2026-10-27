@@ -23,6 +23,7 @@ export interface User {
   role: Role;
   position: string;
   phone?: string;
+  avatar?: string | null;
   isActive: boolean;
   registrationStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
   departmentId?: string | null;

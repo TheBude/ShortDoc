@@ -267,6 +267,8 @@ router.post('/login', loginLimiter, async (req, res, next) => {
           fullName: user.fullName,
           role: user.role,
           position: user.position,
+          phone: user.phone,
+          avatar: user.avatar,
           department: user.department,
         },
       },
@@ -339,6 +341,45 @@ router.post('/change-password', authenticate, async (req: AuthRequest, res, next
     });
 
     return sendSuccess(res, null, 'Parol muvaffaqiyatli yangilandi');
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Profil rasmi: mijoz 256x256 JPEG ga kichraytirib data URL sifatida yuboradi
+const AVATAR_PREFIX = 'data:image/jpeg;base64,';
+const AVATAR_MAX_BYTES = 200 * 1024;
+
+router.put('/avatar', authenticate, async (req: AuthRequest, res, next) => {
+  try {
+    const { image } = z.object({ image: z.string().min(1, 'Rasm yuborilmadi') }).parse(req.body);
+
+    if (!image.startsWith(AVATAR_PREFIX)) {
+      return sendError(res, 'Rasm JPEG formatida bo‘lishi kerak', 400);
+    }
+    const buffer = Buffer.from(image.slice(AVATAR_PREFIX.length), 'base64');
+    // JPEG boshlanishi (magic bytes) va hajmini tekshirish
+    if (buffer.length < 4 || buffer[0] !== 0xff || buffer[1] !== 0xd8 || buffer[2] !== 0xff) {
+      return sendError(res, 'Rasm fayli yaroqsiz', 400);
+    }
+    if (buffer.length > AVATAR_MAX_BYTES) {
+      return sendError(res, 'Rasm hajmi juda katta', 400);
+    }
+
+    await prisma.user.update({ where: { id: req.user!.userId }, data: { avatar: image } });
+    invalidateUserCache(req.user!.userId);
+
+    return sendSuccess(res, { avatar: image }, 'Profil rasmi yangilandi');
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.delete('/avatar', authenticate, async (req: AuthRequest, res, next) => {
+  try {
+    await prisma.user.update({ where: { id: req.user!.userId }, data: { avatar: null } });
+    invalidateUserCache(req.user!.userId);
+    return sendSuccess(res, null, 'Profil rasmi o‘chirildi');
   } catch (error) {
     next(error);
   }

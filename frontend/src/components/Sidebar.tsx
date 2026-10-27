@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useSidebar } from '@/context/SidebarContext';
 import { useRealtime } from '@/context/RealtimeContext';
 import { fetchApi } from '@/lib/api';
+import { Avatar } from '@/components/ui/Avatar';
 import {
   LayoutDashboard,
   FileText,
@@ -588,11 +589,15 @@ function SidebarContent() {
                 : 'text-slate-700 dark:text-slate-300 hover:bg-white/60 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
-            <UserCircle
-              className={`w-4 h-4 shrink-0 transition-colors ${
-                isItemActive('/profile') ? 'text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200'
-              }`}
-            />
+            {user?.avatar ? (
+              <Avatar src={user.avatar} name={user.fullName} className="w-5 h-5 shrink-0" />
+            ) : (
+              <UserCircle
+                className={`w-4 h-4 shrink-0 transition-colors ${
+                  isItemActive('/profile') ? 'text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200'
+                }`}
+              />
+            )}
             {!isCollapsed && <span className="truncate">Profil</span>}
           </Link>
         </div>

@@ -101,6 +101,7 @@ model User {
   role         Role        @default(STAFF)
   position     String
   phone        String?
+  avatar       String?
   isActive     Boolean     @default(true)
   tokenVersion Int         @default(1)
   departmentId String?

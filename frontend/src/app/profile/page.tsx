@@ -1,15 +1,46 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
+import { Avatar } from '@/components/ui/Avatar';
 import { useAuth } from '@/context/AuthContext';
 import { fetchApi } from '@/lib/api';
 import { getRoleLabel } from '@/lib/labels';
-import { Mail, Lock, User as UserIcon, Building, Briefcase, Phone, ShieldCheck, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Mail, Lock, User as UserIcon, Building, Briefcase, Phone, ShieldCheck, Camera, Trash2, CheckCircle2, AlertTriangle } from 'lucide-react';
 
 const inputClass =
   'w-full px-3 py-2.5 text-sm bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500 transition-colors';
 const buttonClass =
   'w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-blue-700 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold px-5 py-2.5 transition-colors cursor-pointer';
+
+const AVATAR_SIZE = 256;
+
+/** Tanlangan rasmni markazdan kvadrat qilib kesadi va 256x256 JPEG (data URL) ga aylantiradi */
+const resizeToAvatar = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const side = Math.min(img.width, img.height);
+      const canvas = document.createElement('canvas');
+      canvas.width = AVATAR_SIZE;
+      canvas.height = AVATAR_SIZE;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        URL.revokeObjectURL(url);
+        return reject(new Error('canvas'));
+      }
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, AVATAR_SIZE, AVATAR_SIZE);
+      ctx.drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, AVATAR_SIZE, AVATAR_SIZE);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL('image/jpeg', 0.85));
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('image'));
+    };
+    img.src = url;
+  });
 
 type Notice = { type: 'success' | 'error'; text: string } | null;
 
@@ -69,7 +100,49 @@ const InfoRow = ({ icon: Icon, label, value }: { icon: React.ElementType; label:
 );
 
 export default function ProfilePage() {
-  const { user, logout } = useAuth();
+  const { user, refreshUser, logout } = useAuth();
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [avatarNotice, setAvatarNotice] = useState<Notice>(null);
+  const [avatarBusy, setAvatarBusy] = useState(false);
+
+  const handleAvatarPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setAvatarNotice(null);
+    if (!file.type.startsWith('image/')) {
+      setAvatarNotice({ type: 'error', text: 'Faqat rasm fayli tanlang (JPG, PNG, WEBP)' });
+      return;
+    }
+    setAvatarBusy(true);
+    try {
+      const image = await resizeToAvatar(file);
+      const res = await fetchApi('/auth/avatar', { method: 'PUT', body: JSON.stringify({ image }) });
+      if (res.success) {
+        await refreshUser();
+        setAvatarNotice({ type: 'success', text: 'Profil rasmi yangilandi' });
+      } else {
+        setAvatarNotice({ type: 'error', text: res.message || 'Rasmni saqlashda xatolik yuz berdi' });
+      }
+    } catch {
+      setAvatarNotice({ type: 'error', text: 'Rasmni o‘qib bo‘lmadi. Boshqa rasm tanlang' });
+    }
+    setAvatarBusy(false);
+  };
+
+  const handleAvatarRemove = async () => {
+    setAvatarNotice(null);
+    setAvatarBusy(true);
+    const res = await fetchApi('/auth/avatar', { method: 'DELETE' });
+    if (res.success) {
+      await refreshUser();
+      setAvatarNotice({ type: 'success', text: 'Profil rasmi o‘chirildi' });
+    } else {
+      setAvatarNotice({ type: 'error', text: res.message || 'Rasmni o‘chirishda xatolik yuz berdi' });
+    }
+    setAvatarBusy(false);
+  };
 
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -109,15 +182,42 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-4 sm:space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-lg font-bold text-slate-800 dark:text-slate-200 shrink-0">
-          {user?.fullName?.charAt(0) || <UserIcon className="w-5 h-5" />}
-        </div>
-        <div className="min-w-0">
-          <h1 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white truncate">Profil</h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user?.email}</p>
+      <div className="flex items-center gap-4">
+        <Avatar
+          src={user?.avatar}
+          name={user?.fullName}
+          className="w-20 h-20 sm:w-24 sm:h-24 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-2xl text-slate-800 dark:text-slate-200"
+        />
+        <div className="min-w-0 space-y-2">
+          <div>
+            <h1 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white truncate">Profil</h1>
+            <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user?.email}</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={avatarBusy}
+              onClick={() => fileInputRef.current?.click()}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-blue-700 hover:bg-blue-600 disabled:opacity-50 text-white text-xs font-semibold px-3 py-2 transition-colors cursor-pointer"
+            >
+              <Camera className="w-3.5 h-3.5" />
+              {avatarBusy ? 'Yuklanmoqda...' : user?.avatar ? 'Rasmni almashtirish' : 'Rasm yuklash'}
+            </button>
+            {user?.avatar && (
+              <button
+                type="button"
+                disabled={avatarBusy}
+                onClick={handleAvatarRemove}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-600 text-xs font-semibold px-3 py-2 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> O‘chirish
+              </button>
+            )}
+          </div>
+          <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarPick} className="hidden" />
         </div>
       </div>
+      <NoticeBox notice={avatarNotice} />
 
       {/* Shaxsiy ma'lumotlar (faqat o‘qish uchun) */}
       <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 sm:p-6">

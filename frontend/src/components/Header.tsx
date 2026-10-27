@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useSidebar } from '@/context/SidebarContext';
 import { useRealtime } from '@/context/RealtimeContext';
+import { Avatar } from '@/components/ui/Avatar';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { LogOut, User as UserIcon, Building, Sun, Moon, Bell, CheckCheck, ExternalLink } from 'lucide-react';
 
@@ -225,9 +226,7 @@ export const Header = () => {
             title="Profilni ochish"
             className="flex items-center gap-2.5 pl-3 border-l border-slate-200 dark:border-slate-800 rounded-r-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 pr-2 py-1 transition-colors"
           >
-            <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-bold text-xs shrink-0">
-              {user?.fullName?.charAt(0) || <UserIcon className="w-4 h-4" />}
-            </div>
+            <Avatar src={user?.avatar} name={user?.fullName} className="w-8 h-8 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs" />
             <div className="text-left">
               <div className="text-xs font-semibold text-slate-800 dark:text-white leading-tight truncate max-w-[140px]" title={user?.fullName}>
                 {displayName}
@@ -256,9 +255,9 @@ export const Header = () => {
             aria-label="Profil menyusi"
             aria-haspopup="menu"
             aria-expanded={profileOpen}
-            className="flex items-center justify-center h-10 w-10 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 font-bold text-sm cursor-pointer transition-colors"
+            className="flex items-center justify-center h-10 w-10 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 font-bold text-sm cursor-pointer transition-colors overflow-hidden"
           >
-            {user?.fullName?.charAt(0) || <UserIcon className="w-4 h-4" />}
+            <Avatar src={user?.avatar} name={user?.fullName} className="w-full h-full text-sm" />
           </button>
 
           {profileOpen && (
@@ -268,9 +267,7 @@ export const Header = () => {
             >
               <div className="p-4 space-y-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-bold text-sm shrink-0">
-                    {user?.fullName?.charAt(0) || <UserIcon className="w-4 h-4" />}
-                  </div>
+                  <Avatar src={user?.avatar} name={user?.fullName} className="w-10 h-10 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-sm" />
                   <div className="min-w-0">
                     <div className="text-sm font-semibold text-slate-900 dark:text-white truncate">{user?.fullName}</div>
                     <div className="text-xs text-slate-500 dark:text-slate-400 truncate">{user?.position || user?.email}</div>
