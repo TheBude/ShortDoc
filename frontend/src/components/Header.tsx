@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useSidebar } from '@/context/SidebarContext';
 import { useRealtime } from '@/context/RealtimeContext';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { LogOut, User as UserIcon, Building, Sun, Moon, Bell, CheckCheck, ExternalLink } from 'lucide-react';
 
 function formatShortName(name: string = ''): string {
@@ -95,6 +96,9 @@ export const Header = () => {
         <div className="hidden sm:block">
           {getRoleBadge(user?.role)}
         </div>
+
+        {/* Language Switcher */}
+        <LanguageSwitcher />
 
         {/* Real-time Notifications Bell */}
         <div className="relative" ref={bellRef}>

@@ -4,6 +4,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRealtime } from '@/context/RealtimeContext';
 import { fetchApi } from '@/lib/api';
+import { getRoleLabel } from '@/lib/labels';
 import { User, Department, Role } from '@/types';
 import {
   Users,
@@ -39,10 +40,10 @@ function getDepartmentScope(deptName: string = '', position: string = '') {
 
   if (d.includes('rektor') || p.includes('rektor') || p.includes('prorektor')) {
     return {
-      roleTitle: 'Rahbariyat (LEADERSHIP)',
+      roleTitle: 'Rahbariyat',
       roleBadgeColor: standardBadge,
       capabilities: [
-        'Universitet bo‘yicha umumiy ijro intizomi va barcha hujjatlar monitoringi',
+        'Universitet bo‘yicha umumiy ijro intizomi va barcha hujjatlar nazorati',
         'Rasmiy buyruq loyihalari va xizmat xatlariga yakuniy imzo qo‘yish',
         'Barcha bo‘lim va kafedralar kesimidagi kechikishlar va analitik hisobotlarni ko‘rish',
       ],
@@ -51,10 +52,10 @@ function getDepartmentScope(deptName: string = '', position: string = '') {
 
   if (d.includes('devon') || p.includes('devonxona')) {
     return {
-      roleTitle: 'Devonxona (CHANCELLERY)',
+      roleTitle: 'Devonxona',
       roleBadgeColor: standardBadge,
       capabilities: [
-        'Kiruvchi va chiquvchi rasmiy hujjatlarni ro‘yxatga olish va reg-raqam berish',
+        'Kiruvchi va chiquvchi rasmiy hujjatlarni ro‘yxatga olish va ro‘yxat raqami berish',
         'Hujjatlarni rektoratga, fakultetlarga va ijrochi bo‘limlarga yo‘naltirish',
         'Ijro intizomi muddatlarini belgilash va nazorat kartochkalarini yuritish',
       ],
@@ -69,7 +70,7 @@ function getDepartmentScope(deptName: string = '', position: string = '') {
     p.includes('boshliq')
   ) {
     return {
-      roleTitle: 'Bo‘lim / Kafedra rahbari (DEPARTMENT_HEAD)',
+      roleTitle: 'Bo‘lim / Kafedra rahbari',
       roleBadgeColor: standardBadge,
       capabilities: [
         'Bo‘lim nomidan rasmiy bildirgi, xizmat xatlari va buyruq loyihalarini kiritish',
@@ -87,7 +88,7 @@ function getDepartmentScope(deptName: string = '', position: string = '') {
     d.includes('axborot')
   ) {
     return {
-      roleTitle: 'IT / Raqamli ta’lim mutaxassisi (STAFF)',
+      roleTitle: 'Axborot texnologiyalari / Raqamli ta’lim mutaxassisi',
       roleBadgeColor: standardBadge,
       capabilities: [
         'Universitet AT tizimlari (HEMIS, ATM, tarmoq) bo‘yicha topshiriqlar ijrosini ta’minlash',
@@ -99,7 +100,7 @@ function getDepartmentScope(deptName: string = '', position: string = '') {
 
   if (d.includes('qabul') || d.includes('magistr') || d.includes('bakalavr')) {
     return {
-      roleTitle: 'Qabul bo‘limi mutaxassisi (STAFF)',
+      roleTitle: 'Qabul bo‘limi mutaxassisi',
       roleBadgeColor: standardBadge,
       capabilities: [
         'Qabul jarayoniga oid rasmiy xatlar, arizalar va buyruq loyihalarini kiritish',
@@ -110,7 +111,7 @@ function getDepartmentScope(deptName: string = '', position: string = '') {
 
   if (d.includes('baholash') || d.includes('bilim') || d.includes('test')) {
     return {
-      roleTitle: 'Baholash va monitoring mutaxassisi (STAFF)',
+      roleTitle: 'Baholash va nazorat mutaxassisi',
       roleBadgeColor: standardBadge,
       capabilities: [
         'Yakuniy nazoratlar va monitoring natijalari bo‘yicha xizmat xatlarini tayyorlash',
@@ -121,7 +122,7 @@ function getDepartmentScope(deptName: string = '', position: string = '') {
 
   // Default staff
   return {
-    roleTitle: 'Bo‘lim xodimi / Ijrochi (STAFF)',
+    roleTitle: 'Bo‘lim xodimi / Ijrochi',
     roleBadgeColor: standardBadge,
     capabilities: [
       'Bo‘lim nomidan xizmat xatlari va bildirgilar yaratish',
@@ -502,7 +503,7 @@ export default function AdminUsersPage() {
                         <td className="py-3 px-4 whitespace-nowrap text-slate-600 dark:text-slate-400">{u.email}</td>
                         <td className="py-3 px-4 whitespace-nowrap">
                           <span className="font-semibold text-[11px] px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700">
-                            {u.role}
+                            {getRoleLabel(u.role)}
                           </span>
                         </td>
                         <td className="py-3 px-4 whitespace-nowrap text-slate-700 dark:text-slate-300">{u.department?.name || '—'}</td>

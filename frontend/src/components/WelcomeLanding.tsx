@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useTheme } from '@/context/ThemeContext';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import {
   GraduationCap,
   ShieldCheck,
@@ -77,6 +78,8 @@ export const WelcomeLanding = () => {
 
           {/* Action Buttons (Right) */}
           <div className="flex items-center gap-2 sm:gap-3">
+            <LanguageSwitcher />
+
             {/* Theme Toggle Button */}
             <button
               onClick={toggleTheme}

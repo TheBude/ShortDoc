@@ -45,3 +45,15 @@ body {
 .dark ::-webkit-scrollbar-thumb:hover {
   background: #475569;
 }
+
+/* Til almashganda mazmun yumshoq paydo bo‘ladi */
+@keyframes lang-swap {
+  0% { opacity: 0.35; transform: translateY(3px); filter: blur(2px); }
+  100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+body.lang-swap main {
+  animation: lang-swap 0.4s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  body.lang-swap main { animation: none; }
+}

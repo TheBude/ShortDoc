@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRealtime } from '@/context/RealtimeContext';
 import { fetchApi } from '@/lib/api';
+import { getDocumentStatusLabel } from '@/lib/labels';
 import { WelcomeLanding } from '@/components/WelcomeLanding';
 import {
   FileText,
@@ -403,7 +404,7 @@ export default function HomePage() {
                       ) : doc.status === 'COMPLETED' ? (
                         <span className="text-emerald-700 dark:text-emerald-400 font-semibold">To‘liq tasdiqlangan</span>
                       ) : (
-                        <span>Holati: {doc.status}</span>
+                        <span>Holati: {getDocumentStatusLabel(doc.status)}</span>
                       )}
                     </span>
                     <Link

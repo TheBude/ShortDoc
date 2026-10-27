@@ -106,7 +106,7 @@ export const UserCredentialsModal: React.FC<UserCredentialsModalProps> = ({ targ
             <p className="text-emerald-700 dark:text-emerald-400 font-semibold">Ma’lumotlar yangilandi.</p>
             <div className="rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 font-mono space-y-1 break-all">
               <div>Login: {email.trim()}</div>
-              <div>Parol: {savedPassword}</div>
+              <div>Parol: <span translate="no">{savedPassword}</span></div>
             </div>
             <p className="text-slate-500">
               Parol faqat hozir ko‘rinadi, keyin ko‘rib bo‘lmaydi. Foydalanuvchiga xavfsiz yo‘l bilan yetkazing. Uning

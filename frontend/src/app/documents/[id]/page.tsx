@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useRealtime } from '@/context/RealtimeContext';
 import { fetchApi, getApiBaseUrl } from '@/lib/api';
+import { getDocumentStatusLabel } from '@/lib/labels';
 import { Document, DocumentApproval, DocumentFile, Task } from '@/types';
 import {
   ArrowLeft,
@@ -654,9 +655,9 @@ export default function DocumentDetailPage({
                 <div className="flex-1">
                   <span className="font-semibold text-slate-800 dark:text-slate-200">{hist.changedBy.fullName}</span>{' '}
                   <span className="text-slate-500 dark:text-slate-400">holatni</span>{' '}
-                  <span className="font-bold text-slate-700 dark:text-slate-300">{hist.oldStatus}</span>{' '}
+                  <span className="font-bold text-slate-700 dark:text-slate-300">{getDocumentStatusLabel(hist.oldStatus)}</span>{' '}
                   <span className="text-slate-500 dark:text-slate-400">dan</span>{' '}
-                  <span className="font-bold text-primary-700 dark:text-primary-400">{hist.newStatus}</span>{' '}
+                  <span className="font-bold text-primary-700 dark:text-primary-400">{getDocumentStatusLabel(hist.newStatus)}</span>{' '}
                   <span className="text-slate-500 dark:text-slate-400">ga o‘zgartirdi.</span>
                   {hist.reason && <div className="text-[11px] text-slate-400 dark:text-slate-500 italic mt-0.5">Sabab: {hist.reason}</div>}
                 </div>

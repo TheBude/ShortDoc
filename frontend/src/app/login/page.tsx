@@ -8,6 +8,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { fetchApi } from '@/lib/api';
 import { Department } from '@/types';
 import { RegisterSection } from '@/components/auth/RegisterSection';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import {
   GraduationCap,
   Lock,
@@ -282,6 +283,7 @@ export default function LoginPage() {
             <span>Asosiy sahifaga qaytish</span>
           </Link>
           <div className="flex items-center gap-2.5">
+            <LanguageSwitcher tone="glass" />
             <button
               type="button"
               onClick={toggleTheme}

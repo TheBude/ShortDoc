@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { AuthProvider } from '@/context/AuthContext';
 import { ThemeProvider } from '@/context/ThemeContext';
+import { LanguageProvider } from '@/context/LanguageContext';
 import { SidebarProvider } from '@/context/SidebarContext';
 import { RealtimeProvider } from '@/context/RealtimeContext';
 import { AppLayout } from '@/components/AppLayout';
@@ -23,13 +24,15 @@ export default function RootLayout({
     <html lang="uz" suppressHydrationWarning>
       <body className="antialiased text-slate-800 dark:text-slate-100 bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
         <ThemeProvider>
-          <AuthProvider>
-            <RealtimeProvider>
-              <SidebarProvider>
-                <AppLayout>{children}</AppLayout>
-              </SidebarProvider>
-            </RealtimeProvider>
-          </AuthProvider>
+          <LanguageProvider>
+            <AuthProvider>
+              <RealtimeProvider>
+                <SidebarProvider>
+                  <AppLayout>{children}</AppLayout>
+                </SidebarProvider>
+              </RealtimeProvider>
+            </AuthProvider>
+          </LanguageProvider>
         </ThemeProvider>
       </body>
     </html>
