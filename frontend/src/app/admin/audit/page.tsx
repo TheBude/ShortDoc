@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { fetchApi } from '@/lib/api';
+import { getAuditActionLabel, getAuditEntityLabel } from '@/lib/labels';
 import { ShieldCheck, Calendar, User, Search } from 'lucide-react';
 
 export default function AdminAuditPage() {
@@ -65,13 +66,13 @@ export default function AdminAuditPage() {
                     </td>
                     <td className="py-3 px-4 whitespace-nowrap">
                       <span className="font-mono font-bold text-primary-700 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/60 px-2 py-0.5 rounded border border-primary-100 dark:border-primary-900/60">
-                        {log.action}
+                        {getAuditActionLabel(log.action)}
                       </span>
                     </td>
                     <td className="py-3 px-4 whitespace-nowrap font-medium text-slate-900 dark:text-white">
                       {log.user?.fullName || 'Tizim'}
                     </td>
-                    <td className="py-3 px-4 whitespace-nowrap text-slate-500 dark:text-slate-400">{log.entity}</td>
+                    <td className="py-3 px-4 whitespace-nowrap text-slate-500 dark:text-slate-400">{getAuditEntityLabel(log.entity)}</td>
                     <td className="py-3 px-4 max-w-md text-slate-800 dark:text-slate-200">{log.details || '—'}</td>
                     <td className="py-3 px-4 whitespace-nowrap font-mono text-[11px] text-slate-400 dark:text-slate-500">
                       {log.ipAddress || '127.0.0.1'}
