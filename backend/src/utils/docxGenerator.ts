@@ -33,6 +33,8 @@ interface DocumentDataForDocx {
   sender?: string | null;
   receiver?: string | null;
   summary?: string | null;
+  withoutQr?: boolean;
+  showApprovalList?: boolean;
   createdAt: Date;
   department?: {
     name: string;
@@ -156,7 +158,9 @@ export async function generateDocumentDocx(
 
   // QR-kod: tekshirish sahifasiga olib boradi
   const verifyUrl = `${verifyBaseUrl.replace(/\/+$/, '')}/verify/${docData.id}`;
-  const qrBuffer = await QRCode.toBuffer(verifyUrl, {
+  const qrBuffer = docData.withoutQr
+    ? null
+    : await QRCode.toBuffer(verifyUrl, {
     type: 'png',
     width: 200,
     margin: 1,
@@ -167,7 +171,8 @@ export async function generateDocumentDocx(
   });
 
   // Imzolagan kelishuvchilar ro'yxati: "Lavozim F.I.Sh. imzoladi (sana)"
-  const signedApprovals = (docData.approvals || []).filter((a) => a.status === 'APPROVED');
+  const signedApprovals =
+    docData.showApprovalList === false ? [] : (docData.approvals || []).filter((a) => a.status === 'APPROVED');
   const approvalParagraphs: Paragraph[] =
     signedApprovals.length === 0
       ? []
@@ -200,13 +205,14 @@ export async function generateDocumentDocx(
             margin: {
               top: 1134, // 2.0 cm
               right: 850, // 1.5 cm
-              bottom: 1700, // QR-kod pastki qismda o'rtada turadi
+              bottom: qrBuffer ? 1700 : 1134, // QR-kod pastki qismda o'rtada turadi
               left: 1701, // 3.0 cm
               footer: 500,
             },
           },
         },
-        footers: {
+        footers: qrBuffer
+          ? {
           default: new Footer({
             children: [
               new Paragraph({
@@ -231,7 +237,8 @@ export async function generateDocumentDocx(
               }),
             ],
           }),
-        },
+        }
+          : undefined,
         children: [
           // 1. Shapka: chap tomoni bo'sh, o'ng tomonda kimga va kimdan
           new Table({

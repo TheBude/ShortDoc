@@ -67,6 +67,9 @@ function DocumentsContent() {
     priority: 'MEDIUM',
     deadline: '',
     summary: '',
+    hashtags: [] as string[],
+    withoutQr: false,
+    showApprovalList: true,
     approverIds: [] as string[],
   });
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
@@ -97,6 +100,9 @@ function DocumentsContent() {
       priority: 'MEDIUM',
       deadline: '',
       summary: '',
+      hashtags: [],
+      withoutQr: false,
+      showApprovalList: true,
       approverIds: [],
     });
     setFormError(null);
@@ -110,6 +116,7 @@ function DocumentsContent() {
   const urlCategory = searchParams.get('category') || '';
   const urlPendingMySig = searchParams.get('pendingMySignature') === 'true';
   const urlCreate = searchParams.get('create') === 'true';
+  const urlSearch = searchParams.get('search') || '';
 
   // React to URL search params whenever sidebar links are clicked
   useEffect(() => {
@@ -117,6 +124,7 @@ function DocumentsContent() {
     setStatus(urlStatus);
     setCategory(urlCategory);
     setPendingMySignature(urlPendingMySig);
+    if (urlSearch) setSearch(urlSearch);
     setPage(1);
 
     // Determine human-readable title for active filter
@@ -143,7 +151,7 @@ function DocumentsContent() {
     if (urlCreate) {
       setIsModalOpen(true);
     }
-  }, [urlDocType, urlStatus, urlCategory, urlPendingMySig, urlCreate]);
+  }, [urlDocType, urlStatus, urlCategory, urlPendingMySig, urlCreate, urlSearch]);
 
   useEffect(() => {
     const timer = setTimeout(() => {

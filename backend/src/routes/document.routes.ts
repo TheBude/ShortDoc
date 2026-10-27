@@ -29,6 +29,10 @@ const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingm
 const conflictError = (message: string) => Object.assign(new Error(message), { statusCode: 409 });
 
 // Hujjatni Word (.docx) formatida javob sifatida yuborish (ochiq va autentifikatsiyali yo'nalishlar uchun umumiy)
+// Heshteglar: '#' belgisiz, kichik harfda, takrorsiz
+const normalizeHashtags = (tags: string[]) =>
+  [...new Set(tags.map((t) => t.replace(/^#+/, '').trim().toLowerCase().slice(0, 40)).filter(Boolean))];
+
 const sendDocumentDocx = async (res: Response, document: Parameters<typeof generateDocumentDocx>[0]) => {
   const docxBuffer = await generateDocumentDocx(document, config.APP_URL);
 
@@ -104,6 +108,7 @@ router.get('/', authenticate, async (req: AuthRequest, res, next) => {
           { summary: { contains: search, mode: 'insensitive' } },
           { sender: { contains: search, mode: 'insensitive' } },
           { receiver: { contains: search, mode: 'insensitive' } },
+          { hashtags: { has: search.replace(/^#/, '').trim().toLowerCase() } },
         ],
       });
     }
@@ -393,6 +398,9 @@ router.post('/', authenticate, async (req: AuthRequest, res, next) => {
       summary: z.string().optional().nullable(),
       approverIds: z.array(z.string().min(1)).optional().default([]),
       isPublic: z.boolean().optional().default(false),
+      hashtags: z.array(z.string()).max(10, 'Ko‘pi bilan 10 ta heshteg').optional().default([]),
+      withoutQr: z.boolean().optional().default(false),
+      showApprovalList: z.boolean().optional().default(true),
     });
 
     const data = schema.parse(req.body);
@@ -499,6 +507,9 @@ router.post('/', authenticate, async (req: AuthRequest, res, next) => {
           summary: data.summary,
           // Hammaga ochiq belgisini faqat vakolatli rollar qo'ya oladi
           isPublic: data.isPublic && ['SUPER_ADMIN', 'LEADERSHIP', 'CHANCELLERY'].includes(req.user!.role),
+          hashtags: normalizeHashtags(data.hashtags),
+          withoutQr: data.withoutQr,
+          showApprovalList: data.showApprovalList,
           status: initialStatus,
         },
       });

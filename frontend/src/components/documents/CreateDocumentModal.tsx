@@ -37,6 +37,9 @@ interface CreateDocumentModalProps {
     priority: string;
     deadline: string;
     summary: string;
+    hashtags: string[];
+    withoutQr: boolean;
+    showApprovalList: boolean;
     approverIds: string[];
   };
   setFormData: React.Dispatch<React.SetStateAction<any>>;
@@ -100,6 +103,7 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
   const [recipient, setRecipient] = useState('custom');
   const [approverSearch, setApproverSearch] = useState('');
   const [fileError, setFileError] = useState<string | null>(null);
+  const [tagInput, setTagInput] = useState('');
 
   const canUseRestricted = PRIVILEGED_ROLES.includes(user?.role || '');
   const today = new Date().toISOString().slice(0, 10);
@@ -172,6 +176,13 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
     }
   };
 
+  const addTag = () => {
+    const tag = tagInput.replace(/^#+/, '').trim().toLowerCase();
+    setTagInput('');
+    if (!tag || formData.hashtags.includes(tag) || formData.hashtags.length >= 10) return;
+    setFormData({ ...formData, hashtags: [...formData.hashtags, tag] });
+  };
+
   const moveApprover = (index: number, delta: number) => {
     const target = index + delta;
     if (target < 0 || target >= formData.approverIds.length) return;
@@ -211,6 +222,7 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
     setFileError(null);
     setRecipient('custom');
     setApproverSearch('');
+    setTagInput('');
     onClose();
   };
 
@@ -296,7 +308,7 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
         <>
           <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-100 dark:border-slate-800">
             <div>
-              <h2 className="text-base font-bold text-slate-900 dark:text-white">Yangi hujjat yaratish</h2>
+              <h2 className="text-base font-bold text-slate-900 dark:text-white">Ichki hujjat yaratish</h2>
               <p className="text-xs text-slate-500">Quyidagi ma’lumotlarni to‘ldiring va imzo qo‘yuvchilarni tanlang</p>
             </div>
             <button type="button" onClick={close} aria-label="Yopish" className="text-slate-400 hover:text-slate-600 p-2 -m-2 rounded-lg">
@@ -314,23 +326,18 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
           <form onSubmit={handleCreateDocument} className="space-y-3.5 text-xs">
             {/* 1. Hujjat turi */}
             <div>
-              <label className={labelCls}>1. Hujjat turini tanlang</label>
-              <div className="grid grid-cols-3 gap-2">
+              <label className={labelCls}>1. Hujjat turi *</label>
+              <select
+                value={formData.category}
+                onChange={(e) => selectType(e.target.value)}
+                className={inputCls}
+              >
                 {DOC_TYPES.filter((t) => !t.restricted || canUseRestricted).map((t) => (
-                  <button
-                    type="button"
-                    key={t.label}
-                    onClick={() => selectType(t.label)}
-                    className={`py-2.5 px-2 sm:p-2 rounded-lg border text-xs font-semibold text-center transition-all cursor-pointer ${
-                      formData.category === t.label
-                        ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-600 text-blue-700 dark:text-blue-300'
-                        : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50'
-                    }`}
-                  >
+                  <option key={t.label} value={t.label}>
                     {t.label}
-                  </button>
+                  </option>
                 ))}
-              </div>
+              </select>
             </div>
 
             {/* 2. Sarlavha */}
@@ -433,13 +440,55 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
             </div>
 
             <div>
-              <label className={labelCls}>Hujjat matni (mazmuni) *</label>
+              <label className={labelCls}>Qisqacha mazmuni *</label>
               <textarea
                 rows={6}
                 required
                 value={formData.summary}
                 onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
-                placeholder="Sizga, ... ma’lum qilaman. (Word hujjatning asosiy matni shu yerdan olinadi)"
+                placeholder="Sizga, ... ma’lum qilaman."
+                className={inputCls}
+              />
+              <p className="text-[11px] text-slate-500 mt-1">Word hujjatning asosiy matni shu yerdan olinadi.</p>
+            </div>
+
+            {/* Heshteglar */}
+            <div>
+              <label className={labelCls}>Hujjat heshteglari</label>
+              {formData.hashtags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-1.5">
+                  {formData.hashtags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-900 text-blue-700 dark:text-blue-300 text-[11px] font-medium"
+                    >
+                      #{tag}
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, hashtags: formData.hashtags.filter((t) => t !== tag) })}
+                        aria-label={`#${tag} ni olib tashlash`}
+                        className="p-1 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900 cursor-pointer"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <input
+                type="text"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ',') {
+                    e.preventDefault();
+                    addTag();
+                  } else if (e.key === 'Backspace' && !tagInput && formData.hashtags.length > 0) {
+                    setFormData({ ...formData, hashtags: formData.hashtags.slice(0, -1) });
+                  }
+                }}
+                onBlur={addTag}
+                placeholder="Heshteg yozing va Enter bosing"
                 className={inputCls}
               />
             </div>
@@ -461,9 +510,33 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
               </label>
             )}
 
+            {/* Word hujjat sozlamalari */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <label className="flex items-start gap-2 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.withoutQr}
+                  onChange={(e) => setFormData({ ...formData, withoutQr: e.target.checked })}
+                  className="mt-0.5 rounded text-blue-600 focus:ring-blue-500"
+                />
+                <span className="font-semibold text-slate-800 dark:text-slate-200">QR-kodsiz yaratish</span>
+              </label>
+              <label className="flex items-start gap-2 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.showApprovalList}
+                  onChange={(e) => setFormData({ ...formData, showApprovalList: e.target.checked })}
+                  className="mt-0.5 rounded text-blue-600 focus:ring-blue-500"
+                />
+                <span className="font-semibold text-slate-800 dark:text-slate-200">
+                  Imzodan so‘ng kelishuvchilar ro‘yxatini shakllantirish
+                </span>
+              </label>
+            </div>
+
             {/* Fayl biriktirish */}
             <div>
-              <label className={labelCls}>Fayl biriktirish</label>
+              <label className={labelCls}>Fayl biriktirish / ilovalar</label>
               <label className="flex items-center justify-center gap-2 p-3 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60 cursor-pointer transition-colors">
                 <Paperclip className="w-4 h-4" />
                 <span>Fayllarni tanlang (PDF, Word, Excel, rasm, ZIP)</span>

@@ -126,6 +126,9 @@ export interface Document {
   status: DocumentStatus;
   summary?: string;
   isArchived: boolean;
+  hashtags?: string[];
+  withoutQr?: boolean;
+  showApprovalList?: boolean;
   createdAt: string;
   updatedAt: string;
   files?: DocumentFile[];

@@ -516,6 +516,19 @@ export default function DocumentDetailPage({
           <p className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-xl border border-slate-100 dark:border-slate-800 whitespace-pre-wrap">
             {document.summary || 'Izoh yoki mazmun kiritilmagan.'}
           </p>
+          {document.hashtags && document.hashtags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-2.5">
+              {document.hashtags.map((tag) => (
+                <Link
+                  key={tag}
+                  href={`/documents?search=${encodeURIComponent('#' + tag)}`}
+                  className="px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-900 text-blue-700 dark:text-blue-300 text-[11px] font-medium"
+                >
+                  #{tag}
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
