@@ -4,6 +4,19 @@ const path = require('path');
 // Eski demo bo'limlar: faqat hech kim va hech qanday hujjat bog'lanmagan bo'lsa o'chiriladi
 const OBSOLETE_DEMO_CODES = ['FINANCE', 'HR-DEPT', 'IT-FAC', 'PHYS-FAC', 'PHIL-FAC'];
 
+// Inglizcha kodlar o'zbekchaga almashtirildi: mavjud bo'limlar kodi o'zgartiriladi (foydalanuvchi va hujjatlar bog'lanishi saqlanadi)
+const RENAMED_CODES = {
+  'RECTOR': 'RAH-01',
+  'MATH-FAC': 'FAK-01',
+  'FAC-02': 'FAK-02',
+  'HIST-FAC': 'FAK-03',
+  'FAC-04': 'FAK-04',
+  'FAC-05': 'FAK-05',
+  'INT-REL': 'BOL-04',
+  'CHANC': 'BOL-15',
+  'DIGITAL': 'MRK-05',
+};
+
 /**
  * SamDU tuzilmasini (Rahbariyat, Institutlar, Fakultetlar, Kafedralar, Boshqarma va bo'limlar, Markazlar)
  * bazaga qo'shadi yoki yangilaydi. Takror ishga tushirish xavfsiz.
@@ -11,6 +24,16 @@ const OBSOLETE_DEMO_CODES = ['FINANCE', 'HR-DEPT', 'IT-FAC', 'PHYS-FAC', 'PHIL-F
 async function syncOrgStructure(prisma) {
   const file = path.join(__dirname, '..', 'prisma', 'org-structure.json');
   const units = JSON.parse(fs.readFileSync(file, 'utf8'));
+
+  for (const [oldCode, newCode] of Object.entries(RENAMED_CODES)) {
+    const [oldDep, newDep] = await Promise.all([
+      prisma.department.findUnique({ where: { code: oldCode } }),
+      prisma.department.findUnique({ where: { code: newCode } }),
+    ]);
+    if (oldDep && !newDep) {
+      await prisma.department.update({ where: { id: oldDep.id }, data: { code: newCode } });
+    }
+  }
 
   for (const unit of units) {
     await prisma.department.upsert({

@@ -245,7 +245,7 @@ router.get(['/export-excel', '/export-xlsx'], authenticate, async (req: AuthRequ
 
     const formattedDeps = departments.map((dp) => ({
       name: String(dp.name || 'Bo‘lim').replace(/[‘’`ʼʻ]/g, "'"),
-      code: dp.code || 'DEP',
+      code: dp.code || 'BOL',
       usersCount: dp._count?.users || 0,
       documentsCount: dp._count?.documents || 0,
     }));
