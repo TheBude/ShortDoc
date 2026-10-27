@@ -25,6 +25,7 @@ import {
   Clock,
   UserCheck,
   Trash2,
+  UserCircle,
 } from 'lucide-react';
 
 function SidebarContent() {
@@ -571,6 +572,29 @@ function SidebarContent() {
             </div>
           )}
 
+        </div>
+
+        {/* Profil */}
+        <div className={`shrink-0 px-2 pb-2 ${isCollapsed ? 'flex justify-center' : ''}`}>
+          <Link
+            href="/profile"
+            onClick={closeMobile}
+            title={isCollapsed ? 'Profil' : undefined}
+            className={`group flex items-center rounded-lg font-medium transition-all ${
+              isCollapsed ? 'justify-center h-10 w-10' : 'gap-3 px-3 py-3 lg:gap-2.5 lg:py-2 w-full'
+            } ${
+              isItemActive('/profile')
+                ? 'bg-white shadow-sm dark:shadow-none dark:bg-slate-800 text-blue-700 dark:text-white font-semibold border border-blue-200 dark:border-slate-700'
+                : 'text-slate-700 dark:text-slate-300 hover:bg-white/60 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <UserCircle
+              className={`w-4 h-4 shrink-0 transition-colors ${
+                isItemActive('/profile') ? 'text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200'
+              }`}
+            />
+            {!isCollapsed && <span className="truncate">Profil</span>}
+          </Link>
         </div>
 
         {/* 4. Footer */}

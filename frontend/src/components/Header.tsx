@@ -220,7 +220,11 @@ export const Header = () => {
           </button>
 
           {/* User Profile */}
-          <div className="flex items-center gap-2.5 pl-3 border-l border-slate-200 dark:border-slate-800">
+          <Link
+            href="/profile"
+            title="Profilni ochish"
+            className="flex items-center gap-2.5 pl-3 border-l border-slate-200 dark:border-slate-800 rounded-r-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 pr-2 py-1 transition-colors"
+          >
             <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-bold text-xs shrink-0">
               {user?.fullName?.charAt(0) || <UserIcon className="w-4 h-4" />}
             </div>
@@ -232,7 +236,7 @@ export const Header = () => {
                 {user?.position || user?.email}
               </div>
             </div>
-          </div>
+          </Link>
 
           {/* Logout button */}
           <button
@@ -284,6 +288,15 @@ export const Header = () => {
               </div>
 
               <div className="p-1.5">
+                <Link
+                  href="/profile"
+                  role="menuitem"
+                  onClick={() => setProfileOpen(false)}
+                  className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                >
+                  <UserIcon className="w-4 h-4 text-slate-500" />
+                  <span>Profil</span>
+                </Link>
                 <button
                   type="button"
                   role="menuitem"
