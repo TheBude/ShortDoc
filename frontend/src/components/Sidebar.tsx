@@ -9,7 +9,6 @@ import { useRealtime } from '@/context/RealtimeContext';
 import { fetchApi } from '@/lib/api';
 import { Avatar } from '@/components/ui/Avatar';
 import {
-  LayoutDashboard,
   FileText,
   Users,
   Building2,
@@ -21,7 +20,6 @@ import {
   Archive,
   Phone,
   FileCheck2,
-  Clock,
   UserCheck,
   Trash2,
   UserCircle,
@@ -185,38 +183,17 @@ function SidebarContent() {
         {/* 3. Navigation Sections (Scrollable & Role-based) */}
         <div className="flex-1 py-3 px-2 space-y-4 overflow-y-auto overscroll-contain text-sm lg:text-xs">
           
-          {/* SECTION 1: ASOSIY ISH MENYUSI */}
+          {/* SECTION 1: ISH STOLIM */}
           <div>
             {!isCollapsed ? (
               <div className="px-3 pb-2 text-[10px] font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
-                Asosiy
+                Ish Stolim
               </div>
             ) : (
               <div className="border-t border-blue-300/70 dark:border-slate-800 my-2" />
             )}
 
             <div className="space-y-1">
-              {/* Mening ishlarim (Bosh sahifa) */}
-              <Link
-                href="/"
-                onClick={closeMobile}
-                title={isCollapsed ? 'Mening ishlarim' : undefined}
-                className={`group flex items-center rounded-lg font-medium transition-all ${
-                  isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-3 px-3 py-3 lg:gap-2.5 lg:py-2'
-                } ${
-                  isItemActive('/')
-                    ? 'bg-white shadow-sm dark:shadow-none dark:bg-slate-800 text-blue-700 dark:text-white font-semibold border border-blue-200 dark:border-slate-700'
-                    : 'text-slate-700 dark:text-slate-300 hover:bg-white/60 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white'
-                }`}
-              >
-                <LayoutDashboard
-                  className={`w-4 h-4 shrink-0 transition-colors ${
-                    isItemActive('/') ? 'text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200'
-                  }`}
-                />
-                {!isCollapsed && <span className="truncate">Mening ishlarim</span>}
-              </Link>
-
               {/* Imzolashim kerak (Aynan ushbu foydalanuvchining imzosi kutilayotganlar) */}
               <Link
                 href="/documents?pendingMySignature=true"
@@ -250,49 +227,6 @@ function SidebarContent() {
                     </span>
                   )
                 )}
-              </Link>
-
-              {/* Bajarishim kerak (Topshiriqlar) */}
-              <Link
-                href="/tasks"
-                onClick={closeMobile}
-                title={isCollapsed ? 'Bajarishim kerak' : undefined}
-                className={`group relative flex items-center rounded-lg font-medium transition-all ${
-                  isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'justify-between px-3 py-3 lg:py-2'
-                } ${
-                  isItemActive('/tasks')
-                    ? 'bg-white shadow-sm dark:shadow-none dark:bg-slate-800 text-blue-700 dark:text-white font-semibold border border-blue-200 dark:border-slate-700'
-                    : 'text-slate-700 dark:text-slate-300 hover:bg-white/60 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white'
-                }`}
-              >
-                <div className="flex items-center gap-2.5 truncate">
-                  <Clock
-                    className={`w-4 h-4 shrink-0 transition-colors ${
-                      isItemActive('/tasks')
-                        ? 'text-blue-600 dark:text-blue-400'
-                        : 'text-slate-600 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200'
-                    }`}
-                  />
-                  {!isCollapsed && <span className="truncate">Bajarishim kerak</span>}
-                </div>
-
-                {(counts.overdue || 0) > 0 ? (
-                  isCollapsed ? (
-                    <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-[#dbe5f4] dark:ring-[#0b1329]" />
-                  ) : (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-500/30">
-                      {counts.overdue}
-                    </span>
-                  )
-                ) : (counts.pendingTasks || 0) > 0 ? (
-                  isCollapsed ? (
-                    <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-slate-400 ring-2 ring-[#dbe5f4] dark:ring-[#0b1329]" />
-                  ) : (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white shadow-sm dark:shadow-none dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-blue-200 dark:border-slate-700">
-                      {counts.pendingTasks}
-                    </span>
-                  )
-                ) : null}
               </Link>
 
               {/* Barcha hujjatlar */}

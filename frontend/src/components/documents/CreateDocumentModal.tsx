@@ -54,19 +54,19 @@ interface CreateDocumentModalProps {
 }
 
 // Hujjat turlari yagona manba sifatida: qabul qiluvchi namunasi va cheklov shu yerda
-const DOC_TYPES: { label: string; defaultReceiver: string; restricted?: boolean }[] = [
-  { label: 'Bildirgi', defaultReceiver: 'Universitet rektoriga' },
-  { label: 'Xizmat xati', defaultReceiver: 'O‘quv boshqarmasiga' },
-  { label: 'Ariza', defaultReceiver: 'Fakultet dekanatiga' },
-  { label: 'Murojaat', defaultReceiver: 'Rahbariyatga' },
-  { label: 'Hisobot', defaultReceiver: 'Kafedra mudiriga' },
-  { label: 'Rasmiy xat', defaultReceiver: 'Tashkilot rahbariga' },
-  { label: 'Shartnoma', defaultReceiver: 'Hamkor tashkilotga' },
-  { label: 'Buyruq', defaultReceiver: 'Universitet bo‘yicha', restricted: true },
-  { label: 'Qaror', defaultReceiver: 'Kengash a’zolariga', restricted: true },
-  { label: 'Farmoyish', defaultReceiver: 'Universitet bo‘yicha', restricted: true },
-  { label: 'Arxiv hujjati', defaultReceiver: 'Arxivga' },
-  { label: 'Boshqa', defaultReceiver: '' },
+const DOC_TYPES: { label: string; restricted?: boolean }[] = [
+  { label: 'Bildirgi' },
+  { label: 'Xizmat xati' },
+  { label: 'Ariza' },
+  { label: 'Murojaat' },
+  { label: 'Hisobot' },
+  { label: 'Rasmiy xat' },
+  { label: 'Shartnoma' },
+  { label: 'Buyruq', restricted: true },
+  { label: 'Qaror', restricted: true },
+  { label: 'Farmoyish', restricted: true },
+  { label: 'Arxiv hujjati' },
+  { label: 'Boshqa' },
 ];
 
 const MAX_FILES = 10;
@@ -99,8 +99,8 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
   uploadWarnings,
   user,
 }) => {
-  // 'custom' | 'u:<userId>' | 'd:<departmentId>'
-  const [recipient, setRecipient] = useState('custom');
+  // '' (tanlanmagan) | 'u:<userId>' | 'd:<departmentId>'
+  const [recipient, setRecipient] = useState('');
   const [approverSearch, setApproverSearch] = useState('');
   const [fileError, setFileError] = useState<string | null>(null);
   const [tagInput, setTagInput] = useState('');
@@ -145,17 +145,11 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
       category: label,
       // Buyruq/Qaror/Farmoyish odatda hammaga ochiq (faqat vakolatli rollar uchun)
       isPublic: canUseRestricted ? !!def?.restricted : false,
-      // Qabul qiluvchi qo'lda yozilayotgan bo'lsa, namuna yangilanadi; tanlangan xodim/bo'lim saqlanadi
-      receiver: recipient === 'custom' ? def?.defaultReceiver || '' : prev.receiver,
     }));
   };
 
   const selectRecipient = (value: string) => {
     setRecipient(value);
-    if (value === 'custom') {
-      setFormData((prev: any) => ({ ...prev, assigneeId: '' }));
-      return;
-    }
     const [kind, id] = [value.slice(0, 1), value.slice(2)];
     if (kind === 'u') {
       const target = activeUsers.find((u) => u.id === id);
@@ -171,7 +165,7 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
       setFormData((prev: any) => ({
         ...prev,
         assigneeId: head?.id || '',
-        receiver: head ? composeReceiver(head) : dept ? `${UNIVERSITY_NAME} ${dept.name}` : prev.receiver,
+        receiver: head ? composeReceiver(head) : prev.receiver,
       }));
     }
   };
@@ -190,10 +184,6 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
     [next[index], next[target]] = [next[target], next[index]];
     setFormData({ ...formData, approverIds: next });
   };
-
-  const headMissing =
-    recipient.startsWith('d:') &&
-    !activeUsers.some((u) => u.role === 'DEPARTMENT_HEAD' && u.departmentId === recipient.slice(2));
 
   const addFiles = (list: FileList | null) => {
     if (!list) return;
@@ -220,7 +210,7 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
 
   const close = () => {
     setFileError(null);
-    setRecipient('custom');
+    setRecipient('');
     setApproverSearch('');
     setTagInput('');
     onClose();
@@ -367,16 +357,27 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
               </div>
 
               <div>
-                <label className={labelCls}>Kimga (qabul qiluvchi)</label>
-                <select value={recipient} onChange={(e) => selectRecipient(e.target.value)} className={inputCls}>
-                  <option value="custom">Qo‘lda yozish</option>
+                <label className={labelCls}>Kimga (qabul qiluvchi) *</label>
+                <select
+                  value={recipient}
+                  required
+                  onChange={(e) => selectRecipient(e.target.value)}
+                  className={inputCls}
+                >
+                  <option value="" disabled>
+                    Qabul qiluvchini tanlang
+                  </option>
                   {groupDepartments(departmentsList).map((g) => (
                     <optgroup key={g.key} label={`${g.label} (mudiriga yuboriladi)`}>
-                      {g.items.map((d) => (
-                        <option key={d.id} value={`d:${d.id}`}>
-                          {d.name}
-                        </option>
-                      ))}
+                      {g.items.map((d) => {
+                        const hasHead = activeUsers.some((u) => u.role === 'DEPARTMENT_HEAD' && u.departmentId === d.id);
+                        return (
+                          <option key={d.id} value={`d:${d.id}`} disabled={!hasHead}>
+                            {d.name}
+                            {hasHead ? '' : ' — mudir biriktirilmagan'}
+                          </option>
+                        );
+                      })}
                     </optgroup>
                   ))}
                   <optgroup label="Xodimlar">
@@ -392,24 +393,13 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
               </div>
             </div>
 
-            {recipient === 'custom' && (
-              <input
-                type="text"
-                value={formData.receiver}
-                onChange={(e) => setFormData({ ...formData, receiver: e.target.value })}
-                placeholder="Qabul qiluvchi nomi..."
-                className={inputCls}
-              />
-            )}
-            {headMissing && (
-              <p className="text-[11px] text-amber-600 dark:text-amber-400">
-                Tanlangan bo‘limda mudir biriktirilmagan: hujjat faqat matn sifatida yoziladi, hech kimga biriktirilmaydi.
-              </p>
-            )}
-            {recipient !== 'custom' && !headMissing && (
-              <p className="text-[11px] text-slate-500">
-                Hujjat tanlangan qabul qiluvchiga mas’ul sifatida biriktiriladi va uning ro‘yxatida ko‘rinadi.
-              </p>
+            {/* Hujjat shapkasi: Word'dagi yuqori o'ng blok shu ko'rinishda chiqadi */}
+            {formData.receiver && (
+              <div className="p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 text-[11px] leading-relaxed">
+                <p className="text-slate-500 mb-1">Hujjat shapkasi:</p>
+                <p className="font-bold text-slate-900 dark:text-slate-100">{formData.receiver}</p>
+                <p className="font-bold text-slate-900 dark:text-slate-100 mt-1.5">{formData.sender} tomonidan</p>
+              </div>
             )}
 
             {/* Muhimlik va muddat */}

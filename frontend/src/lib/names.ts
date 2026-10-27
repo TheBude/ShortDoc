@@ -29,5 +29,8 @@ export function composeSender(user?: Pick<User, 'fullName' | 'position' | 'depar
 /** Hujjat shapkasidagi "Kimga": "<universitet> <bo‘lim> <lavozim> <Sh.Sh.Familiya>ga" */
 export function composeReceiver(user?: Pick<User, 'fullName' | 'position' | 'department'> | null): string {
   if (!user) return '';
-  return `${UNIVERSITY_NAME} ${composeSender(user)}ga`;
+  const text = `${UNIVERSITY_NAME} ${composeSender(user)}`;
+  // Jo‘nalish kelishigi: k -> ka, q -> qa, qolganlari -> ga (Istamovga, Karimovaga)
+  const last = text.slice(-1).toLowerCase();
+  return `${text}${last === 'k' ? 'ka' : last === 'q' ? 'qa' : 'ga'}`;
 }
