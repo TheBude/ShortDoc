@@ -13,7 +13,8 @@ export const LanguageSwitcher = ({ tone = 'default' }: { tone?: 'default' | 'gla
   const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
+    // pointerdown: iOS Safari sahifaning bo‘sh joyiga bosilganda mousedown yubormaydi
+    function handleClickOutside(event: PointerEvent) {
       if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
         setOpen(false);
       }
@@ -21,10 +22,10 @@ export const LanguageSwitcher = ({ tone = 'default' }: { tone?: 'default' | 'gla
     function handleEscape(event: KeyboardEvent) {
       if (event.key === 'Escape') setOpen(false);
     }
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('pointerdown', handleClickOutside);
     document.addEventListener('keydown', handleEscape);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('pointerdown', handleClickOutside);
       document.removeEventListener('keydown', handleEscape);
     };
   }, []);
@@ -41,7 +42,7 @@ export const LanguageSwitcher = ({ tone = 'default' }: { tone?: 'default' | 'gla
         aria-expanded={open}
         aria-label="Til / Тил / Язык"
         title="Til / Тил / Язык"
-        className={`group flex items-center gap-1.5 h-[34px] pl-2.5 pr-2 rounded-lg border transition-all duration-200 cursor-pointer active:scale-95 ${
+        className={`group flex items-center gap-1.5 h-10 lg:h-[34px] pl-2.5 pr-2 rounded-lg border transition-all duration-200 cursor-pointer active:scale-95 ${
           open
             ? 'bg-primary-50 dark:bg-primary-950/40 border-primary-300 dark:border-primary-800 text-primary-700 dark:text-primary-300'
             : tone === 'glass'
@@ -69,11 +70,18 @@ export const LanguageSwitcher = ({ tone = 'default' }: { tone?: 'default' | 'gla
         <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
       </button>
 
+      {/* Telefonda menyu ekran pastidan chiqadi, sm dan boshlab tugma tagida ochiladi */}
+      {open && (
+        <div className="fixed inset-0 z-40 bg-slate-950/40 sm:hidden" aria-hidden="true" onClick={() => setOpen(false)} />
+      )}
+
       <div
         role="listbox"
         aria-label={active.label}
-        className={`absolute right-0 mt-2 w-60 origin-top-right bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl z-50 overflow-hidden transition-all duration-200 ease-out ${
-          open ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-1 pointer-events-none'
+        className={`fixed inset-x-3 bottom-3 z-50 origin-bottom sm:absolute sm:inset-x-auto sm:bottom-auto sm:right-0 sm:mt-2 sm:w-60 sm:origin-top-right bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden transition-all duration-200 ease-out ${
+          open
+            ? 'visible opacity-100 scale-100 translate-y-0'
+            : 'invisible opacity-0 scale-95 translate-y-2 sm:-translate-y-1 pointer-events-none'
         }`}
       >
         <div className="px-3.5 py-2.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">

@@ -16,6 +16,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import Link from 'next/link';
+import { Modal } from '@/components/ui/Modal';
 
 export default function TasksPage() {
   const { user } = useAuth();
@@ -146,6 +147,9 @@ export default function TasksPage() {
     }
   };
 
+  const isTaskOverdue = (task: Task) =>
+    !!task.deadline && new Date(task.deadline) < new Date() && task.status !== 'COMPLETED';
+
   const getStatusBadge = (st: string) => {
     switch (st) {
       case 'PENDING':
@@ -183,7 +187,7 @@ export default function TasksPage() {
       <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-wrap gap-2 text-xs font-semibold transition-colors duration-200">
         <button
           onClick={() => setStatusFilter('')}
-          className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
+          className={`px-3.5 py-2 sm:px-3 sm:py-1.5 rounded-lg transition-colors cursor-pointer ${
             statusFilter === '' ? 'bg-primary-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
           }`}
         >
@@ -191,7 +195,7 @@ export default function TasksPage() {
         </button>
         <button
           onClick={() => setStatusFilter('PENDING')}
-          className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
+          className={`px-3.5 py-2 sm:px-3 sm:py-1.5 rounded-lg transition-colors cursor-pointer ${
             statusFilter === 'PENDING' ? 'bg-primary-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
           }`}
         >
@@ -199,7 +203,7 @@ export default function TasksPage() {
         </button>
         <button
           onClick={() => setStatusFilter('IN_PROGRESS')}
-          className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
+          className={`px-3.5 py-2 sm:px-3 sm:py-1.5 rounded-lg transition-colors cursor-pointer ${
             statusFilter === 'IN_PROGRESS' ? 'bg-primary-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
           }`}
         >
@@ -207,7 +211,7 @@ export default function TasksPage() {
         </button>
         <button
           onClick={() => setStatusFilter('COMPLETED')}
-          className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
+          className={`px-3.5 py-2 sm:px-3 sm:py-1.5 rounded-lg transition-colors cursor-pointer ${
             statusFilter === 'COMPLETED' ? 'bg-primary-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
           }`}
         >
@@ -228,7 +232,7 @@ export default function TasksPage() {
             <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">Topshiriqlar mavjud emas</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="hidden lg:block overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 uppercase font-semibold">
                 <tr>
@@ -242,10 +246,7 @@ export default function TasksPage() {
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
                 {tasks.map((task) => {
-                  const isOverdue =
-                    task.deadline &&
-                    new Date(task.deadline) < new Date() &&
-                    task.status !== 'COMPLETED';
+                  const isOverdue = isTaskOverdue(task);
 
                   return (
                     <tr key={task.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors">
@@ -316,11 +317,88 @@ export default function TasksPage() {
           </div>
         )}
 
+        {/* Telefon va planshet: jadval o‘rniga kartochkalar */}
+        {!loading && tasks.length > 0 && (
+          <div className="lg:hidden p-2 grid gap-2 md:grid-cols-2">
+            {tasks.map((task) => {
+              const isOverdue = isTaskOverdue(task);
+
+              return (
+                <div
+                  key={task.id}
+                  className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-xl space-y-2.5 border border-slate-200/80 dark:border-slate-800"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <Link
+                      href={`/documents/${task.documentId}`}
+                      className="inline-flex items-center gap-1 py-1 font-mono text-xs font-bold text-primary-600 dark:text-primary-400 hover:underline"
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      <span>{task.document?.regNumber || 'Hujjat'}</span>
+                    </Link>
+                    {getStatusBadge(task.status)}
+                  </div>
+
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-900 dark:text-white leading-snug">{task.title}</h3>
+                    {task.description && (
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">{task.description}</p>
+                    )}
+                  </div>
+
+                  {task.resultComment && (
+                    <div className="text-[11px] text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 p-1.5 rounded">
+                      Natija: {task.resultComment}
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between gap-3 text-xs">
+                    <span className="flex items-center gap-1.5 min-w-0 text-slate-600 dark:text-slate-300">
+                      <UserIcon className="w-3.5 h-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
+                      <span className="truncate">{task.assignedTo?.fullName}</span>
+                    </span>
+                    {task.deadline && (
+                      <span
+                        className={`flex items-center gap-1 shrink-0 font-semibold ${
+                          isOverdue ? 'text-rose-600 dark:text-rose-400' : 'text-slate-600 dark:text-slate-300'
+                        }`}
+                      >
+                        <Calendar className="w-3.5 h-3.5" />
+                        {new Date(task.deadline).toLocaleDateString('uz-UZ')}
+                        {isOverdue && <span className="text-[10px] text-rose-500 dark:text-rose-400">(Muddati o‘tdi)</span>}
+                      </span>
+                    )}
+                  </div>
+
+                  {task.status !== 'COMPLETED' && (
+                    <div className="flex gap-2 pt-2.5 border-t border-slate-200 dark:border-slate-800">
+                      {task.status === 'PENDING' && (
+                        <button
+                          onClick={() => handleUpdateStatus(task.id, 'IN_PROGRESS')}
+                          className="flex-1 py-2.5 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-semibold text-sm cursor-pointer"
+                        >
+                          Boshlash
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setSelectedTask(task)}
+                        className="flex-1 py-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-semibold text-sm cursor-pointer"
+                      >
+                        Natija topshirish
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="p-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+          <div className="p-4 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
             <span>Jami: {totalTasks} ta topshiriq | Sahifa {page} / {totalPages}</span>
-            <div className="flex gap-1">
+            <div className="flex gap-2 sm:gap-1">
               <button
                 disabled={page <= 1}
                 onClick={() => {
@@ -328,7 +406,7 @@ export default function TasksPage() {
                   setPage(p);
                   loadTasks(p);
                 }}
-                className="px-3 py-1 rounded border border-slate-200 dark:border-slate-700 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
+                className="px-4 py-2 sm:px-3 sm:py-1 rounded border border-slate-200 dark:border-slate-700 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
               >
                 Oldingi
               </button>
@@ -339,7 +417,7 @@ export default function TasksPage() {
                   setPage(p);
                   loadTasks(p);
                 }}
-                className="px-3 py-1 rounded border border-slate-200 dark:border-slate-700 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
+                className="px-4 py-2 sm:px-3 sm:py-1 rounded border border-slate-200 dark:border-slate-700 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
               >
                 Keyingi
               </button>
@@ -350,146 +428,142 @@ export default function TasksPage() {
 
       {/* Create Task Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 w-full max-w-lg p-6 transition-colors duration-200">
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Yangi Topshiriq Biriktirish</h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">Hujjat asosida mas’ul ijrochiga topshiriq bering</p>
+        <Modal size="lg">
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Yangi Topshiriq Biriktirish</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">Hujjat asosida mas’ul ijrochiga topshiriq bering</p>
 
-            {formError && (
-              <div className="mb-4 p-3 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 rounded-lg text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>{formError}</span>
-              </div>
-            )}
+          {formError && (
+            <div className="mb-4 p-3 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 rounded-lg text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{formError}</span>
+            </div>
+          )}
 
-            <form onSubmit={handleCreateTask} className="space-y-4 text-xs">
-              <div>
-                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Tegishli Hujjat *</label>
-                <select
-                  required
-                  value={newTaskData.documentId}
-                  onChange={(e) => setNewTaskData({ ...newTaskData, documentId: e.target.value })}
-                  className="w-full p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 text-xs"
-                >
-                  <option value="">Hujjatni tanlang...</option>
-                  {documentsList.map((doc) => (
-                    <option key={doc.id} value={doc.id}>
-                      {doc.regNumber} — {doc.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
+          <form onSubmit={handleCreateTask} className="space-y-4 text-xs">
+            <div>
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Tegishli Hujjat *</label>
+              <select
+                required
+                value={newTaskData.documentId}
+                onChange={(e) => setNewTaskData({ ...newTaskData, documentId: e.target.value })}
+                className="w-full p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 text-xs"
+              >
+                <option value="">Hujjatni tanlang...</option>
+                {documentsList.map((doc) => (
+                  <option key={doc.id} value={doc.id}>
+                    {doc.regNumber} — {doc.title}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-              <div>
-                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Topshiriq nomi *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Masalan: 3 kun muddatda taklif tayyorlash"
-                  value={newTaskData.title}
-                  onChange={(e) => setNewTaskData({ ...newTaskData, title: e.target.value })}
-                  className="w-full p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 text-xs"
-                />
-              </div>
+            <div>
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Topshiriq nomi *</label>
+              <input
+                type="text"
+                required
+                placeholder="Masalan: 3 kun muddatda taklif tayyorlash"
+                value={newTaskData.title}
+                onChange={(e) => setNewTaskData({ ...newTaskData, title: e.target.value })}
+                className="w-full p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 text-xs"
+              />
+            </div>
 
-              <div>
-                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Mas’ul ijrochi xodim *</label>
-                <select
-                  required
-                  value={newTaskData.assignedToId}
-                  onChange={(e) => setNewTaskData({ ...newTaskData, assignedToId: e.target.value })}
-                  className="w-full p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 text-xs"
-                >
-                  <option value="">Ijrochini tanlang...</option>
-                  {usersList.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.fullName} ({u.position})
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <div>
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Mas’ul ijrochi xodim *</label>
+              <select
+                required
+                value={newTaskData.assignedToId}
+                onChange={(e) => setNewTaskData({ ...newTaskData, assignedToId: e.target.value })}
+                className="w-full p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 text-xs"
+              >
+                <option value="">Ijrochini tanlang...</option>
+                {usersList.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.fullName} ({u.position})
+                  </option>
+                ))}
+              </select>
+            </div>
 
-              <div>
-                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Ijro muddati (Dedlayn)</label>
-                <input
-                  type="date"
-                  value={newTaskData.deadline}
-                  onChange={(e) => setNewTaskData({ ...newTaskData, deadline: e.target.value })}
-                  className="w-full p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 text-xs"
-                />
-              </div>
+            <div>
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Ijro muddati (Dedlayn)</label>
+              <input
+                type="date"
+                value={newTaskData.deadline}
+                onChange={(e) => setNewTaskData({ ...newTaskData, deadline: e.target.value })}
+                className="w-full p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 text-xs"
+              />
+            </div>
 
-              <div>
-                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Topshiriq tavsifi</label>
-                <textarea
-                  rows={3}
-                  placeholder="Vazifa bo‘yicha aniq ko‘rsatmalar..."
-                  value={newTaskData.description}
-                  onChange={(e) => setNewTaskData({ ...newTaskData, description: e.target.value })}
-                  className="w-full p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 text-xs"
-                />
-              </div>
+            <div>
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Topshiriq tavsifi</label>
+              <textarea
+                rows={3}
+                placeholder="Vazifa bo‘yicha aniq ko‘rsatmalar..."
+                value={newTaskData.description}
+                onChange={(e) => setNewTaskData({ ...newTaskData, description: e.target.value })}
+                className="w-full p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 text-xs"
+              />
+            </div>
 
-              <div className="flex justify-end gap-2 pt-4 border-t border-slate-100 dark:border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 font-semibold cursor-pointer"
-                >
-                  Bekor qilish
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-semibold disabled:opacity-50 cursor-pointer"
-                >
-                  {submitting ? 'Saqlanmoqda...' : 'Topshiriqni Biriktirish'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+            <div className="flex gap-2 sm:justify-end pt-4 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="px-4 py-2.5 sm:py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 font-semibold cursor-pointer"
+              >
+                Bekor qilish
+              </button>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="flex-1 sm:flex-none px-4 py-2.5 sm:py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-semibold disabled:opacity-50 cursor-pointer"
+              >
+                {submitting ? 'Saqlanmoqda...' : 'Topshiriqni Biriktirish'}
+              </button>
+            </div>
+          </form>
+        </Modal>
       )}
 
       {/* Submit Result Modal */}
       {selectedTask && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 w-full max-w-md p-6 transition-colors duration-200">
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Topshiriq Natijasini Topshirish</h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">{selectedTask.title}</p>
+        <Modal size="md">
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Topshiriq Natijasini Topshirish</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">{selectedTask.title}</p>
 
-            <form onSubmit={handleSubmitResult} className="space-y-4 text-xs">
-              <div>
-                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Bajarilgan ish bo‘yicha xulosa (natija) *</label>
-                <textarea
-                  required
-                  rows={4}
-                  placeholder="Vazifa qanday bajarilgani haqida qisqacha ma’lumot..."
-                  value={resultComment}
-                  onChange={(e) => setResultComment(e.target.value)}
-                  className="w-full p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 text-xs"
-                />
-              </div>
+          <form onSubmit={handleSubmitResult} className="space-y-4 text-xs">
+            <div>
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Bajarilgan ish bo‘yicha xulosa (natija) *</label>
+              <textarea
+                required
+                rows={4}
+                placeholder="Vazifa qanday bajarilgani haqida qisqacha ma’lumot..."
+                value={resultComment}
+                onChange={(e) => setResultComment(e.target.value)}
+                className="w-full p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 text-xs"
+              />
+            </div>
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setSelectedTask(null)}
-                  className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 font-semibold cursor-pointer"
-                >
-                  Bekor qilish
-                </button>
-                <button
-                  type="submit"
-                  disabled={submittingResult}
-                  className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold disabled:opacity-50 cursor-pointer"
-                >
-                  {submittingResult ? 'Yuborilmoqda...' : 'Bajarildi deb belgilash'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+            <div className="flex gap-2 sm:justify-end pt-3 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setSelectedTask(null)}
+                className="px-4 py-2.5 sm:py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 font-semibold cursor-pointer"
+              >
+                Bekor qilish
+              </button>
+              <button
+                type="submit"
+                disabled={submittingResult}
+                className="flex-1 sm:flex-none px-4 py-2.5 sm:py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold disabled:opacity-50 cursor-pointer"
+              >
+                {submittingResult ? 'Yuborilmoqda...' : 'Bajarildi deb belgilash'}
+              </button>
+            </div>
+          </form>
+        </Modal>
       )}
     </div>
   );

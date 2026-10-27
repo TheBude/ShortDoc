@@ -43,6 +43,9 @@ function DocumentsContent() {
   const [activeFilterName, setActiveFilterName] = useState<string>('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  // Telefonda holat/tur/muhimlik filtrlari yig‘ilgan turadi (qidiruvgina ko‘rinadi)
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const activeFilterCount = [status, category, priority].filter(Boolean).length;
 
   // Modal for new document
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -294,9 +297,9 @@ function DocumentsContent() {
 
       {/* Active Filter Pill / Banner */}
       {activeFilterName && (
-        <div className="flex items-center justify-between p-3.5 bg-blue-50 dark:bg-slate-900 border border-blue-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-200 font-medium shadow-sm transition-colors duration-200">
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 p-3.5 bg-blue-50 dark:bg-slate-900 border border-blue-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-200 font-medium shadow-sm transition-colors duration-200">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-primary-600 dark:bg-primary-500 animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-primary-600 dark:bg-primary-500 animate-pulse shrink-0" />
             <span>Tanlangan bo‘lim: <strong className="font-bold text-slate-900 dark:text-white text-sm ml-1">{activeFilterName}</strong></span>
           </div>
           <button
@@ -309,7 +312,7 @@ function DocumentsContent() {
               setSearch('');
               router.push('/documents');
             }}
-            className="text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300 underline font-bold cursor-pointer transition-colors"
+            className="py-1 text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300 underline font-bold cursor-pointer transition-colors"
           >
             Filtrni tozalash
           </button>
@@ -319,10 +322,10 @@ function DocumentsContent() {
       {/* Tabs & Filters */}
       <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 transition-colors duration-200">
         {/* Document Type Tabs */}
-        <div className="flex border-b border-slate-200 dark:border-slate-800 overflow-x-auto text-sm font-medium">
+        <div className="flex border-b border-slate-200 dark:border-slate-800 overflow-x-auto no-scrollbar text-sm font-medium">
           <button
             onClick={() => { setDocType(''); setPage(1); }}
-            className={`pb-3 px-4 border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
+            className={`pt-2 sm:pt-0 pb-3 px-4 border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
               docType === '' ? 'border-primary-600 text-primary-600 dark:text-primary-400 font-bold' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
             }`}
           >
@@ -330,7 +333,7 @@ function DocumentsContent() {
           </button>
           <button
             onClick={() => { setDocType('INTERNAL'); setPage(1); }}
-            className={`pb-3 px-4 border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
+            className={`pt-2 sm:pt-0 pb-3 px-4 border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
               docType === 'INTERNAL' ? 'border-primary-600 text-primary-600 dark:text-primary-400 font-bold' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
             }`}
           >
@@ -338,7 +341,7 @@ function DocumentsContent() {
           </button>
           <button
             onClick={() => { setDocType('INCOMING'); setPage(1); }}
-            className={`pb-3 px-4 border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
+            className={`pt-2 sm:pt-0 pb-3 px-4 border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
               docType === 'INCOMING' ? 'border-primary-600 text-primary-600 dark:text-primary-400 font-bold' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
             }`}
           >
@@ -346,7 +349,7 @@ function DocumentsContent() {
           </button>
           <button
             onClick={() => { setDocType('OUTGOING'); setPage(1); }}
-            className={`pb-3 px-4 border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
+            className={`pt-2 sm:pt-0 pb-3 px-4 border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
               docType === 'OUTGOING' ? 'border-primary-600 text-primary-600 dark:text-primary-400 font-bold' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
             }`}
           >
@@ -356,61 +359,85 @@ function DocumentsContent() {
 
         {/* Search and Dropdowns */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-          <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Qidirish..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Qidirish..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-9 pr-3 py-2.5 sm:py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setFiltersOpen((v) => !v)}
+              aria-expanded={filtersOpen}
+              className={`sm:hidden relative inline-flex items-center gap-1.5 px-3.5 rounded-lg border text-sm font-medium cursor-pointer transition-colors ${
+                filtersOpen || activeFilterCount > 0
+                  ? 'bg-blue-50 dark:bg-blue-950/50 border-blue-300 dark:border-blue-800 text-blue-700 dark:text-blue-300'
+                  : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200'
+              }`}
+            >
+              <Filter className="w-4 h-4" />
+              <span>Filtrlar</span>
+              {activeFilterCount > 0 && (
+                <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-blue-700 text-white text-[10px] font-bold flex items-center justify-center">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
           </div>
 
-          <select
-            value={status}
-            onChange={(e) => { setStatus(e.target.value); setPage(1); }}
-            className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
-          >
-            <option value="">Barcha holatlar</option>
-            <option value="REGISTERED">Ro‘yxatga olingan</option>
-            <option value="IN_APPROVAL">Imzolanmoqda</option>
-            <option value="IN_EXECUTION">Ijroda</option>
-            <option value="COMPLETED">Bajarilgan</option>
-            <option value="REJECTED">Qaytarilgan</option>
-          </select>
+          {/* Telefonda filtrlar tugma orqali ochiladi; sm dan boshlab doim ko‘rinadi va asosiy setkaga qo‘shiladi */}
+          <div className={`${filtersOpen ? 'grid' : 'hidden'} grid-cols-2 gap-2 sm:contents`}>
+            <select
+              value={status}
+              onChange={(e) => { setStatus(e.target.value); setPage(1); }}
+              className="w-full px-3 py-2.5 sm:py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              <option value="">Barcha holatlar</option>
+              <option value="REGISTERED">Ro‘yxatga olingan</option>
+              <option value="IN_APPROVAL">Imzolanmoqda</option>
+              <option value="IN_EXECUTION">Ijroda</option>
+              <option value="COMPLETED">Bajarilgan</option>
+              <option value="REJECTED">Qaytarilgan</option>
+            </select>
 
-          <select
-            value={category}
-            onChange={(e) => { setCategory(e.target.value); setPage(1); }}
-            className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
-          >
-            <option value="">Barcha turlar</option>
-            {ALL_CATEGORIES_LIST.map((c) => (
-              <option key={c.key} value={c.key}>
-                {c.label}
-              </option>
-            ))}
-          </select>
+            <select
+              value={category}
+              onChange={(e) => { setCategory(e.target.value); setPage(1); }}
+              className="w-full px-3 py-2.5 sm:py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              <option value="">Barcha turlar</option>
+              {ALL_CATEGORIES_LIST.map((c) => (
+                <option key={c.key} value={c.key}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
 
-          <select
-            value={priority}
-            onChange={(e) => { setPriority(e.target.value); setPage(1); }}
-            className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500"
-          >
-            <option value="">Barcha muhimlik darajalari</option>
-            <option value="LOW">Past</option>
-            <option value="MEDIUM">O‘rta</option>
-            <option value="HIGH">Yuqori</option>
-            <option value="URGENT">Shoshilinch</option>
-          </select>
+            <select
+              value={priority}
+              onChange={(e) => { setPriority(e.target.value); setPage(1); }}
+              className="col-span-2 sm:col-span-1 w-full px-3 py-2.5 sm:py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="">Barcha muhimlik darajalari</option>
+              <option value="LOW">Past</option>
+              <option value="MEDIUM">O‘rta</option>
+              <option value="HIGH">Yuqori</option>
+              <option value="URGENT">Shoshilinch</option>
+            </select>
 
-          <button
-            onClick={() => { setSearch(''); setDocType(''); setStatus(''); setPriority(''); setCategory(''); setPage(1); }}
-            className="px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 font-medium cursor-pointer"
-          >
-            Filtrni tozalash
-          </button>
+            <button
+              onClick={() => { setSearch(''); setDocType(''); setStatus(''); setPriority(''); setCategory(''); setPage(1); }}
+              className="col-span-2 sm:col-span-1 px-3 py-2.5 sm:py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 font-medium cursor-pointer"
+            >
+              Filtrni tozalash
+            </button>
+          </div>
         </div>
       </div>
 
@@ -429,8 +456,8 @@ function DocumentsContent() {
           </div>
         ) : (
           <>
-            {/* Desktop Table View */}
-            <div className="hidden sm:block overflow-x-auto">
+            {/* Desktop Table View (8 ustun: xl dan boshlab; kichikroq ekranlarda kartochkalar) */}
+            <div className="hidden xl:block overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 uppercase font-semibold">
                   <tr>
@@ -501,38 +528,41 @@ function DocumentsContent() {
               </table>
             </div>
 
-            {/* Mobile Card View (Telefonda siqilib qolmaydigan qulay kartochkalar) */}
-            <div className="sm:hidden divide-y divide-slate-100 dark:divide-slate-800 p-2 space-y-2">
+            {/* Mobile Card View (Telefon va planshetda siqilib qolmaydigan qulay kartochkalar) */}
+            <div className="xl:hidden p-2 grid gap-2 md:grid-cols-2">
               {documents.map((doc) => (
-                <div key={doc.id} className="p-3 bg-slate-50 dark:bg-slate-850 rounded-xl space-y-2 border border-slate-200/80 dark:border-slate-800">
+                <div key={doc.id} className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl space-y-2 border border-slate-200/80 dark:border-slate-800">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-mono text-xs font-bold text-slate-900 dark:text-slate-100">
+                    <span className="font-mono text-xs font-bold text-slate-900 dark:text-slate-100 shrink-0">
                       {doc.regNumber}
                     </span>
-                    <div className="flex items-center gap-1.5 flex-wrap">
+                    <div className="flex items-center justify-end gap-1.5 flex-wrap">
                       {getCategoryBadge(doc.category)}
                       {getStatusBadge(doc.status)}
                     </div>
                   </div>
 
-                  <h3 className="font-semibold text-xs text-slate-900 dark:text-white leading-snug">
+                  <h3 className="font-semibold text-sm text-slate-900 dark:text-white leading-snug">
                     {doc.title}
                   </h3>
 
-                  <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
-                    <span>{doc.creator?.fullName || doc.sender || '—'}</span>
-                    {doc.deadline && (
-                      <span className="flex items-center gap-1 text-slate-600 dark:text-slate-400">
-                        <Calendar className="w-3 h-3" />
-                        {new Date(doc.deadline).toLocaleDateString('uz-UZ')}
-                      </span>
-                    )}
+                  <div className="flex items-center justify-between gap-2 text-[11px] text-slate-500 pt-1">
+                    <span className="min-w-0 truncate">{doc.creator?.fullName || doc.sender || '—'}</span>
+                    <div className="flex items-center gap-2.5 shrink-0">
+                      {doc.priority === 'URGENT' && getPriorityBadge(doc.priority)}
+                      {doc.deadline && (
+                        <span className="flex items-center gap-1 text-slate-600 dark:text-slate-400">
+                          <Calendar className="w-3 h-3" />
+                          {new Date(doc.deadline).toLocaleDateString('uz-UZ')}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
                     <Link
                       href={`/documents/${doc.id}`}
-                      className="flex-1 py-1.5 text-center text-xs font-semibold rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200"
+                      className="flex-1 py-2.5 text-center text-sm font-semibold rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200"
                     >
                       Ko‘rish
                     </Link>
@@ -541,7 +571,7 @@ function DocumentsContent() {
                       onClick={() => downloadDocumentDocx(doc.id, doc.regNumber, doc.category)}
                       disabled={!isDocxAvailable(doc.approvals)}
                       title={isDocxAvailable(doc.approvals) ? undefined : DOCX_LOCKED_HINT}
-                      className="px-3 py-1.5 text-xs font-semibold disabled:opacity-40 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800 flex items-center gap-1"
+                      className="px-4 py-2.5 text-sm font-semibold disabled:opacity-40 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800 flex items-center gap-1.5"
                     >
                       <Download className="w-3.5 h-3.5" />
                       <span>.docx</span>
@@ -555,20 +585,20 @@ function DocumentsContent() {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="p-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+          <div className="p-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
             <span>Sahifa {page} / {totalPages}</span>
-            <div className="flex gap-1">
+            <div className="flex gap-2 sm:gap-1">
               <button
                 disabled={page <= 1}
                 onClick={() => setPage(page - 1)}
-                className="px-3 py-1 rounded border border-slate-200 dark:border-slate-700 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
+                className="px-4 py-2 sm:px-3 sm:py-1 rounded border border-slate-200 dark:border-slate-700 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
               >
                 Oldingi
               </button>
               <button
                 disabled={page >= totalPages}
                 onClick={() => setPage(page + 1)}
-                className="px-3 py-1 rounded border border-slate-200 dark:border-slate-700 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
+                className="px-4 py-2 sm:px-3 sm:py-1 rounded border border-slate-200 dark:border-slate-700 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
               >
                 Keyingi
               </button>

@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { AuthProvider } from '@/context/AuthContext';
 import { ThemeProvider } from '@/context/ThemeContext';
@@ -13,6 +13,13 @@ export const metadata: Metadata = {
   icons: {
     icon: '/samdu-logo.png',
   },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  // Android'da klaviatura ochilganda sahifa o‘lchami moslashadi (oynadagi tugmalar klaviatura ostida qolmaydi)
+  interactiveWidget: 'resizes-content',
 };
 
 export default function RootLayout({

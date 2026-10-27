@@ -72,7 +72,7 @@ export default function ReportsPage() {
           type="button"
           disabled={exporting}
           onClick={handleExportExcel}
-          className="inline-flex items-center gap-2 bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 text-sm font-semibold px-4 py-2.5 rounded-lg shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+          className="inline-flex items-center justify-center gap-2 bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 text-sm font-semibold px-4 py-2.5 rounded-lg shadow-sm transition-colors cursor-pointer disabled:opacity-50"
         >
           {exporting ? (
             <div className="w-4 h-4 border-2 border-white dark:border-slate-900 border-t-transparent rounded-full animate-spin" />
@@ -109,9 +109,9 @@ export default function ReportsPage() {
       </div>
 
       {/* Detailed Department Breakdown Table */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 transition-colors duration-200">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 sm:p-6 transition-colors duration-200">
         <h2 className="text-base font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-          <BarChart3 className="w-5 h-5 text-slate-700 dark:text-slate-300" />
+          <BarChart3 className="w-5 h-5 shrink-0 text-slate-700 dark:text-slate-300" />
           <span>Bo‘limlar va Kafedralar Bo‘yicha Taqsimot</span>
         </h2>
 
@@ -121,7 +121,7 @@ export default function ReportsPage() {
             <p className="text-xs">Ma’lumotlar yuklanmoqda...</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 uppercase font-semibold">
                 <tr>
@@ -158,6 +158,40 @@ export default function ReportsPage() {
                 })}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* Telefon: jadval o‘rniga kartochkalar */}
+        {!loading && (
+          <div className="md:hidden space-y-2">
+            {departmentsStat.map((dep: any) => {
+              const share =
+                counts.total > 0
+                  ? Math.round(((dep._count?.documents || 0) / counts.total) * 100)
+                  : 0;
+
+              return (
+                <div
+                  key={dep.id}
+                  className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-xl space-y-2 border border-slate-200/80 dark:border-slate-800"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="text-sm font-semibold text-slate-900 dark:text-white leading-snug">{dep.name}</h3>
+                    <span className="font-mono font-bold text-xs text-primary-700 dark:text-primary-400">{dep.code}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300">
+                    <span>{dep._count?.users || 0} nafar</span>
+                    <span className="font-semibold text-slate-900 dark:text-slate-200">{dep._count?.documents || 0} ta</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                      <div className="bg-primary-600 h-full rounded-full" style={{ width: `${share}%` }} />
+                    </div>
+                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{share}%</span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

@@ -66,19 +66,20 @@ function SidebarContent() {
       {/* Mobile Backdrop Overlay */}
       {isMobileOpen && (
         <div
+          data-scroll-lock
           onClick={closeMobile}
-          className="fixed inset-0 z-40 bg-slate-950/70 backdrop-blur-sm transition-opacity duration-300 md:hidden"
+          className="fixed inset-0 z-40 bg-slate-950/70 backdrop-blur-sm transition-opacity duration-300 lg:hidden"
           aria-hidden="true"
         />
       )}
 
-      {/* Main Sidebar Drawer / Panel */}
+      {/* Main Sidebar Drawer / Panel (lg dan kichik ekranlarda — chapdan chiqadigan menyu) */}
       <aside
-        className={`fixed md:sticky top-0 inset-y-0 left-0 z-50 flex h-screen flex-col overflow-hidden border-r border-blue-300 dark:border-slate-800 bg-[#dbe5f4] dark:bg-[#0b1329] text-slate-700 dark:text-slate-200 shadow-xl shadow-slate-300/60 dark:shadow-2xl dark:shadow-black/40 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] select-none shrink-0 ${
+        className={`fixed lg:sticky top-0 inset-y-0 left-0 z-50 flex h-screen h-dvh flex-col overflow-hidden border-r border-blue-300 dark:border-slate-800 bg-[#dbe5f4] dark:bg-[#0b1329] text-slate-700 dark:text-slate-200 lg:shadow-xl lg:shadow-slate-300/60 dark:lg:shadow-2xl dark:lg:shadow-black/40 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] select-none shrink-0 w-72 sm:w-80 max-w-[85vw] ${
           isMobileOpen
-            ? 'w-72 sm:w-80 max-w-[85vw] translate-x-0 shadow-[12px_0_40px_rgba(2,6,23,0.8)]'
-            : '-translate-x-full md:translate-x-0'
-        } ${isDesktopCollapsed ? 'md:w-20' : 'md:w-72'}`}
+            ? 'translate-x-0 shadow-[12px_0_40px_rgba(2,6,23,0.8)]'
+            : '-translate-x-full lg:translate-x-0'
+        } ${isDesktopCollapsed ? 'lg:w-20' : 'lg:w-72'}`}
       >
         {/* 1. Header (SamDU Logo & Collapse Toggle) */}
         <div
@@ -133,7 +134,7 @@ function SidebarContent() {
                 ? 'Panelni kengaytirish'
                 : 'Panelni ixchamlashtirish'
             }
-            className="rounded-lg p-2 text-slate-600 dark:text-slate-400 hover:bg-white/60 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100 transition-colors cursor-pointer shrink-0 focus:outline-none"
+            className="rounded-lg p-2.5 lg:p-2 text-slate-600 dark:text-slate-400 hover:bg-white/60 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100 transition-colors cursor-pointer shrink-0 focus:outline-none"
           >
             <svg
               className="h-5 w-5"
@@ -172,8 +173,8 @@ function SidebarContent() {
             href="/documents?create=true"
             onClick={closeMobile}
             title={isCollapsed ? 'Yangi hujjat yaratish' : undefined}
-            className={`flex items-center justify-center gap-2 rounded-lg bg-blue-700 hover:bg-blue-600 active:bg-blue-800 text-white font-semibold text-xs transition-all shadow-sm group ${
-              isCollapsed ? 'w-10 h-10 p-0' : 'w-full py-2.5 px-3'
+            className={`flex items-center justify-center gap-2 rounded-lg bg-blue-700 hover:bg-blue-600 active:bg-blue-800 text-white font-semibold text-sm lg:text-xs transition-all shadow-sm group ${
+              isCollapsed ? 'w-10 h-10 p-0' : 'w-full py-3 lg:py-2.5 px-3'
             }`}
           >
             <Plus className="w-4 h-4 shrink-0 transition-transform duration-200" />
@@ -182,7 +183,7 @@ function SidebarContent() {
         </div>
 
         {/* 3. Navigation Sections (Scrollable & Role-based) */}
-        <div className="flex-1 py-3 px-2 space-y-4 overflow-y-auto text-xs">
+        <div className="flex-1 py-3 px-2 space-y-4 overflow-y-auto overscroll-contain text-sm lg:text-xs">
           
           {/* SECTION 1: ASOSIY ISH MENYUSI */}
           <div>
@@ -201,7 +202,7 @@ function SidebarContent() {
                 onClick={closeMobile}
                 title={isCollapsed ? 'Mening ishlarim' : undefined}
                 className={`group flex items-center rounded-lg font-medium transition-all ${
-                  isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-2.5 px-3 py-2'
+                  isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-3 px-3 py-3 lg:gap-2.5 lg:py-2'
                 } ${
                   isItemActive('/')
                     ? 'bg-white shadow-sm dark:shadow-none dark:bg-slate-800 text-blue-700 dark:text-white font-semibold border border-blue-200 dark:border-slate-700'
@@ -222,7 +223,7 @@ function SidebarContent() {
                 onClick={closeMobile}
                 title={isCollapsed ? 'Imzolashim kerak' : undefined}
                 className={`group relative flex items-center rounded-lg font-medium transition-all ${
-                  isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'justify-between px-3 py-2'
+                  isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'justify-between px-3 py-3 lg:py-2'
                 } ${
                   isItemActive('/documents?pendingMySignature=true')
                     ? 'bg-white shadow-sm dark:shadow-none dark:bg-slate-800 text-blue-700 dark:text-white font-semibold border border-blue-200 dark:border-slate-700'
@@ -257,7 +258,7 @@ function SidebarContent() {
                 onClick={closeMobile}
                 title={isCollapsed ? 'Bajarishim kerak' : undefined}
                 className={`group relative flex items-center rounded-lg font-medium transition-all ${
-                  isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'justify-between px-3 py-2'
+                  isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'justify-between px-3 py-3 lg:py-2'
                 } ${
                   isItemActive('/tasks')
                     ? 'bg-white shadow-sm dark:shadow-none dark:bg-slate-800 text-blue-700 dark:text-white font-semibold border border-blue-200 dark:border-slate-700'
@@ -300,7 +301,7 @@ function SidebarContent() {
                 onClick={closeMobile}
                 title={isCollapsed ? 'Barcha hujjatlar' : undefined}
                 className={`group flex items-center rounded-lg font-medium transition-all ${
-                  isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-2.5 px-3 py-2'
+                  isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-3 px-3 py-3 lg:gap-2.5 lg:py-2'
                 } ${
                   isItemActive('/documents')
                     ? 'bg-white shadow-sm dark:shadow-none dark:bg-slate-800 text-blue-700 dark:text-white font-semibold border border-blue-200 dark:border-slate-700'
@@ -335,7 +336,7 @@ function SidebarContent() {
                   onClick={closeMobile}
                   title={isCollapsed ? 'Yangi kelgan xatlar' : undefined}
                   className={`group relative flex items-center rounded-lg font-medium transition-all ${
-                    isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'justify-between px-3 py-2'
+                    isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'justify-between px-3 py-3 lg:py-2'
                   } ${
                     isItemActive('/documents?status=REGISTERED')
                       ? 'bg-white shadow-sm dark:shadow-none dark:bg-slate-800 text-blue-700 dark:text-white font-semibold border border-blue-200 dark:border-slate-700'
@@ -369,7 +370,7 @@ function SidebarContent() {
                   onClick={closeMobile}
                   title={isCollapsed ? 'Kiruvchi xatlar' : undefined}
                   className={`group flex items-center rounded-lg font-medium transition-all ${
-                    isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-2.5 px-3 py-2'
+                    isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-3 px-3 py-3 lg:gap-2.5 lg:py-2'
                   } ${
                     isItemActive('/documents?documentType=INCOMING')
                       ? 'bg-white shadow-sm dark:shadow-none dark:bg-slate-800 text-blue-700 dark:text-white font-semibold border border-blue-200 dark:border-slate-700'
@@ -392,7 +393,7 @@ function SidebarContent() {
                   onClick={closeMobile}
                   title={isCollapsed ? 'Chiquvchi xatlar' : undefined}
                   className={`group flex items-center rounded-lg font-medium transition-all ${
-                    isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-2.5 px-3 py-2'
+                    isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-3 px-3 py-3 lg:gap-2.5 lg:py-2'
                   } ${
                     isItemActive('/documents?documentType=OUTGOING')
                       ? 'bg-white shadow-sm dark:shadow-none dark:bg-slate-800 text-blue-700 dark:text-white font-semibold border border-blue-200 dark:border-slate-700'
@@ -415,7 +416,7 @@ function SidebarContent() {
                   onClick={closeMobile}
                   title={isCollapsed ? 'Elektron arxiv' : undefined}
                   className={`group flex items-center rounded-lg font-medium transition-all ${
-                    isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-2.5 px-3 py-2'
+                    isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-3 px-3 py-3 lg:gap-2.5 lg:py-2'
                   } ${
                     isItemActive('/documents?status=ARCHIVED')
                       ? 'bg-white shadow-sm dark:shadow-none dark:bg-slate-800 text-blue-700 dark:text-white font-semibold border border-blue-200 dark:border-slate-700'
@@ -451,7 +452,7 @@ function SidebarContent() {
                   onClick={closeMobile}
                   title={isCollapsed ? 'Hisobotlar' : undefined}
                   className={`group flex items-center rounded-lg font-medium transition-all ${
-                    isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-2.5 px-3 py-2'
+                    isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-3 px-3 py-3 lg:gap-2.5 lg:py-2'
                   } ${
                     isItemActive('/reports')
                       ? 'bg-white shadow-sm dark:shadow-none dark:bg-slate-800 text-blue-700 dark:text-white font-semibold border border-blue-200 dark:border-slate-700'
@@ -473,7 +474,7 @@ function SidebarContent() {
                     onClick={closeMobile}
                     title={isCollapsed ? 'Universitet tuzilmasi' : undefined}
                     className={`group flex items-center rounded-lg font-medium transition-all ${
-                      isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-2.5 px-3 py-2'
+                      isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-3 px-3 py-3 lg:gap-2.5 lg:py-2'
                     } ${
                       isItemActive('/admin/departments')
                         ? 'bg-white shadow-sm dark:shadow-none dark:bg-slate-800 text-blue-700 dark:text-white font-semibold border border-blue-200 dark:border-slate-700'
@@ -496,7 +497,7 @@ function SidebarContent() {
                     onClick={closeMobile}
                     title={isCollapsed ? 'Xodimlar ro‘yxati' : undefined}
                     className={`group flex items-center rounded-lg font-medium transition-all ${
-                      isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-2.5 px-3 py-2'
+                      isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-3 px-3 py-3 lg:gap-2.5 lg:py-2'
                     } ${
                       isItemActive('/admin/users')
                         ? 'bg-white shadow-sm dark:shadow-none dark:bg-slate-800 text-blue-700 dark:text-white font-semibold border border-blue-200 dark:border-slate-700'
@@ -528,7 +529,7 @@ function SidebarContent() {
                     onClick={closeMobile}
                     title={isCollapsed ? 'Xavfsizlik & audit jurnali' : undefined}
                     className={`group flex items-center rounded-lg font-medium transition-all ${
-                      isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-2.5 px-3 py-2'
+                      isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-3 px-3 py-3 lg:gap-2.5 lg:py-2'
                     } ${
                       isItemActive('/admin/audit')
                         ? 'bg-white shadow-sm dark:shadow-none dark:bg-slate-800 text-blue-700 dark:text-white font-semibold border border-blue-200 dark:border-slate-700'
@@ -551,7 +552,7 @@ function SidebarContent() {
                     onClick={closeMobile}
                     title={isCollapsed ? 'Ma’lumotlarni tozalash' : undefined}
                     className={`group flex items-center rounded-lg font-medium transition-all ${
-                      isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-2.5 px-3 py-2'
+                      isCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-3 px-3 py-3 lg:gap-2.5 lg:py-2'
                     } ${
                       isItemActive('/admin/maintenance')
                         ? 'bg-white shadow-sm dark:shadow-none dark:bg-slate-800 text-blue-700 dark:text-white font-semibold border border-blue-200 dark:border-slate-700'
@@ -588,7 +589,7 @@ function SidebarContent() {
             <>
               <a
                 href="tel:+998662391140"
-                className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+                className="flex items-center gap-2 py-1 lg:py-0 text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
               >
                 <Phone className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400 shrink-0" />
                 <span className="font-medium text-[11px]">+998 66 239-11-40</span>
@@ -613,7 +614,7 @@ export const Sidebar = () => {
   return (
     <Suspense
       fallback={
-        <aside className="w-72 bg-[#dbe5f4] dark:bg-[#0b1329] text-slate-700 dark:text-slate-300 flex flex-col shrink-0 min-h-screen border-r border-blue-300 dark:border-slate-800 select-none animate-pulse" />
+        <aside className="hidden lg:flex w-72 bg-[#dbe5f4] dark:bg-[#0b1329] text-slate-700 dark:text-slate-300 flex-col shrink-0 min-h-screen border-r border-blue-300 dark:border-slate-800 select-none animate-pulse" />
       }
     >
       <SidebarContent />

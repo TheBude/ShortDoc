@@ -110,7 +110,7 @@ export default function DocumentVerificationPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-4">
+      <div className="min-h-screen min-h-dvh bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-4">
         <div className="w-12 h-12 rounded-full border-4 border-primary-200 border-t-primary-600 animate-spin mb-4" />
         <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
           Hujjat haqiqiyligi tekshirilmoqda...
@@ -122,7 +122,7 @@ export default function DocumentVerificationPage() {
 
   if (error || !docData) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-4">
+      <div className="min-h-screen min-h-dvh bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-4">
         <div className="max-w-md w-full bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-900/60 rounded-3xl shadow-xl p-8 text-center space-y-4">
           <div className="w-16 h-16 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto shadow-sm">
             <XCircle className="w-9 h-9" />
@@ -177,7 +177,7 @@ export default function DocumentVerificationPage() {
     : 'SD-VERIFY-SAMDU';
 
   return (
-    <div className="min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 py-8 px-4 sm:px-6">
+    <div className="min-h-screen min-h-dvh bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 py-8 px-4 sm:px-6">
       <div className="max-w-3xl mx-auto space-y-6">
 
         {/* 1. Official University Brand Header */}

@@ -291,6 +291,41 @@ export default function AdminUsersPage() {
     }
   };
 
+  const getRegistrationBadge = (u: User) => {
+    if (u.registrationStatus === 'PENDING') {
+      return (
+        <span className="px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 text-[10px] font-bold border border-amber-200 dark:border-amber-800">
+          Kutilmoqda
+        </span>
+      );
+    }
+    if (u.registrationStatus === 'REJECTED') {
+      return (
+        <span className="px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/70 text-rose-800 dark:text-rose-300 text-[10px] font-bold border border-rose-200 dark:border-rose-800">
+          Rad etilgan
+        </span>
+      );
+    }
+    return (
+      <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold border border-emerald-200 dark:border-emerald-800">
+        Tasdiqlangan
+      </span>
+    );
+  };
+
+  const getAccountStatus = (u: User) =>
+    u.isActive ? (
+      <span className="text-emerald-700 dark:text-emerald-400 font-semibold flex items-center gap-1">
+        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+        Faol
+      </span>
+    ) : (
+      <span className="text-rose-600 dark:text-rose-400 font-semibold flex items-center gap-1">
+        <XCircle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+        Bloklangan
+      </span>
+    );
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -312,17 +347,17 @@ export default function AdminUsersPage() {
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-1">
+      <div className="flex items-stretch gap-2 border-b border-slate-200 dark:border-slate-800 pb-1">
         <button
           type="button"
           onClick={() => setActiveTab('pending')}
-          className={`flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all cursor-pointer ${
+          className={`flex flex-1 sm:flex-none items-center justify-center gap-2 px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all cursor-pointer ${
             activeTab === 'pending'
               ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-800 shadow-sm'
               : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
-          <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+          <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
           <span>Yangi Arizalar (Kutilayotganlar)</span>
           {pendingUsers.length > 0 && (
             <span className="ml-1 px-2 py-0.5 rounded-full text-xs bg-amber-500 text-white font-extrabold animate-pulse">
@@ -334,13 +369,13 @@ export default function AdminUsersPage() {
         <button
           type="button"
           onClick={() => setActiveTab('all')}
-          className={`flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all cursor-pointer ${
+          className={`flex flex-1 sm:flex-none items-center justify-center gap-2 px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all cursor-pointer ${
             activeTab === 'all'
               ? 'bg-primary-50 dark:bg-primary-950/60 text-primary-900 dark:text-primary-200 border border-primary-200 dark:border-primary-800 shadow-sm'
               : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
-          <Users className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+          <Users className="w-4 h-4 text-primary-600 dark:text-primary-400 shrink-0" />
           <span>Barcha Foydalanuvchilar ({activeUsers.length})</span>
         </button>
       </div>
@@ -377,13 +412,13 @@ export default function AdminUsersPage() {
 
                     <div>
                       {/* Top Header */}
-                      <div className="flex items-start justify-between gap-3 mb-3">
-                        <div>
+                      <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2 mb-3">
+                        <div className="min-w-0">
                           <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 mb-1.5 border border-amber-200 dark:border-amber-800">
                             <Clock className="w-3 h-3" />
                             <span>Ariza ko‘rib chiqilmoqda</span>
                           </div>
-                          <h3 className="text-lg font-bold text-slate-900 dark:text-white">{u.fullName}</h3>
+                          <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white break-words">{u.fullName}</h3>
                         </div>
 
                         {/* Auto assigned role badge */}
@@ -448,7 +483,7 @@ export default function AdminUsersPage() {
                         type="button"
                         disabled={actionLoadingId === u.id}
                         onClick={() => handleApprove(u)}
-                        className="flex-1 py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm shadow-emerald-600/20 disabled:opacity-50 cursor-pointer"
+                        className="flex-1 py-3 sm:py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm shadow-emerald-600/20 disabled:opacity-50 cursor-pointer"
                       >
                         <Check className="w-4 h-4" />
                         <span>Arizani Tasdiqlash</span>
@@ -458,7 +493,7 @@ export default function AdminUsersPage() {
                         type="button"
                         disabled={actionLoadingId === u.id}
                         onClick={() => handleReject(u)}
-                        className="py-2.5 px-3.5 rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 text-xs font-bold transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                        className="py-3 sm:py-2.5 px-3.5 rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 text-xs font-bold transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
                       >
                         <X className="w-4 h-4" />
                         <span>Rad etish</span>
@@ -482,7 +517,7 @@ export default function AdminUsersPage() {
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto">
+              <div className="hidden xl:block overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 uppercase font-semibold">
                     <tr>
@@ -508,34 +543,8 @@ export default function AdminUsersPage() {
                         </td>
                         <td className="py-3 px-4 whitespace-nowrap text-slate-700 dark:text-slate-300">{u.department?.name || '—'}</td>
                         <td className="py-3 px-4 whitespace-nowrap text-slate-600 dark:text-slate-400">{u.position}</td>
-                        <td className="py-3 px-4 whitespace-nowrap">
-                          {u.registrationStatus === 'PENDING' ? (
-                            <span className="px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 text-[10px] font-bold border border-amber-200 dark:border-amber-800">
-                              Kutilmoqda
-                            </span>
-                          ) : u.registrationStatus === 'REJECTED' ? (
-                            <span className="px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/70 text-rose-800 dark:text-rose-300 text-[10px] font-bold border border-rose-200 dark:border-rose-800">
-                              Rad etilgan
-                            </span>
-                          ) : (
-                            <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold border border-emerald-200 dark:border-emerald-800">
-                              Tasdiqlangan
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-3 px-4 whitespace-nowrap">
-                          {u.isActive ? (
-                            <span className="text-emerald-700 dark:text-emerald-400 font-semibold flex items-center gap-1">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                              Faol
-                            </span>
-                          ) : (
-                            <span className="text-rose-600 dark:text-rose-400 font-semibold flex items-center gap-1">
-                              <XCircle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
-                              Bloklangan
-                            </span>
-                          )}
-                        </td>
+                        <td className="py-3 px-4 whitespace-nowrap">{getRegistrationBadge(u)}</td>
+                        <td className="py-3 px-4 whitespace-nowrap">{getAccountStatus(u)}</td>
                         <td className="py-3 px-4 text-right whitespace-nowrap">
                           {u.id !== user?.id && (
                             <button
@@ -573,11 +582,75 @@ export default function AdminUsersPage() {
                 </table>
               </div>
 
+              {/* Telefon va planshet: jadval o‘rniga kartochkalar */}
+              <div className="xl:hidden p-2 grid gap-2 md:grid-cols-2">
+                {users.map((u) => (
+                  <div
+                    key={u.id}
+                    className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-xl space-y-2.5 border border-slate-200/80 dark:border-slate-800"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <h3 className="text-sm font-semibold text-slate-900 dark:text-white leading-snug break-words">{u.fullName}</h3>
+                        <div className="text-xs text-slate-500 dark:text-slate-400 truncate">{u.email}</div>
+                      </div>
+                      <div className="text-xs shrink-0">{getAccountStatus(u)}</div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="font-semibold text-[11px] px-2.5 py-0.5 rounded-full bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700">
+                        {getRoleLabel(u.role)}
+                      </span>
+                      {getRegistrationBadge(u)}
+                    </div>
+
+                    <div className="space-y-1 text-xs text-slate-600 dark:text-slate-400">
+                      <div className="flex items-start gap-2">
+                        <Building2 className="w-3.5 h-3.5 mt-0.5 shrink-0 text-slate-400 dark:text-slate-500" />
+                        <span>{u.department?.name || '—'}</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <Briefcase className="w-3.5 h-3.5 mt-0.5 shrink-0 text-slate-400 dark:text-slate-500" />
+                        <span>{u.position}</span>
+                      </div>
+                    </div>
+
+                    {u.id !== user?.id && (
+                      <div className="flex gap-2 pt-2.5 border-t border-slate-200 dark:border-slate-800">
+                        <button
+                          onClick={() => setCredentialsTarget(u)}
+                          className="flex-1 py-2.5 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 cursor-pointer"
+                        >
+                          Login / Parol
+                        </button>
+                        <button
+                          onClick={() => handleToggleActive(u)}
+                          className={`flex-1 py-2.5 rounded-lg text-xs font-semibold cursor-pointer ${
+                            u.isActive
+                              ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                              : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                          }`}
+                        >
+                          {u.isActive ? 'Bloklash' : 'Faollashtirish'}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteUser(u)}
+                          disabled={actionLoadingId === u.id}
+                          className="flex-1 py-2.5 rounded-lg text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white disabled:opacity-50 cursor-pointer"
+                        >
+                          O‘chirish
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="p-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                <div className="p-4 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
                   <span>Jami: {totalUsers} ta foydalanuvchi | Sahifa {page} / {totalPages}</span>
-                  <div className="flex gap-1">
+                  <div className="flex gap-2 sm:gap-1">
                     <button
                       disabled={page <= 1}
                       onClick={() => {
@@ -585,7 +658,7 @@ export default function AdminUsersPage() {
                         setPage(p);
                         loadData(p);
                       }}
-                      className="px-3 py-1 rounded border border-slate-200 dark:border-slate-700 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
+                      className="px-4 py-2 sm:px-3 sm:py-1 rounded border border-slate-200 dark:border-slate-700 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
                     >
                       Oldingi
                     </button>
@@ -596,7 +669,7 @@ export default function AdminUsersPage() {
                         setPage(p);
                         loadData(p);
                       }}
-                      className="px-3 py-1 rounded border border-slate-200 dark:border-slate-700 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
+                      className="px-4 py-2 sm:px-3 sm:py-1 rounded border border-slate-200 dark:border-slate-700 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
                     >
                       Keyingi
                     </button>

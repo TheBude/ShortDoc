@@ -308,7 +308,7 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
 
       {/* Floating Real-time Toast Banner */}
       {activeToast && (
-        <div className="fixed top-5 right-5 z-[99999] max-w-sm w-full bg-white dark:bg-slate-900 border-2 border-primary-500 rounded-2xl shadow-2xl p-4 animate-in slide-in-from-top duration-300">
+        <div className="fixed top-3 left-3 right-3 sm:left-auto sm:top-5 sm:right-5 z-[99999] sm:max-w-sm sm:w-full bg-white dark:bg-slate-900 border-2 border-primary-500 rounded-2xl shadow-2xl p-4 animate-in slide-in-from-top duration-300">
           <div className="flex items-start justify-between gap-3">
             <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-950/70 text-primary-700 dark:text-primary-300 flex items-center justify-center shrink-0">
               <FileCheck2 className="w-4 h-4" />

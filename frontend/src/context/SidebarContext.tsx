@@ -35,6 +35,58 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
     setIsMobileOpen(false);
   }, [pathname]);
 
+  // Menyu ochiq turib ekran kengaysa (masalan, planshet gorizontal burilsa) u yopiladi,
+  // Escape bosilganda ham yopiladi
+  useEffect(() => {
+    if (!isMobileOpen) return;
+    const desktop = window.matchMedia('(min-width: 1024px)');
+    const onResize = (e: MediaQueryListEvent) => {
+      if (e.matches) setIsMobileOpen(false);
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsMobileOpen(false);
+    };
+    desktop.addEventListener('change', onResize);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      desktop.removeEventListener('change', onResize);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [isMobileOpen]);
+
+  // Barmoq bilan surish: chap chetdan o‘ngga — menyu ochiladi, ochiq menyuni chapga surish — yopiladi
+  useEffect(() => {
+    const mobile = window.matchMedia('(max-width: 1023px)');
+    let startX = 0;
+    let startY = 0;
+    let tracking = false;
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (!mobile.matches || e.touches.length !== 1) return;
+      const t = e.touches[0];
+      startX = t.clientX;
+      startY = t.clientY;
+      tracking = isMobileOpen || startX <= 24;
+    };
+    const onTouchEnd = (e: TouchEvent) => {
+      if (!tracking) return;
+      tracking = false;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - startX;
+      const dy = Math.abs(t.clientY - startY);
+      if (dy > Math.abs(dx) * 0.6 || Math.abs(dx) < 60) return;
+      if (!isMobileOpen && dx > 0) setIsMobileOpen(true);
+      else if (isMobileOpen && dx < 0) setIsMobileOpen(false);
+    };
+
+    document.addEventListener('touchstart', onTouchStart, { passive: true });
+    document.addEventListener('touchend', onTouchEnd, { passive: true });
+    return () => {
+      document.removeEventListener('touchstart', onTouchStart);
+      document.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [isMobileOpen]);
+
   const openMobile = () => setIsMobileOpen(true);
   const closeMobile = () => setIsMobileOpen(false);
   const toggleMobile = () => setIsMobileOpen((prev) => !prev);

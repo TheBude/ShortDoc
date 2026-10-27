@@ -29,7 +29,7 @@ export default function VerifyPortalIndexPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 py-12 px-4 sm:px-6 flex flex-col justify-center items-center">
+    <div className="min-h-screen min-h-dvh bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 py-12 px-4 sm:px-6 flex flex-col justify-center items-center">
       <div className="max-w-xl w-full space-y-6">
         
         {/* SamDU Brand Header */}

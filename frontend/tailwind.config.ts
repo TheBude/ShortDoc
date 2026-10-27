@@ -2,6 +2,10 @@ import type { Config } from 'tailwindcss';
 
 export default {
   darkMode: 'class',
+  future: {
+    // Sensorli ekranda bosilgandan keyin hover holati yopishib qolmasligi uchun
+    hoverOnlyWhenSupported: true,
+  },
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',

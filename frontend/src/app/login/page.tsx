@@ -271,13 +271,13 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-primary-950 flex flex-col justify-center items-center p-4 py-8">
+    <div className="min-h-screen min-h-dvh bg-gradient-to-br from-slate-950 via-slate-900 to-primary-950 flex flex-col justify-center items-center p-4 py-8">
       <div className="w-full max-w-xl">
         {/* Navigation back to landing page */}
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex items-center justify-between gap-3">
           <Link
             href="/"
-            className="inline-flex items-center gap-2 text-xs font-semibold text-slate-300 hover:text-white transition-colors bg-white/10 hover:bg-white/15 px-3.5 py-1.5 rounded-xl border border-white/10 shadow-sm"
+            className="inline-flex items-center gap-2 text-xs font-semibold text-slate-300 hover:text-white transition-colors bg-white/10 hover:bg-white/15 px-3.5 py-2.5 sm:py-1.5 rounded-xl border border-white/10 shadow-sm"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Asosiy sahifaga qaytish</span>
@@ -287,12 +287,12 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={toggleTheme}
-              className="p-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-slate-300 hover:text-white transition-colors border border-white/10 cursor-pointer"
+              className="flex items-center justify-center h-10 w-10 lg:h-auto lg:w-auto lg:p-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-slate-300 hover:text-white transition-colors border border-white/10 cursor-pointer"
               title={theme === 'dark' ? "Yorug' rejim" : "Qorong'u rejim"}
             >
               {theme === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-300" /> : <Moon className="w-3.5 h-3.5 text-slate-300" />}
             </button>
-            <span className="text-[11px] text-slate-400 font-medium tracking-wide">
+            <span className="hidden sm:inline text-[11px] text-slate-400 font-medium tracking-wide whitespace-nowrap">
               SamDU • 1420
             </span>
           </div>

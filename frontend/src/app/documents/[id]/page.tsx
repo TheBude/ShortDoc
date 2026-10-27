@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { downloadDocumentDocx, isDocxAvailable, DOCX_LOCKED_HINT } from '@/lib/downloadDocx';
 import { DocumentCommentsSection } from '@/components/documents/DocumentCommentsSection';
+import { Modal } from '@/components/ui/Modal';
 import { getCategoryMeta } from '@/lib/categories';
 
 export default function DocumentDetailPage({
@@ -284,18 +285,18 @@ export default function DocumentDetailPage({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <Link
           href="/documents"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
+          className="inline-flex items-center gap-1.5 py-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Hujjatlar ro‘yxatiga qaytish</span>
         </Link>
 
-        <div className="flex items-center gap-2.5 self-start sm:self-auto flex-wrap">
+        <div className="grid grid-cols-1 sm:flex sm:items-center gap-2.5 sm:flex-wrap">
           {canCompleteDocument && document.status !== 'COMPLETED' && document.status !== 'REJECTED' && (
             <button
               type="button"
               onClick={() => setCompleteModalOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-sm transition-all cursor-pointer"
+              className="inline-flex items-center justify-center gap-2 px-4 py-3 sm:py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm sm:text-xs shadow-sm transition-all cursor-pointer"
             >
               <CheckCircle2 className="w-4 h-4" />
               <span>Bajarildi deb belgilash</span>
@@ -307,7 +308,7 @@ export default function DocumentDetailPage({
             onClick={() => downloadDocumentDocx(document.id, document.regNumber, document.category)}
             disabled={!isDocxAvailable(document.approvals)}
             title={isDocxAvailable(document.approvals) ? undefined : DOCX_LOCKED_HINT}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 font-semibold text-xs shadow-sm transition-all cursor-pointer"
+            className="inline-flex items-center justify-center gap-2 px-4 py-3 sm:py-2 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 font-semibold text-sm sm:text-xs shadow-sm transition-all cursor-pointer"
           >
             <Download className="w-4 h-4" />
             <span>Word (.docx) shaklida yuklab olish</span>
@@ -317,7 +318,7 @@ export default function DocumentDetailPage({
 
       {/* Imzo (Approval) Voting Action Box - Prominently at TOP for instant review */}
       {currentPendingApproval && (
-        <div className="bg-amber-50 dark:bg-amber-950/40 border-2 border-amber-300 dark:border-amber-700/70 rounded-2xl p-6 shadow-sm transition-colors">
+        <div className="bg-amber-50 dark:bg-amber-950/40 border-2 border-amber-300 dark:border-amber-700/70 rounded-2xl p-4 sm:p-6 shadow-sm transition-colors">
           <div className="flex items-center gap-2 mb-2 text-amber-900 dark:text-amber-200 font-bold text-base">
             <FileCheck2 className="w-5 h-5 text-amber-600 dark:text-amber-400" />
             <span>Sizning tasdig‘ingiz (Imzo) talab qilinadi</span>
@@ -335,11 +336,11 @@ export default function DocumentDetailPage({
               className="w-full p-2.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-lg border border-amber-300 dark:border-amber-700/70 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 placeholder-slate-400"
             />
 
-            <div className="flex flex-wrap gap-3">
+            <div className="grid grid-cols-1 sm:flex sm:flex-wrap gap-2.5 sm:gap-3">
               <button
                 disabled={approving}
                 onClick={() => handleApprovalAction('APPROVED')}
-                className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs px-5 py-2.5 rounded-lg shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+                className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm sm:text-xs px-5 py-3 sm:py-2.5 rounded-lg shadow-sm transition-colors cursor-pointer disabled:opacity-50"
               >
                 <CheckCircle2 className="w-4 h-4" />
                 <span>{approving ? 'Bajarilmoqda...' : 'Tasdiqlash (Imzo qo‘yish)'}</span>
@@ -348,7 +349,7 @@ export default function DocumentDetailPage({
               <button
                 disabled={approving}
                 onClick={() => handleApprovalAction('REJECTED')}
-                className="inline-flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs px-5 py-2.5 rounded-lg shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+                className="inline-flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold text-sm sm:text-xs px-5 py-3 sm:py-2.5 rounded-lg shadow-sm transition-colors cursor-pointer disabled:opacity-50"
               >
                 <XCircle className="w-4 h-4" />
                 <span>{approving ? 'Bajarilmoqda...' : 'Qaytarish (E’tiroz bilan)'}</span>
@@ -359,10 +360,10 @@ export default function DocumentDetailPage({
       )}
 
       {/* Main Document Header Card */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 lg:p-8 transition-colors duration-200">
-        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-6 border-b border-slate-100 dark:border-slate-800">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 sm:p-6 lg:p-8 transition-colors duration-200">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-5 sm:pb-6 border-b border-slate-100 dark:border-slate-800">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2 mb-2">
               <span className="font-mono text-sm font-bold bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 px-3 py-1 rounded">
                 {document.regNumber}
               </span>
@@ -373,7 +374,7 @@ export default function DocumentDetailPage({
                 {getStatusLabel(document.status)}
               </span>
             </div>
-            <h1 className="text-xl lg:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">{document.title}</h1>
+            <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-slate-900 dark:text-white tracking-tight break-words">{document.title}</h1>
           </div>
 
           <div className="text-xs text-slate-500 dark:text-slate-400 space-y-1 sm:text-right shrink-0">
@@ -391,7 +392,7 @@ export default function DocumentDetailPage({
 
         {/* Visual Pipeline Bar */}
         <div className="py-5 border-b border-slate-100 dark:border-slate-800">
-          <div className="flex items-center justify-between gap-2 mb-3">
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 mb-3">
             <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
               Hujjat harakati bosqichlari
             </div>
@@ -518,9 +519,9 @@ export default function DocumentDetailPage({
       </div>
 
       {/* Imzo Zanjiri (Approval Chain Timeline) */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 transition-colors duration-200">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 sm:p-6 transition-colors duration-200">
         <h2 className="text-base font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-          <ShieldCheck className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+          <ShieldCheck className="w-5 h-5 shrink-0 text-primary-600 dark:text-primary-400" />
           <span>Imzo Yig‘ish Zanjiri (Kelishuv holati)</span>
         </h2>
 
@@ -531,10 +532,10 @@ export default function DocumentDetailPage({
             {document.approvals.map((app) => (
               <div
                 key={app.id}
-                className="p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between text-xs transition-colors"
+                className="p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs transition-colors"
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 flex items-center justify-center font-bold text-[10px]">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 flex items-center justify-center font-bold text-[10px] shrink-0">
                     {app.stepOrder}
                   </div>
                   <div>
@@ -548,7 +549,7 @@ export default function DocumentDetailPage({
                   </div>
                 </div>
 
-                <div className="text-right">
+                <div className="sm:text-right pl-9 sm:pl-0">
                   {app.status === 'APPROVED' && (
                     <span className="inline-flex items-center gap-1 font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 px-2.5 py-1 rounded-full text-[11px]">
                       <CheckCircle2 className="w-3.5 h-3.5" />
@@ -580,14 +581,14 @@ export default function DocumentDetailPage({
       </div>
 
       {/* Attached Files Section */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 transition-colors duration-200">
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 sm:p-6 transition-colors duration-200">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-4">
           <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Paperclip className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+            <Paperclip className="w-5 h-5 shrink-0 text-primary-600 dark:text-primary-400" />
             <span>Biriktirilgan Fayllar ({document.files?.length || 0})</span>
           </h2>
 
-          <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-50 dark:bg-primary-950/60 text-primary-700 dark:text-primary-300 hover:bg-primary-100 dark:hover:bg-primary-900/60 text-xs font-semibold transition-colors">
+          <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-2.5 sm:py-1.5 rounded-lg bg-primary-50 dark:bg-primary-950/60 text-primary-700 dark:text-primary-300 hover:bg-primary-100 dark:hover:bg-primary-900/60 text-xs font-semibold transition-colors">
             <Upload className="w-3.5 h-3.5" />
             <span>{uploadingFile ? 'Yuklanmoqda...' : 'Fayl qo‘shish'}</span>
             <input type="file" onChange={handleFileUpload} disabled={uploadingFile} className="hidden" />
@@ -606,9 +607,9 @@ export default function DocumentDetailPage({
         ) : (
           <div className="divide-y divide-slate-100 dark:divide-slate-800">
             {document.files.map((file) => (
-              <div key={file.id} className="py-2.5 flex items-center justify-between text-xs">
-                <div>
-                  <div className="font-semibold text-slate-800 dark:text-slate-200">{file.originalName}</div>
+              <div key={file.id} className="py-3 sm:py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                <div className="min-w-0">
+                  <div className="font-semibold text-slate-800 dark:text-slate-200 break-all">{file.originalName}</div>
                   <div className="text-[11px] text-slate-400 dark:text-slate-500">
                     {(file.fileSize / 1024).toFixed(1)} KB • Yukladi: {file.uploadedBy?.fullName || 'Xodim'}
                   </div>
@@ -618,7 +619,7 @@ export default function DocumentDetailPage({
                   type="button"
                   onClick={() => handleDownloadFile(file.id, file.originalName)}
                   disabled={downloadingFileId === file.id}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium transition-colors cursor-pointer disabled:opacity-50"
+                  className="inline-flex items-center justify-center gap-1 px-3 py-2.5 sm:py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium transition-colors cursor-pointer disabled:opacity-50 shrink-0"
                 >
                   <Download className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
                   <span>{downloadingFileId === file.id ? 'Yuklanmoqda...' : 'Yuklab olish'}</span>
@@ -639,9 +640,9 @@ export default function DocumentDetailPage({
       />
 
       {/* Status History / Audit Trail */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 transition-colors duration-200">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 sm:p-6 transition-colors duration-200">
         <h2 className="text-base font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-          <History className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+          <History className="w-5 h-5 shrink-0 text-primary-600 dark:text-primary-400" />
           <span>Holatlar O‘zgarishi Tarixi</span>
         </h2>
 
@@ -652,7 +653,7 @@ export default function DocumentDetailPage({
             document.statusHistory.map((hist) => (
               <div key={hist.id} className="text-xs flex items-start gap-3 py-1.5 border-b border-slate-100 dark:border-slate-800 last:border-0">
                 <div className="w-2 h-2 rounded-full bg-primary-600 mt-1.5 shrink-0" />
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <span className="font-semibold text-slate-800 dark:text-slate-200">{hist.changedBy.fullName}</span>{' '}
                   <span className="text-slate-500 dark:text-slate-400">holatni</span>{' '}
                   <span className="font-bold text-slate-700 dark:text-slate-300">{getDocumentStatusLabel(hist.oldStatus)}</span>{' '}
@@ -660,8 +661,9 @@ export default function DocumentDetailPage({
                   <span className="font-bold text-primary-700 dark:text-primary-400">{getDocumentStatusLabel(hist.newStatus)}</span>{' '}
                   <span className="text-slate-500 dark:text-slate-400">ga o‘zgartirdi.</span>
                   {hist.reason && <div className="text-[11px] text-slate-400 dark:text-slate-500 italic mt-0.5">Sabab: {hist.reason}</div>}
+                  <div className="sm:hidden text-[10px] text-slate-400 dark:text-slate-500 mt-1">{new Date(hist.createdAt).toLocaleString('uz-UZ')}</div>
                 </div>
-                <span className="text-[10px] text-slate-400 dark:text-slate-500 shrink-0">{new Date(hist.createdAt).toLocaleString('uz-UZ')}</span>
+                <span className="hidden sm:block text-[10px] text-slate-400 dark:text-slate-500 shrink-0">{new Date(hist.createdAt).toLocaleString('uz-UZ')}</span>
               </div>
             ))
           )}
@@ -670,8 +672,8 @@ export default function DocumentDetailPage({
 
       {/* Complete Document Confirmation Modal */}
       {completeModalOpen && (
-        <div className="fixed inset-0 z-[99999] bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-md w-full p-6 space-y-4">
+        <Modal size="md">
+          <div className="space-y-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
                 <CheckCircle2 className="w-6 h-6" />
@@ -702,12 +704,12 @@ export default function DocumentDetailPage({
               />
             </div>
 
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
               <button
                 type="button"
                 disabled={completing}
                 onClick={() => setCompleteModalOpen(false)}
-                className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 font-semibold text-xs transition-colors cursor-pointer"
+                className="px-4 py-3 sm:py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 font-semibold text-sm sm:text-xs transition-colors cursor-pointer"
               >
                 Bekor qilish
               </button>
@@ -715,14 +717,14 @@ export default function DocumentDetailPage({
                 type="button"
                 disabled={completing}
                 onClick={() => handleMarkAsCompleted()}
-                className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-sm transition-colors cursor-pointer flex items-center gap-1.5"
+                className="px-4 py-3 sm:py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm sm:text-xs shadow-sm transition-colors cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <CheckCircle2 className="w-4 h-4" />
                 <span>{completing ? 'Yakunlanmoqda...' : 'Tasdiqlash (Bajarildi)'}</span>
               </button>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

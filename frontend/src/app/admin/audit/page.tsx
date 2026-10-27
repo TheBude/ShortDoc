@@ -46,7 +46,7 @@ export default function AdminAuditPage() {
             <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">Jurnal yozuvlari topilmadi</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="hidden lg:block overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 uppercase font-semibold">
                 <tr>
@@ -84,22 +84,50 @@ export default function AdminAuditPage() {
           </div>
         )}
 
+        {/* Telefon va planshet: jadval o‘rniga kartochkalar */}
+        {!loading && logs.length > 0 && (
+          <div className="lg:hidden p-2 grid gap-2 md:grid-cols-2">
+            {logs.map((log) => (
+              <div
+                key={log.id}
+                className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-xl space-y-2 border border-slate-200/80 dark:border-slate-800"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <span className="text-xs font-mono font-bold text-primary-700 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/60 px-2 py-0.5 rounded border border-primary-100 dark:border-primary-900/60">
+                    {getAuditActionLabel(log.action)}
+                  </span>
+                  <span className="text-[11px] text-right text-slate-500 dark:text-slate-400">
+                    {new Date(log.createdAt).toLocaleString('uz-UZ')}
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-x-2 text-xs">
+                  <span className="font-medium text-slate-900 dark:text-white">{log.user?.fullName || 'Tizim'}</span>
+                  <span className="text-slate-400">•</span>
+                  <span className="text-slate-500 dark:text-slate-400">{getAuditEntityLabel(log.entity)}</span>
+                </div>
+                <p className="text-xs text-slate-700 dark:text-slate-300 break-words">{log.details || '—'}</p>
+                <div className="font-mono text-[11px] text-slate-400 dark:text-slate-500">{log.ipAddress || '127.0.0.1'}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="p-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+          <div className="p-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
             <span>Sahifa {page} / {totalPages}</span>
-            <div className="flex gap-1">
+            <div className="flex gap-2 sm:gap-1">
               <button
                 disabled={page <= 1}
                 onClick={() => setPage(page - 1)}
-                className="px-3 py-1 rounded border border-slate-200 dark:border-slate-700 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
+                className="px-4 py-2 sm:px-3 sm:py-1 rounded border border-slate-200 dark:border-slate-700 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
               >
                 Oldingi
               </button>
               <button
                 disabled={page >= totalPages}
                 onClick={() => setPage(page + 1)}
-                className="px-3 py-1 rounded border border-slate-200 dark:border-slate-700 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
+                className="px-4 py-2 sm:px-3 sm:py-1 rounded border border-slate-200 dark:border-slate-700 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
               >
                 Keyingi
               </button>

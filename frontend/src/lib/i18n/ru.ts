@@ -63,6 +63,7 @@ export const RU_DICTIONARY: Record<string, string> = {
   // ───────────── Header / Sidebar ─────────────
   'Menyuni yopish': 'Закрыть меню',
   'Menyuni ochish': 'Открыть меню',
+  'Profil menyusi': 'Меню профиля',
   'Bildirishnomalar': 'Уведомления',
   'Bildirishnoma': 'Уведомление',
   'Hammasini o‘qilgan qilish': 'Отметить все как прочитанные',
@@ -355,6 +356,7 @@ export const RU_DICTIONARY: Record<string, string> = {
   'Ichki Bildirgilar': 'Внутренние докладные',
   'Kiruvchi Xatlar': 'Входящие письма',
   'Chiquvchi Xatlar': 'Исходящие письма',
+  'Filtrlar': 'Фильтры',
   'Barcha holatlar': 'Все статусы',
   'Ro‘yxatga olingan': 'Зарегистрированные',
   'Imzolanmoqda': 'Подписывается',

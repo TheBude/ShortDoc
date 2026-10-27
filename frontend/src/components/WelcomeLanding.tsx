@@ -42,23 +42,24 @@ export const WelcomeLanding = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex flex-col font-sans selection:bg-primary-100 dark:selection:bg-primary-900 selection:text-primary-900 dark:selection:text-primary-100 transition-colors duration-200">
+    <div className="min-h-screen min-h-dvh bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex flex-col font-sans selection:bg-primary-100 dark:selection:bg-primary-900 selection:text-primary-900 dark:selection:text-primary-100 transition-colors duration-200">
       {/* 1. TOP NAVBAR (SamDU Header) */}
-      <header className="sticky top-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors duration-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      {/* backdrop-blur telefonda o‘chiq: u ichidagi fixed elementlar (til menyusi) ekranga emas, sarlavhaga nisbatan joylashib qolardi */}
+      <header className="sticky top-0 z-50 bg-white dark:bg-slate-900 sm:bg-white/95 sm:dark:bg-slate-900/95 sm:backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors duration-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-2">
           {/* Logo & Platform Name */}
-          <Link href="/" className="flex items-center gap-3.5 group">
-            <div className="w-12 h-12 rounded-full bg-white p-0.5 border-2 border-primary-200 dark:border-primary-500/50 flex items-center justify-center shadow-md shadow-primary-500/10 group-hover:scale-105 transition-transform shrink-0">
+          <Link href="/" className="flex items-center gap-2.5 sm:gap-3.5 group min-w-0">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white p-0.5 border-2 border-primary-200 dark:border-primary-500/50 flex items-center justify-center shadow-md shadow-primary-500/10 group-hover:scale-105 transition-transform shrink-0">
               <img
                 src="/samdu-logo.png"
                 alt="Samarqand Davlat Universiteti Gerbi"
                 className="w-full h-full object-contain rounded-full"
               />
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <span className="font-black text-xl tracking-tight text-slate-900 dark:text-white">SamDU ShortDoc</span>
-                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-primary-100 dark:bg-primary-950/80 text-primary-800 dark:text-primary-300 border border-primary-200 dark:border-primary-800 uppercase tracking-wide">
+                <span className="hidden min-[360px]:inline font-black text-base sm:text-xl tracking-tight text-slate-900 dark:text-white whitespace-nowrap"><span className="hidden sm:inline">SamDU </span>ShortDoc</span>
+                <span className="hidden md:inline-block text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-primary-100 dark:bg-primary-950/80 text-primary-800 dark:text-primary-300 border border-primary-200 dark:border-primary-800 uppercase tracking-wide whitespace-nowrap">
                   1420 • SamDU
                 </span>
               </div>
@@ -69,7 +70,7 @@ export const WelcomeLanding = () => {
           </Link>
 
           {/* Navigation Links (Desktop) */}
-          <nav className="hidden lg:flex items-center gap-7 text-sm font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">
+          <nav className="hidden xl:flex items-center gap-7 text-sm font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">
             <a href="#about" className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Bosh sahifa</a>
             <a href="#features" className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Tizim imkoniyatlari</a>
             <a href="#benefits" className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Qulayliklar</a>
@@ -77,13 +78,13 @@ export const WelcomeLanding = () => {
           </nav>
 
           {/* Action Buttons (Right) */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <LanguageSwitcher />
 
-            {/* Theme Toggle Button */}
+            {/* Theme Toggle Button (telefonda menyu ichida) */}
             <button
               onClick={toggleTheme}
-              className="p-2 sm:p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+              className="hidden sm:inline-flex p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
               title={theme === 'dark' ? "Yorug' rejimga o'tish" : "Qorong'u rejimga o'tish"}
               aria-label="Toggle theme"
             >
@@ -96,7 +97,7 @@ export const WelcomeLanding = () => {
 
             <Link
               href="/login"
-              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all whitespace-nowrap"
+              className="hidden lg:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all whitespace-nowrap"
             >
               <span className="w-2 h-2 rounded-full bg-emerald-500" />
               <span>ONE ID</span>
@@ -105,16 +106,16 @@ export const WelcomeLanding = () => {
 
             <Link
               href="/login"
-              className="inline-flex items-center gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white text-xs sm:text-sm font-bold shadow-md shadow-primary-600/30 hover:shadow-lg hover:shadow-primary-600/40 transition-all group cursor-pointer whitespace-nowrap"
+              className="inline-flex items-center gap-2 px-3.5 sm:px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white text-xs sm:text-sm font-bold shadow-md shadow-primary-600/30 hover:shadow-lg hover:shadow-primary-600/40 transition-all group cursor-pointer whitespace-nowrap"
             >
               <span>Kirish</span>
-              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+              <ArrowRight className="hidden sm:block w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
             </Link>
 
             {/* Mobile Menu Hamburger Toggle */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 sm:p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 lg:hidden transition-colors cursor-pointer"
+              className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 xl:hidden transition-colors cursor-pointer"
               aria-label="Navigatsiya menyusi"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -124,36 +125,44 @@ export const WelcomeLanding = () => {
 
         {/* Mobile Navigation Drawer */}
         {mobileMenuOpen && (
-          <div className="lg:hidden border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-4 py-4 space-y-3">
-            <nav className="flex flex-col space-y-2 text-sm font-medium text-slate-700 dark:text-slate-200">
+          <div className="xl:hidden border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-4 py-4 space-y-3">
+            <nav className="flex flex-col space-y-1 text-sm font-medium text-slate-700 dark:text-slate-200">
               <a
                 href="#about"
                 onClick={() => setMobileMenuOpen(false)}
-                className="px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="px-3 py-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
                 Bosh sahifa
               </a>
               <a
                 href="#features"
                 onClick={() => setMobileMenuOpen(false)}
-                className="px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="px-3 py-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
                 Tizim imkoniyatlari
               </a>
               <a
                 href="#benefits"
                 onClick={() => setMobileMenuOpen(false)}
-                className="px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="px-3 py-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
                 Qulayliklar
               </a>
               <a
                 href="#hierarchy"
                 onClick={() => setMobileMenuOpen(false)}
-                className="px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="px-3 py-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
                 SamDU Tuzilmasi
               </a>
+              <button
+                type="button"
+                onClick={toggleTheme}
+                className="sm:hidden flex items-center gap-2.5 px-3 py-3 rounded-lg text-left hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-500" />}
+                <span>{theme === 'dark' ? 'Yorug‘ rejim' : 'Qorong‘u rejim'}</span>
+              </button>
             </nav>
             <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
               <span className="text-xs text-slate-500">ONE ID orqali kirish:</span>
@@ -189,7 +198,7 @@ export const WelcomeLanding = () => {
               </div>
 
               {/* Exact Description customized for SamDU */}
-              <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-base leading-relaxed text-justify sm:text-left">
+              <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-base leading-relaxed">
                 Sharof Rashidov nomidagi Samarqand davlat universitetida ijro intizomi nazoratini ta’minlovchi yagona
                 elektron hujjat aylanishi tizimi. Ushbu platforma universitet rektorati, 16 ta fakultet, 70 dan ortiq
                 kafedralar, ilmiy markazlar va barcha bo‘limlar o‘rtasida xizmat xatlari, bildirgi, arizalar hamda
@@ -201,7 +210,7 @@ export const WelcomeLanding = () => {
               <div className="flex flex-wrap items-center gap-3 pt-2">
                 <Link
                   href="/login"
-                  className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-bold shadow-lg shadow-primary-600/30 hover:shadow-xl hover:shadow-primary-600/40 transition-all cursor-pointer"
+                  className="w-full sm:w-auto justify-center inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-bold shadow-lg shadow-primary-600/30 hover:shadow-xl hover:shadow-primary-600/40 transition-all cursor-pointer"
                 >
                   <span>Tizimga kirish</span>
                   <ArrowRight className="w-4 h-4" />
@@ -209,7 +218,7 @@ export const WelcomeLanding = () => {
 
                 <Link
                   href="/login?mode=register"
-                  className="inline-flex items-center gap-2 px-5 py-3.5 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-primary-500 dark:hover:border-primary-500 bg-white dark:bg-slate-900 hover:bg-primary-50/50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 hover:text-primary-700 dark:hover:text-primary-400 text-sm font-bold transition-all cursor-pointer"
+                  className="w-full sm:w-auto justify-center inline-flex items-center gap-2 px-5 py-3.5 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-primary-500 dark:hover:border-primary-500 bg-white dark:bg-slate-900 hover:bg-primary-50/50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 hover:text-primary-700 dark:hover:text-primary-400 text-sm font-bold transition-all cursor-pointer"
                 >
                   <Users className="w-4 h-4 text-primary-600 dark:text-primary-400" />
                   <span>Xodim arizasi (Ro‘yxatdan o‘tish)</span>
@@ -637,12 +646,12 @@ export const WelcomeLanding = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-4 text-slate-500 text-[11px]">
+          <div className="flex flex-col sm:flex-row items-center gap-1.5 sm:gap-4 text-center text-slate-500 text-[11px]">
             <span className="flex items-center gap-1">
-              <MapPin className="w-3.5 h-3.5 text-slate-400" />
+              <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
               Samarqand sh., Universitet xiyoboni, 15
             </span>
-            <span>•</span>
+            <span className="hidden sm:inline">•</span>
             <span>© {new Date().getFullYear()} SamDU. Barcha huquqlar himoyalangan.</span>
           </div>
         </div>

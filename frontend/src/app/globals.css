@@ -13,12 +13,55 @@
   color-scheme: dark;
 }
 
+html {
+  /* Telefon gorizontal burilganda matn o‘lchami o‘zgarib ketmasligi uchun */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   color: rgb(var(--foreground-rgb));
   background: rgb(var(--background-rgb));
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Sensorli ekranda ikki marta bosib yaqinlashtirish va bosishdagi kechikishni o‘chiradi */
+a,
+button,
+label,
+select,
+summary,
+[role='button'] {
+  touch-action: manipulation;
+}
+
+/*
+ * iOS Safari 16px dan kichik maydonga fokus berilganda sahifani o‘zi yaqinlashtirib yuboradi.
+ * Telefon va planshetda maydonlar 16px bo‘ladi (Tailwind'ning text-xs sinflaridan ustun turishi uchun !important).
+ */
+@media (max-width: 767px), (pointer: coarse) and (max-width: 1023px) {
+  input:not([type='checkbox']):not([type='radio']):not([type='file']):not([type='range']),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Modal yoki mobil menyu ochiq turganda orqadagi sahifa siljimaydi */
+body:has([data-scroll-lock]) {
+  overflow: hidden;
+}
+
+@layer utilities {
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* Custom scrollbar */
@@ -56,4 +99,16 @@ body.lang-swap main {
 }
 @media (prefers-reduced-motion: reduce) {
   body.lang-swap main { animation: none; }
+}
+
+/* Telefonda oyna pastdan yuqoriga chiqadi (bottom sheet) */
+@keyframes sheet-up {
+  0% { transform: translateY(100%); opacity: 0.6; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+@media (max-width: 639px) {
+  .sheet-enter { animation: sheet-up 0.28s cubic-bezier(0.16, 1, 0.3, 1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sheet-enter { animation: none; }
 }
