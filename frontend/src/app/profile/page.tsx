@@ -69,37 +69,13 @@ const InfoRow = ({ icon: Icon, label, value }: { icon: React.ElementType; label:
 );
 
 export default function ProfilePage() {
-  const { user, refreshUser, logout } = useAuth();
-
-  const [newEmail, setNewEmail] = useState('');
-  const [emailPassword, setEmailPassword] = useState('');
-  const [emailNotice, setEmailNotice] = useState<Notice>(null);
-  const [emailBusy, setEmailBusy] = useState(false);
+  const { user, logout } = useAuth();
 
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordNotice, setPasswordNotice] = useState<Notice>(null);
   const [passwordBusy, setPasswordBusy] = useState(false);
-
-  const handleEmailSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setEmailNotice(null);
-    setEmailBusy(true);
-    const res = await fetchApi('/auth/change-email', {
-      method: 'POST',
-      body: JSON.stringify({ password: emailPassword, newEmail }),
-    });
-    setEmailBusy(false);
-    if (res.success) {
-      await refreshUser();
-      setNewEmail('');
-      setEmailPassword('');
-      setEmailNotice({ type: 'success', text: 'Email muvaffaqiyatli yangilandi' });
-    } else {
-      setEmailNotice({ type: 'error', text: res.message || 'Emailni yangilashda xatolik yuz berdi' });
-    }
-  };
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -151,40 +127,12 @@ export default function ProfilePage() {
         </div>
         <div className="divide-y divide-slate-100 dark:divide-slate-800">
           <InfoRow icon={UserIcon} label="F.I.Sh" value={user?.fullName} />
+          <InfoRow icon={Mail} label="Email" value={user?.email} />
           <InfoRow icon={Building} label="Bo‘lim" value={user?.department?.name} />
           <InfoRow icon={Briefcase} label="Lavozim" value={user?.position} />
           <InfoRow icon={ShieldCheck} label="Rol" value={user?.role ? getRoleLabel(user.role) : undefined} />
           {user?.phone && <InfoRow icon={Phone} label="Telefon" value={user.phone} />}
         </div>
-      </section>
-
-      {/* Email o‘zgartirish */}
-      <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 sm:p-6">
-        <h2 className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-white mb-1">
-          <Mail className="w-4 h-4 text-slate-500" /> Emailni o‘zgartirish
-        </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-          Joriy email: <span className="font-medium text-slate-700 dark:text-slate-300">{user?.email}</span>. Tizimga aynan shu email bilan kirasiz.
-        </p>
-        <form onSubmit={handleEmailSubmit} className="space-y-3.5">
-          <label className="block">
-            <span className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Yangi email</span>
-            <input
-              type="email"
-              value={newEmail}
-              onChange={(e) => setNewEmail(e.target.value)}
-              autoComplete="email"
-              inputMode="email"
-              className={inputClass}
-              required
-            />
-          </label>
-          <PasswordField label="Joriy parol (tasdiqlash uchun)" value={emailPassword} onChange={setEmailPassword} autoComplete="current-password" />
-          <NoticeBox notice={emailNotice} />
-          <button type="submit" disabled={emailBusy} className={buttonClass}>
-            {emailBusy ? 'Saqlanmoqda...' : 'Emailni saqlash'}
-          </button>
-        </form>
       </section>
 
       {/* Parol o‘zgartirish */}

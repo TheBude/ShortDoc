@@ -27,7 +27,6 @@ const AUDIT_ACTION_LABELS: Record<string, string> = {
   ADD_COMMENT: 'Izoh qo‘shildi',
   APPROVE_DOCUMENT: 'Hujjat tasdiqlandi',
   APPROVE_USER: 'Ariza tasdiqlandi',
-  CHANGE_EMAIL: 'Email o‘zgartirildi',
   CHANGE_LOGIN: 'Login o‘zgartirildi',
   CHANGE_PASSWORD: 'Parol o‘zgartirildi',
   CHANGE_ROLE: 'Rol o‘zgartirildi',
