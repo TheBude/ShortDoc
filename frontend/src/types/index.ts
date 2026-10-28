@@ -62,6 +62,7 @@ export interface DocumentApproval {
   approverId: string;
   approver: { id: string; fullName: string; position: string };
   stepOrder: number;
+  role?: 'REVIEWER' | 'SIGNER';
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   comments?: string;
   signedAt?: string;

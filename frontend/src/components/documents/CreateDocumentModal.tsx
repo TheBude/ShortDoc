@@ -40,7 +40,8 @@ interface CreateDocumentModalProps {
     hashtags: string[];
     withoutQr: boolean;
     showApprovalList: boolean;
-    approverIds: string[];
+    reviewerIds: string[];
+    signerId: string;
   };
   setFormData: React.Dispatch<React.SetStateAction<any>>;
   handleCreateDocument: (e: React.FormEvent) => void;
@@ -115,7 +116,7 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
     const q = approverSearch.trim().toLowerCase();
     const groups = new Map<string, { order: number; members: User[] }>();
     activeUsers
-      .filter((u) => u.role !== 'SUPER_ADMIN' && !formData.approverIds.includes(u.id))
+      .filter((u) => u.role !== 'SUPER_ADMIN' && !formData.reviewerIds.includes(u.id) && u.id !== formData.signerId)
       .filter((u) => !q || `${u.fullName} ${u.position} ${u.department?.name || ''}`.toLowerCase().includes(q))
       .sort((a, b) => a.fullName.localeCompare(b.fullName))
       .forEach((u) => {
@@ -130,11 +131,33 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
     return [...groups.entries()]
       .sort((a, b) => a[1].order - b[1].order || a[0].localeCompare(b[0]))
       .map(([label, v]) => [label, v.members] as [string, User[]]);
-  }, [activeUsers, approverSearch, formData.approverIds]);
+  }, [activeUsers, approverSearch, formData.reviewerIds, formData.signerId]);
 
-  const selectedApprovers = formData.approverIds
+  const selectedApprovers = formData.reviewerIds
     .map((id) => usersList.find((u) => u.id === id))
     .filter((u): u is User => !!u);
+
+  // Imzolovchi sifatida tanlash mumkin bo'lganlar: kelishuvchilar va Super Admin chiqarib tashlanadi
+  const signerOptions = useMemo(
+    () =>
+      activeUsers
+        .filter((u) => u.role !== 'SUPER_ADMIN' && !formData.reviewerIds.includes(u.id))
+        .sort((a, b) => a.fullName.localeCompare(b.fullName)),
+    [activeUsers, formData.reviewerIds]
+  );
+
+  // Bo'lim kelishuvchi sifatida qo'shilsa, uning mudiri zanjirga kiradi
+  const departmentHead = (departmentId: string) =>
+    activeUsers.find((u) => u.role === 'DEPARTMENT_HEAD' && u.departmentId === departmentId);
+
+  const addReviewer = (userId: string) => {
+    if (!userId || formData.reviewerIds.includes(userId)) return;
+    setFormData({
+      ...formData,
+      reviewerIds: [...formData.reviewerIds, userId],
+      signerId: formData.signerId === userId ? '' : formData.signerId,
+    });
+  };
 
   if (!isOpen) return null;
 
@@ -179,10 +202,10 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
 
   const moveApprover = (index: number, delta: number) => {
     const target = index + delta;
-    if (target < 0 || target >= formData.approverIds.length) return;
-    const next = [...formData.approverIds];
+    if (target < 0 || target >= formData.reviewerIds.length) return;
+    const next = [...formData.reviewerIds];
     [next[index], next[target]] = [next[target], next[index]];
-    setFormData({ ...formData, approverIds: next });
+    setFormData({ ...formData, reviewerIds: next });
   };
 
   const addFiles = (list: FileList | null) => {
@@ -253,7 +276,7 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 pt-2">
-            {formData.approverIds.length === 0 ? (
+            {formData.reviewerIds.length === 0 && !formData.signerId ? (
             <button
               type="button"
               onClick={() =>
@@ -270,7 +293,7 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
             </button>
             ) : (
               <p className="text-[11px] text-slate-500 max-w-xs">
-                Word fayl barcha kelishuvchilar ketma-ket imzolagandan so‘ng yuklab olinadi.
+                Word fayl kelishuvchilar kelishib, imzolovchi imzolagandan so‘ng yuklab olinadi.
               </p>
             )}
 
@@ -569,12 +592,37 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
               )}
             </div>
 
-            {/* 3. Imzolovchilar (ketma-ket) */}
+            {/* 3. Kelishuvchilar (ketma-ket) */}
             <div>
-              <label className={labelCls}>3. Kimlar tasdiqlashi (imzolashi) kerak?</label>
+              <label className={labelCls}>3. Kim bilan kelishilishi kerak? (kelishuvchilar)</label>
               <p className="text-[11px] text-slate-500 mb-1.5">
-                Imzo tartib bilan olinadi: avval 1-imzolovchi, u imzolagach keyingisiga o‘tadi. Tartibni o‘q tugmalari bilan o‘zgartiring.
+                Hujjat avval kelishuvchilarga ketma-ket boradi: 1-kelishuvchi tasdiqlagach keyingisiga o‘tadi. Hammasi kelishgandan keyingina imzolovchiga xabar yuboriladi. Tartibni o‘q tugmalari bilan o‘zgartiring.
               </p>
+
+              <select
+                value=""
+                onChange={(e) => {
+                  const head = departmentHead(e.target.value);
+                  if (head) addReviewer(head.id);
+                }}
+                className={`${inputCls} mb-1.5`}
+              >
+                <option value="">Bo‘limni kelishuvchi sifatida qo‘shish (mudiri qo‘shiladi)...</option>
+                {groupDepartments(departmentsList).map((g) => (
+                  <optgroup key={g.key} label={g.label}>
+                    {g.items.map((d) => {
+                      const head = departmentHead(d.id);
+                      const taken = !!head && (formData.reviewerIds.includes(head.id) || head.id === formData.signerId);
+                      return (
+                        <option key={d.id} value={d.id} disabled={!head || taken}>
+                          {d.name}
+                          {!head ? ' — mudir biriktirilmagan' : taken ? ' — allaqachon tanlangan' : ''}
+                        </option>
+                      );
+                    })}
+                  </optgroup>
+                ))}
+              </select>
 
               {selectedApprovers.length > 0 && (
                 <ol className="mb-2 space-y-1">
@@ -614,7 +662,7 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
                       <button
                         type="button"
                         onClick={() =>
-                          setFormData({ ...formData, approverIds: formData.approverIds.filter((id) => id !== u.id) })
+                          setFormData({ ...formData, reviewerIds: formData.reviewerIds.filter((id) => id !== u.id) })
                         }
                         className="p-2 sm:p-1 text-rose-500 hover:text-rose-700 cursor-pointer"
                         aria-label="Olib tashlash"
@@ -650,7 +698,7 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
                         <button
                           type="button"
                           key={u.id}
-                          onClick={() => setFormData({ ...formData, approverIds: [...formData.approverIds, u.id] })}
+                          onClick={() => addReviewer(u.id)}
                           className="w-full text-left flex flex-wrap items-center gap-x-2 p-2.5 sm:p-1.5 rounded hover:bg-white dark:hover:bg-slate-700/60 cursor-pointer"
                         >
                           <span className="font-semibold text-slate-900 dark:text-slate-100">{u.fullName}</span>
@@ -661,6 +709,32 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
                   ))
                 )}
               </div>
+            </div>
+
+            {/* 4. Imzolovchi: kelishuvchilar tugagach xabar oladi */}
+            <div>
+              <label className={labelCls}>
+                4. Imzolovchi shaxs{formData.reviewerIds.length > 0 ? ' *' : ''}
+              </label>
+              <p className="text-[11px] text-slate-500 mb-1.5">
+                {formData.reviewerIds.length > 0
+                  ? 'Barcha kelishuvchilar tasdiqlagandan so‘ng hujjat imzolash uchun shu shaxsga yuboriladi.'
+                  : 'Kelishuvchilar bo‘lmasa, hujjat to‘g‘ridan-to‘g‘ri shu shaxsga imzolash uchun yuboriladi.'}
+              </p>
+              <select
+                value={formData.signerId}
+                required={formData.reviewerIds.length > 0}
+                onChange={(e) => setFormData({ ...formData, signerId: e.target.value })}
+                className={inputCls}
+              >
+                <option value="">{formData.reviewerIds.length > 0 ? 'Imzolovchini tanlang' : 'Imzolovchi yo‘q'}</option>
+                {signerOptions.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.fullName} — {u.position}
+                    {u.department?.name ? `, ${u.department.name}` : ''}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* Uzun shaklda ham yuborish tugmasi doim ko‘rinib turishi uchun pastda yopishib turadi */}

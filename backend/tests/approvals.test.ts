@@ -139,3 +139,57 @@ describe('FAZA 5.1: Viza Zanjiri va Hujjat Holatlari State Machine', () => {
     expect(doc!.status).toBe('REJECTED');
   });
 });
+
+describe('Kelishuvchi -> imzolovchi oqimi', () => {
+  let doc: any;
+
+  beforeAll(async () => {
+    await setupTestUsers();
+    const res = await request(app)
+      .post('/api/documents')
+      .set('Authorization', `Bearer ${testUsers.staff1.token}`)
+      .send({
+        title: 'Kelishuvchi va imzolovchi sinovi',
+        documentType: 'INTERNAL',
+        category: 'BILDIRGI',
+        reviewerIds: [testUsers.head.id],
+        signerId: testUsers.rector.id,
+      });
+    doc = res.body.data;
+  });
+
+  it('Kelishuvchi bo‘lsa, imzolovchi ko‘rsatilishi shart (400)', async () => {
+    const res = await request(app)
+      .post('/api/documents')
+      .set('Authorization', `Bearer ${testUsers.staff1.token}`)
+      .send({ title: 'Imzolovchisiz zanjir', reviewerIds: [testUsers.head.id] });
+    expect(res.status).toBe(400);
+  });
+
+  it('Imzolovchi kelishuvchilar orasida bo‘la olmaydi (400)', async () => {
+    const res = await request(app)
+      .post('/api/documents')
+      .set('Authorization', `Bearer ${testUsers.staff1.token}`)
+      .send({ title: 'Takroriy shaxs', reviewerIds: [testUsers.head.id], signerId: testUsers.head.id });
+    expect(res.status).toBe(400);
+  });
+
+  it('Zanjir rollari saqlanadi: kelishuvchi 1-bosqich, imzolovchi oxirgi', async () => {
+    const rows = await prisma.documentApproval.findMany({ where: { documentId: doc.id }, orderBy: { stepOrder: 'asc' } });
+    expect(rows.map((r) => r.role)).toEqual(['REVIEWER', 'SIGNER']);
+  });
+
+  it('Imzolovchiga xabar faqat kelishuvchi tasdiqlagach boradi', async () => {
+    const before = await prisma.notification.count({ where: { userId: testUsers.rector.id, link: `/documents/${doc.id}` } });
+    expect(before).toBe(0);
+
+    const ok = await request(app)
+      .post(`/api/documents/${doc.id}/approvals`)
+      .set('Authorization', `Bearer ${testUsers.head.token}`)
+      .send({ status: 'APPROVED' });
+    expect(ok.status).toBe(200);
+
+    const after = await prisma.notification.count({ where: { userId: testUsers.rector.id, link: `/documents/${doc.id}` } });
+    expect(after).toBe(1);
+  });
+});

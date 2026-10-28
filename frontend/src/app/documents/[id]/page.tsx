@@ -322,10 +322,16 @@ export default function DocumentDetailPage({
         <div className="bg-amber-50 dark:bg-amber-950/40 border-2 border-amber-300 dark:border-amber-700/70 rounded-2xl p-4 sm:p-6 shadow-sm transition-colors">
           <div className="flex items-center gap-2 mb-2 text-amber-900 dark:text-amber-200 font-bold text-base">
             <FileCheck2 className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-            <span>Sizning tasdig‘ingiz (Imzo) talab qilinadi</span>
+            <span>
+              {currentPendingApproval.role === 'SIGNER'
+                ? 'Sizning imzoingiz talab qilinadi'
+                : 'Sizning kelishuvingiz talab qilinadi'}
+            </span>
           </div>
           <p className="text-xs text-amber-800 dark:text-amber-300 mb-4">
-            Siz ushbu hujjat bo‘yicha kelishuvchi mas’ul etib belgilangansiz. Hujjatni ko‘rib chiqib, o‘z qaroringizni tasdiqlang:
+            {currentPendingApproval.role === 'SIGNER'
+              ? 'Hujjat barcha kelishuvchilar tomonidan kelishilgan. Siz imzolovchi sifatida belgilangansiz — ko‘rib chiqib, qaroringizni tasdiqlang:'
+              : 'Siz ushbu hujjat bo‘yicha kelishuvchi etib belgilangansiz. Kelishganingizdan keyingina hujjat keyingi bosqichga o‘tadi:'}
           </p>
 
           <div className="space-y-3">
@@ -344,7 +350,7 @@ export default function DocumentDetailPage({
                 className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm sm:text-xs px-5 py-3 sm:py-2.5 rounded-lg shadow-sm transition-colors cursor-pointer disabled:opacity-50"
               >
                 <CheckCircle2 className="w-4 h-4" />
-                <span>{approving ? 'Bajarilmoqda...' : 'Tasdiqlash (Imzo qo‘yish)'}</span>
+                <span>{approving ? 'Bajarilmoqda...' : currentPendingApproval.role === 'SIGNER' ? 'Imzolash' : 'Kelishish'}</span>
               </button>
 
               <button
@@ -452,7 +458,7 @@ export default function DocumentDetailPage({
                         {app.approver.position || app.approver.fullName}
                       </div>
                       <div className="text-[10px] text-slate-400 dark:text-slate-500">
-                        {isApproved ? 'Kelishildi' : isRejected ? 'Rad etildi' : 'Kutilmoqda'}
+                        {isApproved ? (app.role === 'SIGNER' ? 'Imzolandi' : 'Kelishildi') : isRejected ? 'Rad etildi' : 'Kutilmoqda'}
                       </div>
                     </div>
                   </div>
@@ -553,7 +559,18 @@ export default function DocumentDetailPage({
                     {app.stepOrder}
                   </div>
                   <div>
-                    <div className="font-semibold text-slate-800 dark:text-slate-200">{app.approver.fullName}</div>
+                    <div className="font-semibold text-slate-800 dark:text-slate-200">
+                      {app.approver.fullName}{' '}
+                      <span
+                        className={`ml-1 px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                          app.role === 'SIGNER'
+                            ? 'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300'
+                            : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                        }`}
+                      >
+                        {app.role === 'SIGNER' ? 'Imzolovchi' : 'Kelishuvchi'}
+                      </span>
+                    </div>
                     <div className="text-[11px] text-slate-400 dark:text-slate-500">{app.approver.position}</div>
                     {app.comments && (
                       <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-1 italic">

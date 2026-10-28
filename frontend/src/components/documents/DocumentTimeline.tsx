@@ -85,7 +85,7 @@ export const DocumentTimeline = ({ document }: { document: Document }) => {
         tone: 'emerald',
         content: (
           <>
-            <Name>{a.approver.fullName}</Name> hujjatni imzoladi{' '}
+            <Name>{a.approver.fullName}</Name> hujjatni {a.role === 'SIGNER' ? 'imzoladi' : 'kelishdi'}{' '}
             <span className="text-slate-400 dark:text-slate-500">({a.stepOrder}-bosqich)</span>
           </>
         ),
@@ -195,7 +195,7 @@ export const DocumentTimeline = ({ document }: { document: Document }) => {
             <div key={a.id} className="flex items-start gap-2">
               <Hourglass className="w-3.5 h-3.5 mt-0.5 shrink-0" />
               <span>
-                Imzo kutilmoqda: <strong>{a.approver.fullName}</strong> ({a.stepOrder}-bosqich)
+                {a.role === 'SIGNER' ? 'Imzo' : 'Kelishuv'} kutilmoqda: <strong>{a.approver.fullName}</strong> ({a.stepOrder}-bosqich)
               </span>
             </div>
           ))}

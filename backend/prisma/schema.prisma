@@ -45,6 +45,12 @@ enum ApprovalStatus {
   REJECTED
 }
 
+// Zanjirdagi rol: kelishuvchi avval ko'rib chiqadi, imzolovchi oxirida imzolaydi
+enum ApprovalRole {
+  REVIEWER
+  SIGNER
+}
+
 enum DepartmentType {
   RECTORATE
   FACULTY
@@ -192,6 +198,7 @@ model DocumentApproval {
   approverId String
   approver   User           @relation(fields: [approverId], references: [id])
   stepOrder  Int            @default(1)
+  role       ApprovalRole   @default(REVIEWER)
   status     ApprovalStatus @default(PENDING)
   comments   String?
   signedAt   DateTime?

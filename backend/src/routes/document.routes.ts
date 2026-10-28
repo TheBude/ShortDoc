@@ -396,6 +396,9 @@ router.post('/', authenticate, async (req: AuthRequest, res, next) => {
       priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).default('MEDIUM'),
       deadline: optionalDate,
       summary: z.string().optional().nullable(),
+      // Kelishuvchilar (ketma-ket) va oxirida imzolovchi; approverIds eski mijozlar uchun (oxirgisi imzolovchi)
+      reviewerIds: z.array(z.string().min(1)).optional().default([]),
+      signerId: optionalId,
       approverIds: z.array(z.string().min(1)).optional().default([]),
       isPublic: z.boolean().optional().default(false),
       hashtags: z.array(z.string()).max(10, 'Ko‘pi bilan 10 ta heshteg').optional().default([]),
@@ -411,8 +414,27 @@ router.post('/', authenticate, async (req: AuthRequest, res, next) => {
       return sendError(res, 'Ushbu turdagi hujjatni yaratish uchun sizda vakolat yo‘q (faqat Rahbariyat, Kantselyariya va Super Admin)', 403);
     }
 
-    // Takrorlanmagan kelishuvchilar ro'yxati
-    const uniqueApproverIds = data.approverIds ? [...new Set(data.approverIds)] : [];
+    // Zanjir: avval kelishuvchilar, eng oxirida imzolovchi (u faqat barcha kelishuvchilar tasdiqlagach xabar oladi)
+    let chain: Array<{ userId: string; role: 'REVIEWER' | 'SIGNER' }>;
+    if (data.signerId || data.reviewerIds.length > 0) {
+      const reviewers = [...new Set(data.reviewerIds)];
+      if (reviewers.length > 0 && !data.signerId) {
+        return sendError(res, 'Kelishuvchilar tanlangan bo‘lsa, imzolovchi shaxsni ham belgilash shart', 400);
+      }
+      if (data.signerId && reviewers.includes(data.signerId)) {
+        return sendError(res, 'Imzolovchi shaxs kelishuvchilar ro‘yxatida bo‘lishi mumkin emas', 400);
+      }
+      chain = reviewers.map((userId) => ({ userId, role: 'REVIEWER' as const }));
+      if (data.signerId) chain.push({ userId: data.signerId, role: 'SIGNER' });
+    } else {
+      const legacy = [...new Set(data.approverIds)];
+      chain = legacy.map((userId, i) => ({
+        userId,
+        role: i === legacy.length - 1 ? ('SIGNER' as const) : ('REVIEWER' as const),
+      }));
+    }
+    const uniqueApproverIds = chain.map((c) => c.userId);
+    const stepLabel = (role: 'REVIEWER' | 'SIGNER') => (role === 'SIGNER' ? 'imzolash' : 'kelishish');
 
     // Bog'langan bo'lim va mas'ul xodim mavjudligini oldindan tekshirish (aks holda tushunarsiz FK xatosi chiqadi)
     if (data.departmentId) {
@@ -530,20 +552,21 @@ router.post('/', authenticate, async (req: AuthRequest, res, next) => {
       // Agar kelishuvchilar (viza zanjiri) mavjud bo'lsa
       if (uniqueApproverIds.length > 0) {
         await tx.documentApproval.createMany({
-          data: uniqueApproverIds.map((approverId, i) => ({
+          data: chain.map((c, i) => ({
             documentId: doc.id,
-            approverId,
+            approverId: c.userId,
+            role: c.role,
             stepOrder: i + 1,
             status: 'PENDING' as const,
           })),
         });
 
-        // Ketma-ket imzo: faqat birinchi kelishuvchiga xabar boradi, qolganlarga navbati kelganda yuboriladi
+        // Ketma-ket zanjir: faqat birinchi kelishuvchiga xabar boradi, qolganlarga (imzolovchi ham) navbati kelganda yuboriladi
         await tx.notification.create({
           data: {
             userId: uniqueApproverIds[0],
-            title: 'Imzolash uchun yangi hujjat',
-            message: `${req.user!.fullName || 'Xodim'} sizga imzolash uchun hujjat yubordi: "${doc.title}" (${doc.regNumber})`,
+            title: `${chain[0].role === 'SIGNER' ? 'Imzolash' : 'Kelishish'} uchun yangi hujjat`,
+            message: `${req.user!.fullName || 'Xodim'} sizga ${stepLabel(chain[0].role)} uchun hujjat yubordi: "${doc.title}" (${doc.regNumber})`,
             link: `/documents/${doc.id}`,
           },
         });
@@ -583,8 +606,8 @@ router.post('/', authenticate, async (req: AuthRequest, res, next) => {
           countDelta: 1,
         });
         realtime.sendToUser(approverId, 'NOTIFICATION', {
-          title: 'Imzolash uchun yangi hujjat',
-          message: `${req.user!.fullName || 'Xodim'} sizga imzolash uchun hujjat yubordi: "${document.title}" (${document.regNumber})`,
+          title: `${chain[0].role === 'SIGNER' ? 'Imzolash' : 'Kelishish'} uchun yangi hujjat`,
+          message: `${req.user!.fullName || 'Xodim'} sizga ${stepLabel(chain[0].role)} uchun hujjat yubordi: "${document.title}" (${document.regNumber})`,
           link: `/documents/${document.id}`,
         });
         realtime.sendToUser(approverId, 'COUNTS_UPDATE', {});
@@ -867,9 +890,10 @@ router.post('/:id/approvals', authenticate, async (req: AuthRequest, res, next) 
     // Real-time bildirishnomalar
     if (doc.creatorId && doc.creatorId !== req.user!.userId) {
       const isApproved = status === 'APPROVED';
-      const notificationTitle = isApproved ? 'Hujjat imzolandi' : 'Hujjat rad etildi';
+      const wasSigner = nextPendingApproval.role === 'SIGNER';
+      const notificationTitle = isApproved ? (wasSigner ? 'Hujjat imzolandi' : 'Hujjat kelishildi') : 'Hujjat rad etildi';
       const notificationMessage = isApproved
-        ? `${req.user!.fullName || 'Kelishuvchi'} sizning "${doc.title}" (${doc.regNumber}) hujjatingizni tasdiqladi.`
+        ? `${req.user!.fullName || 'Kelishuvchi'} sizning "${doc.title}" (${doc.regNumber}) hujjatingizni ${wasSigner ? 'imzoladi' : 'kelishdi'}.`
         : `${req.user!.fullName || 'Kelishuvchi'} sizning "${doc.title}" (${doc.regNumber}) hujjatingizni rad etdi: ${comments || 'Izohsiz'}`;
 
       await prisma.notification.create({
@@ -892,11 +916,16 @@ router.post('/:id/approvals', authenticate, async (req: AuthRequest, res, next) 
     // Keyingi navbatdagi kelishuvchiga bildirishnoma jo'natish
     if (status === 'APPROVED' && result.remainingPending.length > 0) {
       const nextInQueue = result.remainingPending[0];
+      const nextIsSigner = nextInQueue.role === 'SIGNER';
+      const nextTitle = nextIsSigner ? 'Imzolash navbatingiz keldi' : 'Kelishish navbatingiz keldi';
+      const nextMessage = nextIsSigner
+        ? `"${doc.title}" (${doc.regNumber}) hujjati barcha kelishuvchilar tomonidan kelishildi. Endi imzolash sizga yetib keldi.`
+        : `"${doc.title}" (${doc.regNumber}) hujjati bo‘yicha navbatdagi kelishish sizga yetib keldi.`;
       await prisma.notification.create({
         data: {
           userId: nextInQueue.approverId,
-          title: 'Imzolash navbatingiz keldi',
-          message: `"${doc.title}" (${doc.regNumber}) hujjati bo‘yicha navbatdagi imzolash sizga yetib keldi.`,
+          title: nextTitle,
+          message: nextMessage,
           link: `/documents/${doc.id}`,
         },
       });
@@ -907,8 +936,8 @@ router.post('/:id/approvals', authenticate, async (req: AuthRequest, res, next) 
         creatorName: req.user!.fullName || 'Xodim',
       });
       realtime.sendToUser(nextInQueue.approverId, 'NOTIFICATION', {
-        title: 'Imzolash navbatingiz keldi',
-        message: `"${doc.title}" (${doc.regNumber}) hujjati bo‘yicha navbatdagi imzolash sizga yetib keldi.`,
+        title: nextTitle,
+        message: nextMessage,
         link: `/documents/${doc.id}`,
       });
       realtime.sendToUser(nextInQueue.approverId, 'COUNTS_UPDATE', {});

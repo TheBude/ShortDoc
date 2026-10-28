@@ -70,7 +70,8 @@ function DocumentsContent() {
     hashtags: [] as string[],
     withoutQr: false,
     showApprovalList: true,
-    approverIds: [] as string[],
+    reviewerIds: [] as string[],
+    signerId: '',
   });
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [uploadWarnings, setUploadWarnings] = useState<string[]>([]);
@@ -103,7 +104,8 @@ function DocumentsContent() {
       hashtags: [],
       withoutQr: false,
       showApprovalList: true,
-      approverIds: [],
+      reviewerIds: [],
+      signerId: '',
     });
     setFormError(null);
     setCreatedDocSuccess(null);
@@ -213,6 +215,7 @@ function DocumentsContent() {
       departmentId: formData.departmentId?.trim() || null,
       assigneeId: formData.assigneeId?.trim() || null,
       deadline: formData.deadline?.trim() || null,
+      signerId: formData.signerId || null,
     };
 
     const res = await fetchApi<Document>('/documents', {
