@@ -103,6 +103,7 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
   // '' (tanlanmagan) | 'u:<userId>' | 'd:<departmentId>'
   const [recipient, setRecipient] = useState('');
   const [approverSearch, setApproverSearch] = useState('');
+  const [approverOpen, setApproverOpen] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
   const [tagInput, setTagInput] = useState('');
 
@@ -145,10 +146,6 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
         .sort((a, b) => a.fullName.localeCompare(b.fullName)),
     [activeUsers, formData.reviewerIds]
   );
-
-  // Bo'lim kelishuvchi sifatida qo'shilsa, uning mudiri zanjirga kiradi
-  const departmentHead = (departmentId: string) =>
-    activeUsers.find((u) => u.role === 'DEPARTMENT_HEAD' && u.departmentId === departmentId);
 
   const addReviewer = (userId: string) => {
     if (!userId || formData.reviewerIds.includes(userId)) return;
@@ -235,6 +232,7 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
     setFileError(null);
     setRecipient('');
     setApproverSearch('');
+    setApproverOpen(false);
     setTagInput('');
     onClose();
   };
@@ -555,35 +553,10 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
 
             {/* Kelishuvchilar (ketma-ket) */}
             <div>
-              <label className={labelCls}>Kim bilan kelishilishi kerak? (kelishuvchilar)</label>
+              <label className={labelCls}>Kelishuvchilar</label>
               <p className="text-[11px] text-slate-500 mb-1.5">
-                Hujjat avval kelishuvchilarga ketma-ket boradi: 1-kelishuvchi tasdiqlagach keyingisiga o‘tadi. Hammasi kelishgandan keyingina imzolovchiga xabar yuboriladi. Tartibni o‘q tugmalari bilan o‘zgartiring.
+                Maydonni bosib xodimlarni tanlang, bir nechta qo‘shish mumkin. Hujjat ketma-ket boradi: 1-kelishuvchi tasdiqlagach keyingisiga o‘tadi, hammasi kelishgach imzolovchiga yuboriladi. Tartibni o‘q tugmalari bilan o‘zgartiring.
               </p>
-
-              <select
-                value=""
-                onChange={(e) => {
-                  const head = departmentHead(e.target.value);
-                  if (head) addReviewer(head.id);
-                }}
-                className={`${inputCls} mb-1.5`}
-              >
-                <option value="">Bo‘limni kelishuvchi sifatida qo‘shish (mudiri qo‘shiladi)...</option>
-                {groupDepartments(departmentsList).map((g) => (
-                  <optgroup key={g.key} label={g.label}>
-                    {g.items.map((d) => {
-                      const head = departmentHead(d.id);
-                      const taken = !!head && (formData.reviewerIds.includes(head.id) || head.id === formData.signerId);
-                      return (
-                        <option key={d.id} value={d.id} disabled={!head || taken}>
-                          {d.name}
-                          {!head ? ' — mudir biriktirilmagan' : taken ? ' — allaqachon tanlangan' : ''}
-                        </option>
-                      );
-                    })}
-                  </optgroup>
-                ))}
-              </select>
 
               {selectedApprovers.length > 0 && (
                 <ol className="mb-2 space-y-1">
@@ -635,39 +608,62 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
                 </ol>
               )}
 
-              <div className="relative mb-1.5">
-                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              {/* Kelishuvchi qo‘shish: bosilganda xodimlar ro‘yxati ochiladi */}
+              <div
+                className="relative"
+                onBlur={(e) => {
+                  if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setApproverOpen(false);
+                }}
+              >
+                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                 <input
                   type="text"
                   value={approverSearch}
-                  onChange={(e) => setApproverSearch(e.target.value)}
-                  placeholder="Ism, lavozim yoki bo‘lim bo‘yicha qidirish..."
+                  onFocus={() => setApproverOpen(true)}
+                  onClick={() => setApproverOpen(true)}
+                  onChange={(e) => {
+                    setApproverSearch(e.target.value);
+                    setApproverOpen(true);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') setApproverOpen(false);
+                  }}
+                  placeholder={selectedApprovers.length > 0 ? 'Yana kelishuvchi qo‘shish...' : 'Kelishuvchi tanlang...'}
                   className={`${inputCls} pl-8`}
                 />
-              </div>
 
-              <div className="max-h-56 sm:max-h-40 overflow-y-auto overscroll-contain border border-slate-200 dark:border-slate-700 rounded-lg p-2 space-y-1 bg-slate-50 dark:bg-slate-800/60">
-                {approverGroups.length === 0 ? (
-                  <p className="text-center text-slate-400 py-2">Mos xodim topilmadi</p>
-                ) : (
-                  approverGroups.map(([dept, members]) => (
-                    <div key={dept}>
-                      <div className="px-1.5 pt-1 text-[10px] font-bold uppercase tracking-wide text-slate-400">
-                        {dept}
-                      </div>
-                      {members.map((u) => (
-                        <button
-                          type="button"
-                          key={u.id}
-                          onClick={() => addReviewer(u.id)}
-                          className="w-full text-left flex flex-wrap items-center gap-x-2 p-2.5 sm:p-1.5 rounded hover:bg-white dark:hover:bg-slate-700/60 cursor-pointer"
-                        >
-                          <span className="font-semibold text-slate-900 dark:text-slate-100">{u.fullName}</span>
-                          <span className="text-slate-500 text-[11px]">({u.position})</span>
-                        </button>
-                      ))}
-                    </div>
-                  ))
+                {approverOpen && (
+                  <div
+                    tabIndex={-1}
+                    className="absolute z-20 left-0 right-0 mt-1 max-h-56 overflow-y-auto overscroll-contain border border-slate-200 dark:border-slate-700 rounded-lg p-2 space-y-1 bg-white dark:bg-slate-900 shadow-lg"
+                  >
+                    {approverGroups.length === 0 ? (
+                      <p className="text-center text-slate-400 py-2">Mos xodim topilmadi</p>
+                    ) : (
+                      approverGroups.map(([dept, members]) => (
+                        <div key={dept}>
+                          <div className="px-1.5 pt-1 text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                            {dept}
+                          </div>
+                          {members.map((u) => (
+                            <button
+                              type="button"
+                              key={u.id}
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => {
+                                addReviewer(u.id);
+                                setApproverSearch('');
+                              }}
+                              className="w-full text-left flex flex-wrap items-center gap-x-2 p-2.5 sm:p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-700/60 cursor-pointer"
+                            >
+                              <span className="font-semibold text-slate-900 dark:text-slate-100">{u.fullName}</span>
+                              <span className="text-slate-500 text-[11px]">({u.position})</span>
+                            </button>
+                          ))}
+                        </div>
+                      ))
+                    )}
+                  </div>
                 )}
               </div>
             </div>
