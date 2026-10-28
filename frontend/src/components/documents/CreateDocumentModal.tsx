@@ -337,9 +337,9 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
           )}
 
           <form onSubmit={handleCreateDocument} className="space-y-3.5 text-xs">
-            {/* 1. Hujjat turi */}
+            {/* Hujjat turi */}
             <div>
-              <label className={labelCls}>1. Hujjat turi *</label>
+              <label className={labelCls}>Hujjat turi *</label>
               <select
                 value={formData.category}
                 onChange={(e) => selectType(e.target.value)}
@@ -353,9 +353,9 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
               </select>
             </div>
 
-            {/* 2. Sarlavha */}
+            {/* Sarlavha */}
             <div>
-              <label className={labelCls}>2. Hujjat mavzusi (qisqa nomi) *</label>
+              <label className={labelCls}>Hujjat mavzusi (qisqa nomi) *</label>
               <input
                 type="text"
                 required
@@ -425,33 +425,6 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
               </div>
             )}
 
-            {/* Muhimlik va muddat */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className={labelCls}>Muhimlik darajasi</label>
-                <select
-                  value={formData.priority}
-                  onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                  className={inputCls}
-                >
-                  <option value="LOW">Past</option>
-                  <option value="MEDIUM">Oddiy</option>
-                  <option value="HIGH">Yuqori</option>
-                  <option value="URGENT">Shoshilinch</option>
-                </select>
-              </div>
-              <div>
-                <label className={labelCls}>Ijro muddati</label>
-                <input
-                  type="date"
-                  min={today}
-                  value={formData.deadline}
-                  onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
-                  className={inputCls}
-                />
-              </div>
-            </div>
-
             <div>
               <label className={labelCls}>Qisqacha mazmuni *</label>
               <textarea
@@ -463,88 +436,6 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
                 className={inputCls}
               />
               <p className="text-[11px] text-slate-500 mt-1">Word hujjatning asosiy matni shu yerdan olinadi.</p>
-            </div>
-
-            {/* Heshteglar */}
-            <div>
-              <label className={labelCls}>Hujjat heshteglari</label>
-              {formData.hashtags.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mb-1.5">
-                  {formData.hashtags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="inline-flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-900 text-blue-700 dark:text-blue-300 text-[11px] font-medium"
-                    >
-                      #{tag}
-                      <button
-                        type="button"
-                        onClick={() => setFormData({ ...formData, hashtags: formData.hashtags.filter((t) => t !== tag) })}
-                        aria-label={`#${tag} ni olib tashlash`}
-                        className="p-1 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900 cursor-pointer"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
-              <input
-                type="text"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ',') {
-                    e.preventDefault();
-                    addTag();
-                  } else if (e.key === 'Backspace' && !tagInput && formData.hashtags.length > 0) {
-                    setFormData({ ...formData, hashtags: formData.hashtags.slice(0, -1) });
-                  }
-                }}
-                onBlur={addTag}
-                placeholder="Heshteg yozing va Enter bosing"
-                className={inputCls}
-              />
-            </div>
-
-            {canUseRestricted && (
-              <label className="flex items-start gap-2 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.isPublic}
-                  onChange={(e) => setFormData({ ...formData, isPublic: e.target.checked })}
-                  className="mt-0.5 rounded text-blue-600 focus:ring-blue-500"
-                />
-                <span>
-                  <span className="font-semibold text-slate-800 dark:text-slate-200">Hammaga ochiq (umumiy hujjat)</span>
-                  <span className="block text-[11px] text-slate-500">
-                    Belgilansa, tizimdagi barcha xodimlar bu hujjatni ko‘ra oladi. Belgilanmasa, faqat unga bog‘liq shaxslar ko‘radi.
-                  </span>
-                </span>
-              </label>
-            )}
-
-            {/* Word hujjat sozlamalari */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <label className="flex items-start gap-2 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.withoutQr}
-                  onChange={(e) => setFormData({ ...formData, withoutQr: e.target.checked })}
-                  className="mt-0.5 rounded text-blue-600 focus:ring-blue-500"
-                />
-                <span className="font-semibold text-slate-800 dark:text-slate-200">QR-kodsiz yaratish</span>
-              </label>
-              <label className="flex items-start gap-2 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.showApprovalList}
-                  onChange={(e) => setFormData({ ...formData, showApprovalList: e.target.checked })}
-                  className="mt-0.5 rounded text-blue-600 focus:ring-blue-500"
-                />
-                <span className="font-semibold text-slate-800 dark:text-slate-200">
-                  Imzodan so‘ng kelishuvchilar ro‘yxatini shakllantirish
-                </span>
-              </label>
             </div>
 
             {/* Fayl biriktirish */}
@@ -592,9 +483,79 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
               )}
             </div>
 
-            {/* 3. Kelishuvchilar (ketma-ket) */}
+            {/* Muhimlik va muddat */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className={labelCls}>Muhimlik darajasi</label>
+                <select
+                  value={formData.priority}
+                  onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+                  className={inputCls}
+                >
+                  <option value="LOW">Past</option>
+                  <option value="MEDIUM">Oddiy</option>
+                  <option value="HIGH">Yuqori</option>
+                  <option value="URGENT">Shoshilinch</option>
+                </select>
+              </div>
+              <div>
+                <label className={labelCls}>Ijro muddati</label>
+                <input
+                  type="date"
+                  min={today}
+                  value={formData.deadline}
+                  onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+                  className={inputCls}
+                />
+              </div>
+            </div>
+
+            {/* Heshteglar */}
             <div>
-              <label className={labelCls}>3. Kim bilan kelishilishi kerak? (kelishuvchilar)</label>
+              <label className={labelCls}>Hujjat heshteglari</label>
+              {formData.hashtags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-1.5">
+                  {formData.hashtags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-900 text-blue-700 dark:text-blue-300 text-[11px] font-medium"
+                    >
+                      #{tag}
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, hashtags: formData.hashtags.filter((t) => t !== tag) })}
+                        aria-label={`#${tag} ni olib tashlash`}
+                        className="p-1 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900 cursor-pointer"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <input
+                type="text"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ',') {
+                    e.preventDefault();
+                    addTag();
+                  } else if (e.key === 'Backspace' && !tagInput && formData.hashtags.length > 0) {
+                    setFormData({ ...formData, hashtags: formData.hashtags.slice(0, -1) });
+                  }
+                }}
+                onBlur={addTag}
+                placeholder="Heshteg yozing va Enter bosing"
+                className={inputCls}
+              />
+            </div>
+
+            <p className="pt-1 text-[11px] font-bold uppercase tracking-wide text-slate-400 border-b border-slate-100 dark:border-slate-800 pb-1">Kelishuv va imzo</p>
+
+            {/* Kelishuvchilar (ketma-ket) */}
+            <div>
+              <label className={labelCls}>Kim bilan kelishilishi kerak? (kelishuvchilar)</label>
               <p className="text-[11px] text-slate-500 mb-1.5">
                 Hujjat avval kelishuvchilarga ketma-ket boradi: 1-kelishuvchi tasdiqlagach keyingisiga o‘tadi. Hammasi kelishgandan keyingina imzolovchiga xabar yuboriladi. Tartibni o‘q tugmalari bilan o‘zgartiring.
               </p>
@@ -711,10 +672,10 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
               </div>
             </div>
 
-            {/* 4. Imzolovchi: kelishuvchilar tugagach xabar oladi */}
+            {/* Imzolovchi: kelishuvchilar tugagach xabar oladi */}
             <div>
               <label className={labelCls}>
-                4. Imzolovchi shaxs{formData.reviewerIds.length > 0 ? ' *' : ''}
+                Imzolovchi shaxs{formData.reviewerIds.length > 0 ? ' *' : ''}
               </label>
               <p className="text-[11px] text-slate-500 mb-1.5">
                 {formData.reviewerIds.length > 0
@@ -735,6 +696,49 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
                   </option>
                 ))}
               </select>
+            </div>
+
+            {/* Qo‘shimcha sozlamalar */}
+            <p className="pt-1 text-[11px] font-bold uppercase tracking-wide text-slate-400 border-b border-slate-100 dark:border-slate-800 pb-1">Qo‘shimcha sozlamalar</p>
+            {canUseRestricted && (
+              <label className="flex items-start gap-2 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.isPublic}
+                  onChange={(e) => setFormData({ ...formData, isPublic: e.target.checked })}
+                  className="mt-0.5 rounded text-blue-600 focus:ring-blue-500"
+                />
+                <span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">Hammaga ochiq (umumiy hujjat)</span>
+                  <span className="block text-[11px] text-slate-500">
+                    Belgilansa, tizimdagi barcha xodimlar bu hujjatni ko‘ra oladi. Belgilanmasa, faqat unga bog‘liq shaxslar ko‘radi.
+                  </span>
+                </span>
+              </label>
+            )}
+
+            {/* Word hujjat sozlamalari */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <label className="flex items-start gap-2 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.withoutQr}
+                  onChange={(e) => setFormData({ ...formData, withoutQr: e.target.checked })}
+                  className="mt-0.5 rounded text-blue-600 focus:ring-blue-500"
+                />
+                <span className="font-semibold text-slate-800 dark:text-slate-200">QR-kodsiz yaratish</span>
+              </label>
+              <label className="flex items-start gap-2 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.showApprovalList}
+                  onChange={(e) => setFormData({ ...formData, showApprovalList: e.target.checked })}
+                  className="mt-0.5 rounded text-blue-600 focus:ring-blue-500"
+                />
+                <span className="font-semibold text-slate-800 dark:text-slate-200">
+                  Imzodan so‘ng kelishuvchilar ro‘yxatini shakllantirish
+                </span>
+              </label>
             </div>
 
             {/* Uzun shaklda ham yuborish tugmasi doim ko‘rinib turishi uchun pastda yopishib turadi */}
