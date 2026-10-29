@@ -171,9 +171,14 @@ export async function generateDocumentDocx(
     },
   });
 
-  // Imzolaganlar ro'yxati: "Lavozim F.I.Sh. imzoladi (sana)". Kelishuvchilar va imzolovchilar alohida bloklarda
-  const signedApprovals =
-    docData.showApprovalList === false ? [] : (docData.approvals || []).filter((a) => a.status === 'APPROVED');
+  // Kelishuvchilar ro'yxati: "Lavozim F.I.Sh. imzoladi (sana)". Hali imzolamaganlar ham "jarayonda" holatida ko'rinadi.
+  // Kelishuvchilar va imzolovchilar alohida bloklarda
+  const listedApprovals = docData.showApprovalList === false ? [] : docData.approvals || [];
+  const approvalStatusText = (a: ApproverInfo) => {
+    if (a.status === 'APPROVED') return `imzoladi${a.signedAt ? ` (${formatDate(a.signedAt)})` : ''}`;
+    if (a.status === 'REJECTED') return 'rad etdi';
+    return 'jarayonda';
+  };
   const buildApprovalBlock = (heading: string, list: ApproverInfo[]): Paragraph[] =>
     list.length === 0
       ? []
@@ -188,9 +193,7 @@ export async function generateDocumentDocx(
                 spacing: { after: 60 },
                 children: [
                   run(
-                    `${a.approver.position ? a.approver.position + ' ' : ''}${a.approver.fullName} imzoladi${
-                      a.signedAt ? ` (${formatDate(a.signedAt)})` : ''
-                    }`,
+                    `${a.approver.position ? a.approver.position + ' ' : ''}${a.approver.fullName} ${approvalStatusText(a)}`,
                     { size: 22 }
                   ),
                 ],
@@ -198,8 +201,8 @@ export async function generateDocumentDocx(
           ),
         ];
   const approvalParagraphs: Paragraph[] = [
-    ...buildApprovalBlock('Kelishildi:', signedApprovals.filter((a) => a.role !== 'SIGNER')),
-    ...buildApprovalBlock('Imzolandi:', signedApprovals.filter((a) => a.role === 'SIGNER')),
+    ...buildApprovalBlock('Kelishildi:', listedApprovals.filter((a) => a.role !== 'SIGNER')),
+    ...buildApprovalBlock('Imzolandi:', listedApprovals.filter((a) => a.role === 'SIGNER')),
   ];
 
   const doc = new Document({
