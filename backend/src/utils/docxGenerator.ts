@@ -21,6 +21,7 @@ interface ApproverInfo {
     position?: string | null;
   };
   status: string;
+  role?: string | null;
   signedAt?: Date | null;
 }
 
@@ -170,18 +171,18 @@ export async function generateDocumentDocx(
     },
   });
 
-  // Imzolagan kelishuvchilar ro'yxati: "Lavozim F.I.Sh. imzoladi (sana)"
+  // Imzolaganlar ro'yxati: "Lavozim F.I.Sh. imzoladi (sana)". Kelishuvchilar va imzolovchilar alohida bloklarda
   const signedApprovals =
     docData.showApprovalList === false ? [] : (docData.approvals || []).filter((a) => a.status === 'APPROVED');
-  const approvalParagraphs: Paragraph[] =
-    signedApprovals.length === 0
+  const buildApprovalBlock = (heading: string, list: ApproverInfo[]): Paragraph[] =>
+    list.length === 0
       ? []
       : [
           new Paragraph({
             spacing: { before: 500, after: 100 },
-            children: [run('Kelishildi:', { bold: true, size: 24 })],
+            children: [run(heading, { bold: true, size: 24 })],
           }),
-          ...signedApprovals.map(
+          ...list.map(
             (a) =>
               new Paragraph({
                 spacing: { after: 60 },
@@ -196,6 +197,10 @@ export async function generateDocumentDocx(
               })
           ),
         ];
+  const approvalParagraphs: Paragraph[] = [
+    ...buildApprovalBlock('Kelishildi:', signedApprovals.filter((a) => a.role !== 'SIGNER')),
+    ...buildApprovalBlock('Imzolandi:', signedApprovals.filter((a) => a.role === 'SIGNER')),
+  ];
 
   const doc = new Document({
     sections: [
