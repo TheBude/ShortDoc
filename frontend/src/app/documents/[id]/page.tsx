@@ -29,6 +29,7 @@ import {
 import { downloadDocumentDocx, isDocxAvailable, DOCX_LOCKED_HINT } from '@/lib/downloadDocx';
 import { DocumentCommentsSection } from '@/components/documents/DocumentCommentsSection';
 import { DocumentTimeline } from '@/components/documents/DocumentTimeline';
+import { DocxLivePreview } from '@/components/documents/DocxLivePreview';
 import { Modal } from '@/components/ui/Modal';
 import { getCategoryMeta } from '@/lib/categories';
 
@@ -153,6 +154,15 @@ export default function DocumentDetailPage({
 
   useEffect(() => {
     loadDocument();
+  }, [id]);
+
+  // Boshqa kelishuvchi/imzolovchi imzolaganda hujjat va blanka avtomatik yangilanadi
+  useEffect(() => {
+    const onUpdated = (e: Event) => {
+      if ((e as CustomEvent).detail?.documentId === id) loadDocument(false);
+    };
+    window.addEventListener('document-updated', onUpdated);
+    return () => window.removeEventListener('document-updated', onUpdated);
   }, [id]);
 
   const loadDocument = async (showFullLoading = false) => {
@@ -316,6 +326,13 @@ export default function DocumentDetailPage({
           </button>
         </div>
       </div>
+
+      <DocxLivePreview
+        documentId={document.id}
+        version={(document.approvals || []).map((a) => a.id + a.status).join('|') + document.status}
+        allSigned={isDocxAvailable(document.approvals) && (document.approvals?.length || 0) > 0}
+        rejected={document.status === 'REJECTED'}
+      />
 
       {/* Imzo (Approval) Voting Action Box - Prominently at TOP for instant review */}
       {currentPendingApproval && (

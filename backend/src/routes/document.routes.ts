@@ -33,7 +33,11 @@ const conflictError = (message: string) => Object.assign(new Error(message), { s
 const normalizeHashtags = (tags: string[]) =>
   [...new Set(tags.map((t) => t.replace(/^#+/, '').trim().toLowerCase().slice(0, 40)).filter(Boolean))];
 
-const sendDocumentDocx = async (res: Response, document: Parameters<typeof generateDocumentDocx>[0]) => {
+const sendDocumentDocx = async (
+  res: Response,
+  document: Parameters<typeof generateDocumentDocx>[0],
+  disposition: 'attachment' | 'inline' = 'attachment'
+) => {
   const docxBuffer = await generateDocumentDocx(document, config.APP_URL);
 
   const safeRegNumber = document.regNumber.replace(/[\/\\:*"<>|]/g, '_');
@@ -42,7 +46,7 @@ const sendDocumentDocx = async (res: Response, document: Parameters<typeof gener
   res.setHeader('Content-Type', DOCX_MIME);
   res.setHeader(
     'Content-Disposition',
-    `attachment; filename="${encodeURIComponent(filename)}"; filename*=UTF-8''${encodeURIComponent(filename)}`
+    `${disposition}; filename="${encodeURIComponent(filename)}"; filename*=UTF-8''${encodeURIComponent(filename)}`
   );
   res.setHeader('Content-Length', docxBuffer.length);
 
@@ -377,6 +381,39 @@ router.get('/:id/docx', authenticate, async (req: AuthRequest, res, next) => {
     }
 
     return await sendDocumentDocx(res, document);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Real-time ko'rish uchun Word blankasi: imzolash tugamagan bo'lsa ham, hozirgacha imzolanganlar bilan ko'rsatiladi
+router.get('/:id/docx-preview', authenticate, async (req: AuthRequest, res, next) => {
+  try {
+    const { id } = req.params;
+    const uuidCheck = z.string().uuid('Noto‘g‘ri hujjat identifikatori').safeParse(id);
+    if (!uuidCheck.success) {
+      return sendError(res, 'Noto‘g‘ri hujjat identifikatori (UUID)', 400);
+    }
+
+    const document = await prisma.document.findUnique({
+      where: { id },
+      include: {
+        department: true,
+        creator: { select: { id: true, fullName: true, position: true } },
+        approvals: {
+          include: { approver: { select: { fullName: true, position: true } } },
+          orderBy: { stepOrder: 'asc' },
+        },
+        tasks: true,
+      },
+    });
+
+    if (!document || !canViewDocument(req.user!, document)) {
+      return sendError(res, 'Hujjat topilmadi', 404);
+    }
+
+    res.setHeader('Cache-Control', 'no-store');
+    return await sendDocumentDocx(res, document, 'inline');
   } catch (error) {
     next(error);
   }
@@ -942,6 +979,10 @@ router.post('/:id/approvals', authenticate, async (req: AuthRequest, res, next) 
       });
       realtime.sendToUser(nextInQueue.approverId, 'COUNTS_UPDATE', {});
     }
+
+    // Hujjatga aloqador barcha shaxslarning (yaratuvchi, kelishuvchi, imzolovchi) blankasi real-time yangilanadi
+    const participantIds = [...new Set([...(doc.creatorId ? [doc.creatorId] : []), ...doc.approvals.map((a) => a.approverId)])];
+    realtime.sendToUsers(participantIds, 'DOCUMENT_UPDATED', { documentId: id });
 
     realtime.sendToUser(req.user!.userId, 'APPROVAL_SUBMITTED', { documentId: id });
     realtime.sendToUser(req.user!.userId, 'COUNTS_UPDATE', {});

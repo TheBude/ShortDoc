@@ -224,6 +224,14 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
           } catch {}
         });
 
+        // DOCUMENT_UPDATED: hujjat imzo holati o'zgardi -> ochiq sahifalar blankani yangilaydi
+        eventSource.addEventListener('DOCUMENT_UPDATED', (e: MessageEvent) => {
+          try {
+            const data = JSON.parse(e.data);
+            window.dispatchEvent(new CustomEvent('document-updated', { detail: { documentId: data.documentId } }));
+          } catch {}
+        });
+
         // NOTIFICATION: General notification
         eventSource.addEventListener('NOTIFICATION', (e: MessageEvent) => {
           try {
