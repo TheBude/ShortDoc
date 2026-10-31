@@ -73,7 +73,7 @@ function SidebarContent() {
 
       {/* Main Sidebar Drawer / Panel (lg dan kichik ekranlarda — chapdan chiqadigan menyu) */}
       <aside
-        className={`fixed lg:sticky top-0 inset-y-0 left-0 z-50 flex h-screen h-dvh flex-col overflow-hidden border-r border-blue-300 dark:border-slate-800 bg-[#dbe5f4] dark:bg-[#0b1329] text-slate-700 dark:text-slate-200 lg:shadow-xl lg:shadow-slate-300/60 dark:lg:shadow-2xl dark:lg:shadow-black/40 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] select-none shrink-0 w-72 sm:w-80 max-w-[85vw] ${
+        className={`fixed lg:sticky top-0 inset-y-0 left-0 z-50 flex h-screen h-dvh flex-col overflow-hidden border-r border-blue-300 dark:border-slate-800 bg-[#c7def4] dark:bg-[#0f2b5c] text-slate-700 dark:text-slate-200 lg:shadow-xl lg:shadow-slate-300/60 dark:lg:shadow-2xl dark:lg:shadow-black/40 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] select-none shrink-0 w-72 sm:w-80 max-w-[85vw] ${
           isMobileOpen
             ? 'translate-x-0 shadow-[12px_0_40px_rgba(2,6,23,0.8)]'
             : '-translate-x-full lg:translate-x-0'
@@ -81,7 +81,7 @@ function SidebarContent() {
       >
         {/* 1. Header (SamDU Logo & Collapse Toggle) */}
         <div
-          className={`flex h-[73px] shrink-0 items-center border-b border-blue-300/70 dark:border-slate-800/90 bg-[#cfdcf0] dark:bg-[#090f20] transition-colors ${
+          className={`flex h-[73px] shrink-0 items-center border-b border-blue-300/70 dark:border-slate-800/90 bg-[#c7def4] dark:bg-[#0f2b5c] transition-colors ${
             isCollapsed ? 'justify-center px-2' : 'justify-between px-4 sm:px-5'
           }`}
         >
@@ -166,7 +166,7 @@ function SidebarContent() {
         </div>
 
         {/* 2. Primary Action: Yangi hujjat yaratish */}
-        <div className={`p-3 border-b border-blue-300/70 dark:border-slate-800/90 bg-[#cfdcf0]/60 dark:bg-[#090f20]/50 ${isCollapsed ? 'flex justify-center' : ''}`}>
+        <div className={`p-3 border-b border-blue-300/70 dark:border-slate-800/90 bg-[#c7def4]/60 dark:bg-[#0f2b5c]/50 ${isCollapsed ? 'flex justify-center' : ''}`}>
           <Link
             href="/documents?create=true"
             onClick={closeMobile}
@@ -220,7 +220,7 @@ function SidebarContent() {
 
                 {(counts.pendingSignatures || 0) > 0 && (
                   isCollapsed ? (
-                    <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-blue-400 ring-2 ring-[#dbe5f4] dark:ring-[#0b1329]" />
+                    <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-blue-400 ring-2 ring-[#c7def4] dark:ring-[#0f2b5c]" />
                   ) : (
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-200 border border-blue-200 dark:border-blue-700/60">
                       {counts.pendingSignatures}
@@ -289,7 +289,7 @@ function SidebarContent() {
                   </div>
                   {(counts.registered || 0) > 0 && (
                     isCollapsed ? (
-                      <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-slate-400 ring-2 ring-[#dbe5f4] dark:ring-[#0b1329]" />
+                      <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-slate-400 ring-2 ring-[#c7def4] dark:ring-[#0f2b5c]" />
                     ) : (
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white shadow-sm dark:shadow-none dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-blue-200 dark:border-slate-700">
                         {counts.registered}
@@ -489,7 +489,7 @@ function SidebarContent() {
         </div>
 
         {/* 4. Footer */}
-        <div className={`shrink-0 border-t border-blue-300/70 dark:border-slate-800 bg-[#cfdcf0] dark:bg-[#090f20] text-xs text-slate-600 dark:text-slate-400 ${
+        <div className={`shrink-0 border-t border-blue-300/70 dark:border-slate-800 bg-[#c7def4] dark:bg-[#0f2b5c] text-xs text-slate-600 dark:text-slate-400 ${
           isCollapsed ? 'py-3 flex justify-center' : 'p-3.5 space-y-2'
         }`}>
           {isCollapsed ? (
@@ -529,7 +529,7 @@ export const Sidebar = () => {
   return (
     <Suspense
       fallback={
-        <aside className="hidden lg:flex w-72 bg-[#dbe5f4] dark:bg-[#0b1329] text-slate-700 dark:text-slate-300 flex-col shrink-0 min-h-screen border-r border-blue-300 dark:border-slate-800 select-none animate-pulse" />
+        <aside className="hidden lg:flex w-72 bg-[#c7def4] dark:bg-[#0f2b5c] text-slate-700 dark:text-slate-300 flex-col shrink-0 min-h-screen border-r border-blue-300 dark:border-slate-800 select-none animate-pulse" />
       }
     >
       <SidebarContent />
