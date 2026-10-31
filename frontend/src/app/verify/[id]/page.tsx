@@ -53,6 +53,8 @@ interface VerificationData {
     signedAt?: string | null;
   }>;
   isAuthentic: boolean;
+  isFullySigned?: boolean;
+  isRejected?: boolean;
   verifiedAt: string;
 }
 
@@ -172,6 +174,33 @@ export default function DocumentVerificationPage() {
     }
   })();
 
+  const approvals = docData.approvals || [];
+  const isRejected = docData.isRejected ?? approvals.some((a) => a.status === 'REJECTED');
+  const isFullySigned =
+    !isRejected && (docData.isFullySigned ?? approvals.every((a) => a.status === 'APPROVED'));
+  const pendingCount = approvals.filter((a) => a.status === 'PENDING').length;
+
+  const statusTheme = isRejected
+    ? {
+        gradient: 'from-rose-500 to-red-700',
+        badge: 'Rad etilgan',
+        title: 'HUJJAT RAD ETILGAN',
+        text: 'Mazkur hujjat kelishuv jarayonida rad etilgan. U yuridik kuchga ega emas.',
+      }
+    : isFullySigned
+    ? {
+        gradient: 'from-emerald-500 to-teal-700',
+        badge: 'Rasmiy Tasdiqlangan',
+        title: 'HUJJAT HAQIQIY VA QONUNIY',
+        text: 'Mazkur hujjat Samarqand Davlat Universiteti tomonidan rasmiy ro‘yxatga olingan, barcha mas’ul shaxslar tomonidan elektron imzolangan va yuridik kuchga ega.',
+      }
+    : {
+        gradient: 'from-amber-500 to-orange-600',
+        badge: 'Imzolanish jarayonida',
+        title: 'HUJJAT HALI TO‘LIQ IMZOLANMAGAN',
+        text: `Hujjat tizimda ro‘yxatga olingan, ammo ${pendingCount} nafar mas’ul shaxs hali imzolamagan. Hujjat yuridik kuchga ega emas.`,
+      };
+
   const verificationCode = docId
     ? `SD-VERIFY-${docId.replace(/-/g, '').slice(0, 12).toUpperCase()}`
     : 'SD-VERIFY-SAMDU';
@@ -203,23 +232,23 @@ export default function DocumentVerificationPage() {
         </div>
 
         {/* 2. Official Verification Status Card */}
-        <div className="bg-gradient-to-br from-emerald-500 to-teal-700 text-white rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
+        <div className={`bg-gradient-to-br ${statusTheme.gradient} text-white rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden`}>
           <div className="absolute right-0 top-0 translate-x-10 -translate-y-10 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none" />
 
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 relative z-10">
             <div className="flex items-start gap-4">
               <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0 shadow-inner">
-                <ShieldCheck className="w-9 h-9 text-white" />
+                {isRejected ? <XCircle className="w-9 h-9 text-white" /> : isFullySigned ? <ShieldCheck className="w-9 h-9 text-white" /> : <Clock className="w-9 h-9 text-white" />}
               </div>
               <div>
                 <span className="inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/20 text-white mb-1.5 backdrop-blur-sm">
-                  Rasmiy Tasdiqlangan
+                  {statusTheme.badge}
                 </span>
                 <h2 className="text-xl sm:text-2xl font-black tracking-tight leading-tight">
-                  HUJJAT HAQIQIY VA QONUNIY
+                  {statusTheme.title}
                 </h2>
-                <p className="text-xs text-emerald-100 mt-1 max-w-lg leading-relaxed">
-                  Mazkur hujjat Samarqand Davlat Universiteti tomonidan rasmiy ro‘yxatga olingan, elektron raqamli imzo bilan tasdiqlangan va yuridik kuchga ega.
+                <p className="text-xs text-white/80 mt-1 max-w-lg leading-relaxed">
+                  {statusTheme.text}
                 </p>
               </div>
             </div>
@@ -308,8 +337,14 @@ export default function DocumentVerificationPage() {
                     className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between text-xs"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 flex items-center justify-center">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center ${
+                        app.status === 'APPROVED'
+                          ? 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400'
+                          : app.status === 'REJECTED'
+                          ? 'bg-rose-100 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400'
+                          : 'bg-amber-100 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400'
+                      }`}>
+                        {app.status === 'APPROVED' ? <CheckCircle2 className="w-4 h-4" /> : app.status === 'REJECTED' ? <XCircle className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
                       </div>
                       <div>
                         <div className="font-bold text-slate-900 dark:text-white">{app.approver?.fullName || 'Noma’lum'}</div>
@@ -318,11 +353,17 @@ export default function DocumentVerificationPage() {
                     </div>
 
                     <div className="text-right">
-                      <span className="inline-flex items-center gap-1 font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 px-2.5 py-0.5 rounded-full text-[11px]">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        Tasdiqlangan
+                      <span className={`inline-flex items-center gap-1 font-semibold border px-2.5 py-0.5 rounded-full text-[11px] ${
+                        app.status === 'APPROVED'
+                          ? 'text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800'
+                          : app.status === 'REJECTED'
+                          ? 'text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 border-rose-200 dark:border-rose-800'
+                          : 'text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 border-amber-200 dark:border-amber-800'
+                      }`}>
+                        {app.status === 'APPROVED' ? <CheckCircle2 className="w-3.5 h-3.5" /> : app.status === 'REJECTED' ? <XCircle className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />}
+                        {app.status === 'APPROVED' ? 'Imzolangan' : app.status === 'REJECTED' ? 'Rad etgan' : 'Jarayonda'}
                       </span>
-                      {app.signedAt && !isNaN(new Date(app.signedAt).getTime()) && (
+                      {app.status === 'APPROVED' && app.signedAt && !isNaN(new Date(app.signedAt).getTime()) && (
                         <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 font-mono">
                           {new Date(app.signedAt).toLocaleString('uz-UZ')}
                         </div>

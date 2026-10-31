@@ -301,9 +301,11 @@ router.get('/:id/public-verify', publicVerifyLimiter, async (req, res, next) => 
           signedAt: a.signedAt,
         })),
         isAuthentic: true,
+        isFullySigned: isDocumentFullySigned(document.approvals),
+        isRejected: document.approvals.some((a) => a.status === 'REJECTED'),
         verifiedAt: new Date().toISOString(),
       },
-      'Hujjat haqiqiyligi tasdiqlandi'
+      'Hujjat tizimda mavjud'
     );
   } catch (error) {
     next(error);
