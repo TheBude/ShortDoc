@@ -77,7 +77,7 @@ export const Header = () => {
   const displayName = formatShortName(user?.fullName || '');
 
   return (
-    <header className="h-14 sm:h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-3 sm:px-6 flex items-center justify-between gap-2 sticky top-0 z-30 shadow-sm transition-colors duration-200">
+    <header className="h-14 sm:h-16 bg-primary-200 dark:bg-primary-900 border-b border-primary-300 dark:border-primary-800 px-3 sm:px-6 flex items-center justify-between gap-2 sticky top-0 z-30 shadow-sm transition-colors duration-200">
       <div className="flex items-center gap-2 sm:gap-3 min-w-0">
         {/* Mobile Hamburger Toggle Button */}
         <button
